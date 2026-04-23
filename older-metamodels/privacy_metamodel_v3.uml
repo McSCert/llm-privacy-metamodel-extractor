@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmi:version="2.0" xmi:id="_model_1d7ba01da3af" name="PrivacyPolicyMetamodel">
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_efe72221a461" name="Core">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_ea813403d184" name="PrivacyPolicy">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_9758c6e78634" name="policyId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_c67b2776f3c4" name="version">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_01d7ae193024" name="validFrom">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Long"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_d630d5c6b1fb" name="validTo">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Long"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_d61a16186e55" name="statements" isOrdered="false" aggregation="composite" type="_cls_73202bbe1681">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_63e11dd80aef" value=""/>
+      </ownedAttribute>
+      <ownedRule xmi:type="uml:Constraint" xmi:id="_con_90b278715af0" name="constraint01" constrainedElement="_cls_ea813403d184">
+        <specification xmi:type="uml:OpaqueExpression" xmi:id="_oex_1f04111b0bd4">
+          <language>OCL</language>
+          <body>statements-&gt;size() &gt; 0</body>
+        </specification>
+      </ownedRule>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_73202bbe1681" name="PolicyStatement">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_316e13aa6bee" name="statementId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_cb10243f938f" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_1dd056c05d2f" name="actor" isOrdered="false" type="_cls_14ab235783d2"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_3f3f775dc01b" name="purpose" isOrdered="false" type="_cls_c4ce0d15445a">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_c6220c3bf907" value=""/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_4d5ced9f1f09">
+          <body>Every processing activity has at least one explicit purpose.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_826f4a1e6012" name="processingActivity" isOrdered="false" type="_cls_8a62db5f5283">
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_5935a3497935">
+          <body>One processing activity may appear in multiple statements.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_9bfff47d9812" name="legalBasis" isOrdered="false" type="_cls_80a7c971fce9">
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_7a12ba4940aa">
+          <body>Every policy statement must be legally justified.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_411fda73c1b5" name="governingRegulations" isOrdered="false" type="_cls_ca63472d42f1">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_f7cb43d5ee8d" value=""/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_cdbc45b0e1af" name="constraints" isOrdered="false" type="_cls_6db2dca946fa">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_de1825e52802" value=""/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_46052db69537">
+          <body>Allows constraint reuse, constraint libraries, cross-policy comparison.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_d490ffa7b458" name="rightImpacted" isOrdered="false" type="_cls_a69868914228">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_2e915f3351ef" value=""/>
+      </ownedAttribute>
+      <ownedRule xmi:type="uml:Constraint" xmi:id="_con_f6607b989414" name="constraint_2" constrainedElement="_cls_73202bbe1681">
+        <specification xmi:type="uml:OpaqueExpression" xmi:id="_oex_cfad376e960d">
+          <language>OCL</language>
+          <body>governingRegulations-&gt;forAll(r | r.jurisdiction-&gt;notEmpty())</body>
+        </specification>
+      </ownedRule>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_24c3195025c1" name="Actors">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_14ab235783d2" name="Actor">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_165ed6645d74" name="actorId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_99dcf8580f41" name="name">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_4e79a6097809" name="role" type="_enum_c6c70b05c89b"/>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_88fab27a814e" name="Legal">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_80a7c971fce9" name="LegalBasis">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_369432a6007c" name="basisId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_c041b873e994" name="type" type="_enum_91d752053b2c"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_83cb188efd77" name="evidence">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_42d897f8d64a" name="jurisdiction" isOrdered="false" type="_cls_b9e788a49d4a">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_9334ef131bce" value=""/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_33001d394467">
+          <body>Replaces the former free-text 'jurisdiction' string. References the canonical Jurisdiction instances in RegulatoryContext, preventing synonymous strings (EU / European Union / Europe) for the same jurisdiction and enabling cross-law queries.</body>
+        </ownedComment>
+      </ownedAttribute>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_7c04d34498ca" name="Processing">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_8a62db5f5283" name="ProcessingActivity">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_b6b01c0cfa1e" name="activityId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_9137679eb405" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_8394023b02b5" name="action" type="_enum_53dd59329b7f"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_9d65696d4a31" name="riskAssessmentReference">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_lv_0382726910d5" value="0"/>
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_49b17a84b0d5">
+          <body>Law-neutral reference to any form of impact or risk assessment document (DPIA under GDPR Art.35, RIPD under LGPD Art.38, risk assessment under CPRA, voluntary PIA under PIPEDA). Absence on high-risk activities is a compliance gap signal, not a hard conformance error.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_f7bf52699e29" name="dataProcessed" isOrdered="false" type="_cls_6041fb5e6dad">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_2b4fe1b9c8c9" value=""/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_a855f348e768">
+          <body>One activity to many data categories; one data category to many activities.</body>
+        </ownedComment>
+      </ownedAttribute>
+      <ownedRule xmi:type="uml:Constraint" xmi:id="_con_24fb3d5becaf" name="constraint_3__warning" constrainedElement="_cls_8a62db5f5283">
+        <specification xmi:type="uml:OpaqueExpression" xmi:id="_oex_d615703e0c7b">
+          <language>OCL</language>
+          <body>(self.action = ProcessingAction::Transfer or self.action = ProcessingAction::Share) and self.dataProcessed-&gt;exists(d | d.sensitivity = SensitivityLevel::SpecialCategory or d.sensitivity = SensitivityLevel::High) implies self.riskAssessmentReference-&gt;notEmpty()</body>
+        </specification>
+        <ownedComment xmi:type="uml:Comment" xmi:id="_cmt_dba490c4472f">
+          <body>High-risk Transfer or Share of sensitive data has no risk assessment reference. This is a hard violation under GDPR Art.35 and LGPD Art.38, a regulatory obligation under CPRA, and a best-practice recommendation under PIPEDA.</body>
+        </ownedComment>
+      </ownedRule>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_dfa45d2204a6" name="Purposes">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_c4ce0d15445a" name="Purpose">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_9e04034f97a9" name="purposeId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_0f9c8d9060e5" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_406e10a1ace9" name="category" type="_enum_b1dae970afe0"/>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_f5e102739e0e" name="PersonalDataModel">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_6041fb5e6dad" name="PersonalData">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_0704622ac79f" name="dataId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_3fa434830d96" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_c2378d7f9845" name="source">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_f2786fb56653" name="category" type="_enum_b9d41df59d1c"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_c58fb24711d8" name="sensitivity" type="_enum_baf5ac3df86b"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_2e60d847c4a3" name="identifiability" type="_enum_56d7791bf50d"/>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_0132840c71f5" name="PolicyRules">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_6db2dca946fa" name="Constraint">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_1478d225b5d3" name="constraintId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_442e1421139e" name="type" type="_enum_11b795a19c55"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_44e0e57aeb00" name="expression">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_aa730cac7b30" name="enforcementLevel">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_a69868914228" name="Right">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_516d00e0e8f8" name="rightId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_f4f5564f00a3" name="type" type="_enum_2217ebf381a5"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_ec54c7e61a57" name="triggerCondition">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_c3b01effd7bc" name="fulfillmentProcess">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_619ec0ae44f3" name="RegulatoryContext">
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_ca63472d42f1" name="Regulation">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_7db372ff133b" name="regulationId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_d8afd3ec0a33" name="name">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_de97e5354a65" name="version">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_b24d8fb3dd22" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ref_21d717578a9e" name="jurisdiction" isOrdered="false" type="_cls_b9e788a49d4a">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uv_6847a4bac19c" value=""/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_b9e788a49d4a" name="Jurisdiction">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_90de846242e8" name="jurisdictionId">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_da51363486fa" name="name">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_7475658e3e06" name="description">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+    </packagedElement>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Package" xmi:id="_pkg_31daecb45d6c" name="ControlledVocabularies">
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_c6c70b05c89b" name="ActorRole">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_ffea3ca8bef4" name="DataSubject"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_10e0f303535f" name="DataController"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_20e8c19977db" name="DataProcessor"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_e226fcd0c31b" name="ThirdParty"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_53dd59329b7f" name="ProcessingAction">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_43f719c22b8d" name="Collect"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_8632e2d414b9" name="Store"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_35813874a909" name="Use"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_efd36af8db29" name="Share"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_5384144c614b" name="Transfer"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_6ad546c5b2b8" name="Delete"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_91d752053b2c" name="LegalBasisType">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_d0c5a5d36947" name="Consent"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_d4e6e56e96bb" name="Contract"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_581ab76bb2a3" name="LegalObligation"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_3c687f45704a" name="LegitimateInterest"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_1bc494957542" name="VitalInterest"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_93b485abe448" name="PublicTask"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_b1dae970afe0" name="PurposeCategory">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_1f4399e941e9" name="ServiceProvision"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_fcdf5be15cc0" name="Security"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_62ffed45ae1d" name="LegalCompliance"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_62ca957cf47c" name="Marketing"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_1cecda345e62" name="Analytics"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_ef02d1847d11" name="Research"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_11b795a19c55" name="ConstraintType">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_ae57c39df5f1" name="Temporal"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_b91a170c203d" name="Geographic"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_b1a9f0b2c34a" name="Usage"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_9570519ca7de" name="Security"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_4e616b0c76ff" name="Retention"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_fdfb0d72b5b8" name="PurposeLimitation"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_2217ebf381a5" name="RightType">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_4468e6c4fdb0" name="Access"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_dd896cd485f2" name="Rectification"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_d1f559a6199a" name="Erasure"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_cfefd7570896" name="Restriction"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_171d87011da8" name="Portability"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_b6f57a899bf9" name="Objection"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_23ea90056eb0" name="AutomatedDecisionOptOut"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_56d7791bf50d" name="Identifiability">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_cb84ae91640f" name="Identified"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_297de215818b" name="Pseudonymous"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_b299a77a010f" name="Anonymous"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_b9d41df59d1c" name="PersonalDataCategory">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_8d9bfd487278" name="Identifier"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_9636cee40ab4" name="ContactInformation"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_8b59e491f2b5" name="LocationData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_3d087d316158" name="FinancialData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_a495790791ad" name="HealthData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_ae93569de201" name="BiometricData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_6b1c22cf2e7e" name="BehavioralData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_55ef3eca6f87" name="TechnicalData"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_ad3229385ae0" name="ContentData"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_baf5ac3df86b" name="SensitivityLevel">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_d94bca32c668" name="Low"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_8e80ef02ee37" name="Medium"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_9376f195922d" name="High"/>
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_3e41bfd096eb" name="SpecialCategory"/>
+    </packagedElement>
+  </packagedElement>
+</uml:Model>

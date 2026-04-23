@@ -1,0 +1,463 @@
+{
+  "project": "MyProj",
+  "metamodel": "PrivacyPolicyMetamodel",
+  "packages": {
+    "Core": {
+      "classes": {
+        "PrivacyPolicy": {
+          "attributes": {
+            "policyId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "version": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "validFrom": {
+              "type": "long",
+              "multiplicity": "1"
+            },
+            "validTo": {
+              "type": "long",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1..*",
+              "kind": "composition",
+              "navigable": true
+            }
+          },
+          "constraints": {
+            "constraint01": "statements->size() > 0"
+          }
+        },
+        "PolicyStatement": {
+          "attributes": {
+            "statementId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "policy": {
+              "target": "PrivacyPolicy",
+              "multiplicity": "1",
+              "navigable": false
+            },
+            "actor": {
+              "target": "Actor",
+              "multiplicity": "1",
+              "navigable": true
+            },
+            "purpose": {
+              "target": "Purpose",
+              "multiplicity": "1..*",
+              "navigable": true,
+              "note": "Every processing activity has at least one explicit purpose."
+            },
+            "processingActivity": {
+              "target": "ProcessingActivity",
+              "multiplicity": "1",
+              "navigable": true,
+              "note": "One processing activity may appear in multiple statements."
+            },
+            "legalBasis": {
+              "target": "LegalBasis",
+              "multiplicity": "1",
+              "navigable": true,
+              "note": "Every policy statement must be legally justified."
+            },
+            "governingRegulations": {
+              "target": "Regulation",
+              "multiplicity": "1..*",
+              "navigable": true
+            },
+            "constraints": {
+              "target": "Constraint",
+              "multiplicity": "1..*",
+              "navigable": true,
+              "note": "Allows constraint reuse, constraint libraries, cross-policy comparison."
+            },
+            "rightImpacted": {
+              "target": "Right",
+              "multiplicity": "1..*",
+              "navigable": true
+            }
+          },
+          "constraints": {
+            "constraint_2": "governingRegulations->forAll(r | r.jurisdiction->notEmpty())"
+          }
+        }
+      }
+    },
+    "Actors": {
+      "classes": {
+        "Actor": {
+          "attributes": {
+            "actorId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "name": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "role": {
+              "type": "ActorRole",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1",
+              "navigable": false
+            }
+          }
+        }
+      }
+    },
+    "Legal": {
+      "classes": {
+        "LegalBasis": {
+          "attributes": {
+            "basisId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "type": {
+              "type": "LegalBasisType",
+              "multiplicity": "1"
+            },
+            "evidence": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1",
+              "navigable": false
+            },
+            "jurisdiction": {
+              "target": "Jurisdiction",
+              "multiplicity": "1..*",
+              "navigable": true,
+              "note": "Replaces the former free-text 'jurisdiction' string. References the canonical Jurisdiction instances in RegulatoryContext, preventing synonymous strings (EU / European Union / Europe) for the same jurisdiction and enabling cross-law queries."
+            }
+          }
+        }
+      }
+    },
+    "Processing": {
+      "classes": {
+        "ProcessingActivity": {
+          "attributes": {
+            "activityId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "action": {
+              "type": "ProcessingAction",
+              "multiplicity": "1"
+            },
+            "riskAssessmentReference": {
+              "type": "string",
+              "multiplicity": "0..1",
+              "note": "Law-neutral reference to any form of impact or risk assessment document (DPIA under GDPR Art.35, RIPD under LGPD Art.38, risk assessment under CPRA, voluntary PIA under PIPEDA). Absence on high-risk activities is a compliance gap signal, not a hard conformance error."
+            }
+          },
+          "associations": {
+            "dataProcessed": {
+              "target": "PersonalData",
+              "multiplicity": "1..*",
+              "navigable": true,
+              "note": "One activity to many data categories; one data category to many activities."
+            },
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1",
+              "navigable": false
+            }
+          },
+          "constraints": {
+            "constraint_3": {
+              "severity": "warning",
+              "expression": "(self.action = ProcessingAction::Transfer or self.action = ProcessingAction::Share) and self.dataProcessed->exists(d | d.sensitivity = SensitivityLevel::SpecialCategory or d.sensitivity = SensitivityLevel::High) implies self.riskAssessmentReference->notEmpty()",
+              "message": "High-risk Transfer or Share of sensitive data has no risk assessment reference. This is a hard violation under GDPR Art.35 and LGPD Art.38, a regulatory obligation under CPRA, and a best-practice recommendation under PIPEDA."
+            }
+          }
+        }
+      }
+    },
+    "Purposes": {
+      "classes": {
+        "Purpose": {
+          "attributes": {
+            "purposeId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "category": {
+              "type": "PurposeCategory",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1..*",
+              "navigable": false
+            }
+          }
+        }
+      }
+    },
+    "PersonalDataModel": {
+      "classes": {
+        "PersonalData": {
+          "attributes": {
+            "dataId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "source": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "category": {
+              "type": "PersonalDataCategory",
+              "multiplicity": "1"
+            },
+            "sensitivity": {
+              "type": "SensitivityLevel",
+              "multiplicity": "1"
+            },
+            "identifiability": {
+              "type": "Identifiability",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "usedInActivities": {
+              "target": "ProcessingActivity",
+              "multiplicity": "1..*",
+              "navigable": false
+            }
+          }
+        }
+      }
+    },
+    "PolicyRules": {
+      "classes": {
+        "Constraint": {
+          "attributes": {
+            "constraintId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "type": {
+              "type": "ConstraintType",
+              "multiplicity": "1"
+            },
+            "expression": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "enforcementLevel": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "0..*",
+              "navigable": false
+            }
+          }
+        },
+        "Right": {
+          "attributes": {
+            "rightId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "type": {
+              "type": "RightType",
+              "multiplicity": "1"
+            },
+            "triggerCondition": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "fulfillmentProcess": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "statements": {
+              "target": "PolicyStatement",
+              "multiplicity": "1..*",
+              "navigable": false
+            }
+          }
+        }
+      }
+    },
+    "RegulatoryContext": {
+      "classes": {
+        "Regulation": {
+          "attributes": {
+            "regulationId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "name": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "version": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "jurisdiction": {
+              "target": "Jurisdiction",
+              "multiplicity": "1..*",
+              "navigable": true
+            },
+            "governedStatements": {
+              "target": "PolicyStatement",
+              "multiplicity": "0..*",
+              "navigable": false
+            }
+          }
+        },
+        "Jurisdiction": {
+          "attributes": {
+            "jurisdictionId": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "name": {
+              "type": "string",
+              "multiplicity": "1"
+            },
+            "description": {
+              "type": "string",
+              "multiplicity": "1"
+            }
+          },
+          "associations": {
+            "regulation": {
+              "target": "Regulation",
+              "multiplicity": "1..*",
+              "navigable": false
+            }
+          }
+        }
+      }
+    },
+    "ControlledVocabularies": {
+      "enumerations": {
+        "ActorRole": [
+          "DataSubject",
+          "DataController",
+          "DataProcessor",
+          "ThirdParty"
+        ],
+        "ProcessingAction": [
+          "Collect",
+          "Store",
+          "Use",
+          "Share",
+          "Transfer",
+          "Delete"
+        ],
+        "LegalBasisType": [
+          "Consent",
+          "Contract",
+          "LegalObligation",
+          "LegitimateInterest",
+          "VitalInterest",
+          "PublicTask"
+        ],
+        "PurposeCategory": [
+          "ServiceProvision",
+          "Security",
+          "LegalCompliance",
+          "Marketing",
+          "Analytics",
+          "Research"
+        ],
+        "ConstraintType": [
+          "Temporal",
+          "Geographic",
+          "Usage",
+          "Security",
+          "Retention",
+          "PurposeLimitation"
+        ],
+        "RightType": [
+          "Access",
+          "Rectification",
+          "Erasure",
+          "Restriction",
+          "Portability",
+          "Objection",
+          "AutomatedDecisionOptOut"
+        ],
+        "Identifiability": [
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "PersonalDataCategory": [
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "SensitivityLevel": [
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ]
+      }
+    }
+  }
+}
