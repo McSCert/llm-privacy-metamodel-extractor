@@ -12,7 +12,7 @@ has a direct, traceable counterpart in the prompt system.
 ## The Three-Layer Mapping
 
 ```
-PrivacyPolicyMetamodel v4
+PrivacyPolicyMetamodel
         │
         ▼
 Pydantic Schema (models.py / enums.py)
