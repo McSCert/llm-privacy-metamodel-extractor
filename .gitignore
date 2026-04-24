@@ -1,0 +1,154 @@
+# =============================================================================
+# .gitignore — Privacy Policy Extraction Pipeline
+# macOS / Python / VSCode
+# =============================================================================
+
+# =============================================================================
+# macOS
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# =============================================================================
+# Python
+# =============================================================================
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# Byte-compiled / optimised / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+*.whl
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyright/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# =============================================================================
+# Pipeline data — never commit extracted content or model artefacts
+# =============================================================================
+
+# SQLite databases (ChunkStore and ModelRepository)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# TF-IDF embedder pickles (large, reproducible from source PDFs)
+data/*.pkl
+
+# Gap analysis reports (generated output)
+data/*.txt
+data/*.html
+data/*.csv
+
+# Ensure the data/ directory itself is tracked (empty placeholder)
+!data/.gitkeep
+
+# =============================================================================
+# Input law PDFs — large binary files, store separately (e.g. Git LFS or cloud)
+# =============================================================================
+laws/*.pdf
+laws/*.txt
+# Uncomment the lines below if you use Git LFS for PDFs instead:
+# !laws/*.pdf
+
+# =============================================================================
+# LLM / API keys and secrets — NEVER commit these
+# =============================================================================
+.env
+.env.*
+!.env.example
+*.env
+secrets.json
+secrets.yaml
+api_keys.txt
+anthropic_key.txt
+
+# =============================================================================
+# IDE and editor
+# =============================================================================
+
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# Logs — pipeline output logs
+# =============================================================================
+*.log
+logs/
+
+# =============================================================================
+# Temporary and scratch files
+# =============================================================================
+tmp/
+temp/
+scratch/
+*.tmp
+*.bak
+*.orig
