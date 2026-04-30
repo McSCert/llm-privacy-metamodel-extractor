@@ -6,7 +6,7 @@ PLACEMENT
 ---------
 This file lives at the PROJECT ROOT, alongside the three sub-packages:
 
-    full_artifacts_n0_rejectionloop/
+    LLM-PRIVACY-METAMODEL-EXTRACTION/
     ├── gap_analysis/
     │   ├── __init__.py
     │   ├── gap_analysis.py       <- GapAnalyser
@@ -26,26 +26,26 @@ This file lives at the PROJECT ROOT, alongside the three sub-packages:
 
 Run from the project root (activate your venv first):
     source .venv/bin/activate
-    python run_pipeline.py --input PIPEDA=../../laws/pipeda.pdf --articles "Principle 4.1" --backend local
+    python run_pipeline.py --input PIPEDA=laws/pipeda.pdf --articles "Principle 4.1" --backend local
 
 Quick-start examples
 --------------------
 Prototype on one PIPEDA principle, local Ollama:
     python run_pipeline.py \\
-        --input PIPEDA=../../laws/pipeda.pdf \\
-        --articles "Principle 4.1" \\
-        --backend local --local-model llama3.1:8b
+        --input PIPEDA=laws/pipeda.pdf \\
+        --articles "4.1 Principle 1" \\
+        --backend local --local-model llama3.1:70b-instruct-q4
 
 Full run, Anthropic API:
     python run_pipeline.py \\
-        --input GDPR=../../laws/gdpr.pdf CCPA=../../laws/ccpa.txt \\
+        --input GDPR=laws/gdpr.pdf CCPA=laws/ccpa.txt \\
         --backend anthropic
 
 Ingest only (no LLM calls, cheap first step):
-    python run_pipeline.py --input PIPEDA=../../laws/pipeda.pdf --stage ingest
+    python run_pipeline.py --input PIPEDA=laws/pipeda.pdf --stage ingest
 
 Dry-run (tests all code paths, zero API cost):
-    python run_pipeline.py --input PIPEDA=../../laws/pipeda.pdf --dry-run
+    python run_pipeline.py --input PIPEDA=laws/pipeda.pdf --dry-run
 
 Gap report from an existing repository:
     python run_pipeline.py --stage analyse
@@ -152,6 +152,9 @@ from privacy_schema.models import (
 from gap_analyses.repository  import ModelRepository
 from gap_analyses.gap_analysis import GapAnalyser
 
+# XMI serialisation
+from tranform_format.pydantic_to_xmi import PolicyXMIWriter
+
 
 # =============================================================================
 # LOGGING
@@ -255,22 +258,22 @@ EMPTY_FALLBACKS: dict[str, str] = {
 def _strip_underscores(obj: Any) -> Any:
     """
     Recursively strip leading underscores from dict keys.
- 
+
     Some local LLMs prefix field names with _ (e.g. "_source_clause",
     "_dataProcessed"). This breaks Pydantic alias matching because the
     models use camelCase aliases ("source_clause", "dataProcessed").
- 
+
     Only strips a SINGLE leading underscore. Double-underscore keys
     ("__something") are left unchanged.
- 
+
     Called in _assemble_one_statement() after json.loads() and before
     PolicyStatementModel.model_validate().
- 
+
     Parameters
     ----------
     obj : the parsed JSON value — dict, list, or scalar.
           json.loads() always returns one of these three types.
- 
+
     Returns
     -------
     The same structure with underscore-prefixed keys renamed.
@@ -314,6 +317,7 @@ class PipelineStats:
     pass2_success:      int = 0
     pass2_failed:       int = 0
     statements_stored:  int = 0
+    xmi_files_written:  int = 0
     api_calls:          int = 0
     tokens_in:          int = 0
     tokens_out:         int = 0
@@ -348,6 +352,7 @@ class PipelineStats:
             f"(ok={self.pass2_success}  failed={self.pass2_failed})"
         )
         log.info(f"  Statements stored    : {self.statements_stored}")
+        log.info(f"  XMI files written    : {self.xmi_files_written}")
         log.info(f"  Total LLM calls      : {self.api_calls}")
         if self.tokens_in or self.tokens_out:
             log.info(f"  Tokens  in / out     : {self.tokens_in} / {self.tokens_out}")
@@ -1158,13 +1163,13 @@ def _assemble_one_statement(
             user = prefix + user
 
         last_raw = backend.call(system, user, stats, max_tokens=4096)
-        #print("ASSEMBLER RAW OUTPUT:", last_raw[:500])  
+
         try:
             parsed = json.loads(last_raw)
         except json.JSONDecodeError as exc:
             last_errors = [f"JSON parse error: {exc}"]
             continue
-        
+
         # ── Fix 1: unwrap single-key wrapper ──────────────────────────────────
         # Local models sometimes return {"PolicyStatement": {...}} instead of
         # the object directly. Unwrap any single-key dict whose value is a dict.
@@ -1174,11 +1179,10 @@ def _assemble_one_statement(
             if isinstance(sole_val, dict):
                 log.debug(f"    Unwrapping assembler response from key '{sole_key}'")
                 parsed = sole_val
- 
+
         # ── Fix 2: strip leading underscores from field names ─────────────────
         # Local models sometimes prefix field names with _ (e.g. "_source_clause").
         # _strip_underscores is defined at module level below EMPTY_FALLBACKS.
- 
         parsed = _strip_underscores(parsed)
 
         try:
@@ -1222,10 +1226,26 @@ def stage_assemble_and_store(
     backend:            LLMBackend,
     stats:              PipelineStats,
     max_retries:        int,
+    xmi_out_dir:        Optional[Path] = None,
 ) -> None:
     log.info("=" * 60)
     log.info("STAGE 3 — ASSEMBLE (Pass 2)  +  STAGE 4 — STORE")
     log.info("=" * 60)
+
+    # ── XMI writer — instantiated ONCE here, reused for every statement ───────
+    # Constructing it inside the loop would re-parse the .ecore on every call.
+    xmi_writer: Optional[PolicyXMIWriter] = None
+    if xmi_out_dir is not None:
+        ecore_path = Path(__file__).resolve().parent / "privacy_metamodel.ecore"
+        if not ecore_path.exists():
+            log.warning(
+                f"privacy_metamodel.ecore not found at {ecore_path}. "
+                f"XMI output disabled. Run generate_ecore.py first."
+            )
+        else:
+            xmi_out_dir.mkdir(parents=True, exist_ok=True)
+            xmi_writer = PolicyXMIWriter(ecore_path)
+            log.info(f"  XMI output enabled  : {xmi_out_dir}")
 
     with ModelRepository(repo_path) as repo:
         for law, articles in extraction_results.items():
@@ -1240,6 +1260,23 @@ def stage_assemble_and_store(
                     stmt_id = repo.store(law, article_ref, statement)
                     stats.statements_stored += 1
                     log.info(f"  Stored [{law}] {article_ref} -> {stmt_id}")
+
+                    # ── XMI serialisation ─────────────────────────────────────
+                    if xmi_writer is not None:
+                        # Build a safe filename from law + article_ref.
+                        # e.g. "GDPR Art.6(1)(a)" → "GDPR_Art_6_1_a_.xmi"
+                        slug = re.sub(r"[^\w]+", "_", f"{law}_{article_ref}").strip("_")
+                        xmi_path = xmi_out_dir / f"{slug}.xmi"
+                        try:
+                            from privacy_schema.models import PolicyStatementModel
+                            stmt_obj = PolicyStatementModel.model_validate(statement)
+                            xmi_writer.write_policy_statement(stmt_obj, xmi_path)
+                            stats.xmi_files_written += 1
+                            log.info(f"  XMI  [{law}] {article_ref} -> {xmi_path.name}")
+                        except Exception as exc:
+                            log.warning(
+                                f"  XMI write failed for [{law}] {article_ref}: {exc}"
+                            )
                 else:
                     log.warning(
                         f"  Skipped [{law}] {article_ref} — assembly failed"
@@ -1361,6 +1398,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help="SQLite ModelRepository path (default: data/model_repo.db)")
     io.add_argument("--report", default="data/gap_report.txt", metavar="PATH",
                     help="Gap analysis report output (default: data/gap_report.txt)")
+    io.add_argument("--xmi-out", default=None, metavar="DIR",
+                    help=(
+                        "Directory to write one XMI file per PolicyStatement "
+                        "(default: disabled). Requires privacy_metamodel.ecore "
+                        "in the project root. Example: --xmi-out output/xmi"
+                    ))
     io.add_argument("--data-dir", default="data", metavar="DIR",
                     help="Directory for TF-IDF embedder pickles (default: data/)")
 
@@ -1509,6 +1552,7 @@ def main() -> None:
             backend            = backend,
             stats              = stats,
             max_retries        = args.max_retries,
+            xmi_out_dir        = Path(args.xmi_out) if args.xmi_out else None,
         )
 
     # ── Stage 5: Gap Analysis ─────────────────────────────────────────────────

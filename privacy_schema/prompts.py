@@ -628,16 +628,78 @@ def build_assembler_prompt(
 ) -> tuple[str, str]:
     user = (
         "## Task: Assemble a PolicyStatement from Pass 1 extractions\n\n"
-        "Compose the objects below into a single PolicyStatement JSON.\n"
-        "Do NOT re-read or reinterpret the legal text. Only flag consistency issues.\n\n"
-        "### Consistency checks — add \"_warnings\":[...] if any fire\n"
+        "Compose the Pass 1 objects below into a single PolicyStatement JSON.\n"
+        "Do NOT re-read or reinterpret the legal text. Copy field values exactly "
+        "as given — do not paraphrase, expand, or invent content.\n\n"
+
+        # ── FIX 1: full output schema ─────────────────────────────────────────
+        # Previously absent — the LLM had no schema to follow and guessed
+        # field names, nesting, and required vs optional. This caused
+        # Pydantic rejections on every field the LLM got wrong.
+        "## Output schema — you MUST return exactly this structure\n\n"
+        "```json\n"
+        "{\n"
+        "  \"statementId\": \"\",\n"
+        "  \"description\": \"<one-sentence summary of what this statement covers>\",\n"
+        "  \"source_clause\": \"<top-level article reference>\",\n\n"
+        "  \"actor\": { <copy ACTOR object exactly> },\n\n"
+        "  \"purposes\": [ <copy PURPOSES array exactly> ],\n\n"
+        "  \"processingActivity\": { <copy PROCESSING ACTIVITY object exactly> },\n\n"
+        "  \"legalBasis\": { <copy LEGAL BASIS object exactly> },\n\n"
+        "  \"governingRegulations\": [ <copy GOVERNING REGULATIONS array exactly> ],\n\n"
+        "  \"constraints\": [ <copy CONSTRAINTS array exactly> ],\n\n"
+        "  \"rightImpacted\": [ <copy RIGHTS IMPACTED array exactly> ],\n\n"
+        "  \"retentionPolicies\": [ <copy RETENTION POLICIES array, or [] if empty> ],\n\n"
+        "  \"dataTransfers\": [ <copy DATA TRANSFERS array, or [] if empty> ],\n\n"
+        "  \"consentWithdrawal\": [ <copy CONSENT WITHDRAWAL array — see schema below> ]\n"
+        "}\n"
+        "```\n\n"
+        "FIELD RULES:\n"
+        "- \"statementId\" must always be exactly \"\" (empty string — the pipeline fills it).\n"
+        "- Required arrays (purposes, governingRegulations, constraints, rightImpacted) "
+        "must contain at least one item — never [].\n"
+        "- Optional arrays (retentionPolicies, dataTransfers, consentWithdrawal) "
+        "may be [] if the Pass 1 input is empty.\n"
+        "- Use camelCase field names EXACTLY as shown. "
+        "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
+
+        # ── FIX 2: ConsentWithdrawal schema ───────────────────────────────────
+        # Previously absent — the LLM did not know channel is 1..* enum list,
+        # or that deadline and effectOnPriorProcessing are required strings.
+        # This caused Pydantic rejections on every consent-based article.
+        "## ConsentWithdrawal object schema (required when consentWithdrawal is not [])\n\n"
+        "Each item in the consentWithdrawal array MUST have exactly these fields:\n"
+        "```json\n"
+        "{\n"
+        "  \"withdrawalId\": \"\",\n"
+        "  \"channel\": [\"<one or more of: OnlineForm | Email | WrittenRequest "
+        "| InAppToggle | PhoneRequest | InPerson>\"],\n"
+        "  \"deadline\": \"<string — time the controller has to act, "
+        "e.g. 'without undue delay', '30 days', 'immediately'>\",\n"
+        "  \"effectOnPriorProcessing\": \"<string — whether withdrawal affects "
+        "lawfulness of prior processing, e.g. 'Does not affect prior processing'>\",\n"
+        "  \"source_clause\": \"<article reference>\"\n"
+        "}\n"
+        "```\n"
+        "CONSENT WITHDRAWAL RULES:\n"
+        "- \"channel\" is a LIST — always use [\"...\"] even for a single channel.\n"
+        "- \"channel\" values must be exact enum strings from the list above — "
+        "no freeform text.\n"
+        "- \"deadline\" and \"effectOnPriorProcessing\" are required strings — "
+        "never null or omitted.\n"
+        "- \"withdrawalId\" must always be \"\" (pipeline fills it).\n\n"
+
+        "## Consistency checks — add \"_warnings\":[...] to the root object if any fire\n"
         "1. legalBasis.type==\"Consent\" and consentWithdrawal==[]\n"
         "   → \"constraint_4: Consent basis present but no withdrawal mechanics extracted\"\n"
-        "2. processingActivity.action in [Transfer,Share] and any dataProcessed.sensitivity\n"
-        "   in [High,SpecialCategory] and riskAssessmentReference==null\n"
+        "2. processingActivity.action in [Transfer,Share] and any "
+        "dataProcessed.sensitivity in [High,SpecialCategory] "
+        "and riskAssessmentReference==null\n"
         "   → \"constraint_3: High-risk transfer without risk assessment reference\"\n"
         "3. Any governingRegulation has empty jurisdiction list\n"
         "   → \"constraint_2: Regulation missing jurisdiction\"\n\n"
+
+        "## Pass 1 inputs — copy these into the output schema above\n\n"
         f"ACTOR:\n{actor_json}\n\n"
         f"PURPOSES:\n{purposes_json}\n\n"
         f"PROCESSING ACTIVITY:\n{processing_activity_json}\n\n"
@@ -648,6 +710,7 @@ def build_assembler_prompt(
         f"RETENTION POLICIES:\n{retention_json}\n\n"
         f"DATA TRANSFERS:\n{transfers_json}\n\n"
         f"CONSENT WITHDRAWAL:\n{withdrawal_json}\n\n"
-        f"SOURCE CLAUSE: {source_clause}\n"
+        f"SOURCE CLAUSE: {source_clause}\n\n"
+        "Return ONLY the JSON object. No markdown fences, no explanation.\n"
     )
     return SYSTEM_PROMPT, user
