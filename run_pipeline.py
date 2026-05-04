@@ -686,11 +686,59 @@ def _corrective_prompt(
     errors prepended. Asks the LLM to fix only the failing fields.
     Critical for local models which have higher JSON failure rates (ISSUE-6).
     """
+    from privacy_schema.prompts import _ENUM_GRAMMARS
+
+    # Map field names that appear in error paths to their enum grammar keys.
+    # "type" is ambiguous — resolved by concept name.
+    _FIELD_TO_ENUM: dict[str, str] = {
+        "category":        "PersonalDataCategory",
+        "sensitivity":     "SensitivityLevel",
+        "identifiability": "Identifiability",
+        "action":          "ProcessingAction",
+        "role":            "ActorRole",
+        "mechanism":       "TransferMechanism",
+        "unit":            "RetentionUnit",
+        "trigger":         "RetentionTrigger",
+        "channel":         "WithdrawalChannel",
+    }
+    _TYPE_ENUM_BY_CONCEPT: dict[str, str] = {
+        "LegalBasis": "LegalBasisType",
+        "Right":      "RightType",
+        "Constraint": "ConstraintType",
+    }
+    
     error_block = "\n".join(f"  - {e}" for e in errors)
+    
+    
+    # Re-state valid enum values for every failing field so local models
+    # don't repeat the same invalid value across retries.
+    enum_hints: list[str] = []
+    for err in errors:
+        field_path = err.split(":")[0].strip()     # e.g. "dataProcessed.0.category"
+        field_name = field_path.split(".")[-1]      # e.g. "category"
+        if field_name == "type":
+            enum_name = _TYPE_ENUM_BY_CONCEPT.get(concept)
+        else:
+            enum_name = _FIELD_TO_ENUM.get(field_name)
+        if enum_name and enum_name in _ENUM_GRAMMARS:
+            values = " | ".join(_ENUM_GRAMMARS[enum_name])
+            hint = f"  {field_name} must be one of: {values}"
+            if hint not in enum_hints:
+                enum_hints.append(hint)
+
+    enum_block = ""
+    if enum_hints:
+        enum_block = (
+            "\nVALID ENUM VALUES FOR THE FAILING FIELDS "
+            "(use ONLY these exact strings, case-sensitive):\n"
+            + "\n".join(enum_hints)
+            + "\n"
+        )
     prefix = (
         "## CORRECTION NEEDED\n\n"
         "Your previous output failed schema validation:\n"
-        f"{error_block}\n\n"
+        f"{error_block}\n"
+        f"{enum_block}\n"
         "Fix ONLY the fields listed above. Keep all other fields unchanged.\n"
         "Return the complete corrected JSON — no markdown, no explanation.\n\n"
         "PREVIOUS (INVALID) OUTPUT:\n"
@@ -1119,20 +1167,61 @@ def _assemble_one_statement(
         raw = concepts.get(concept, EMPTY_FALLBACKS.get(concept, "{}"))
         return _wrap_for_assembler(concept, raw)
 
+    purposes_json    = _get("Purpose")
+    rights_json      = _get("Right")
+    constraints_json = _get("Constraint")
+    proc_json        = _get("ProcessingActivity")
+
+    # Detect required list fields that are empty and build a targeted synthesis
+    # block. The assembler prompt's generic SYNTHESIS RULES section handles the
+    # "what to produce" guidance; this block tells it "these specific fields
+    # ARE empty in your input — you must synthesize, not copy".
+    synthesis_items: list[str] = []
+    if purposes_json.strip() == "[]":
+        synthesis_items.append(
+            "- PURPOSES input is [] → synthesize 1 Purpose using SYNTHESIS RULES above."
+        )
+    if rights_json.strip() == "[]":
+        synthesis_items.append(
+            "- RIGHTS IMPACTED input is [] → synthesize 1 Right using SYNTHESIS RULES above."
+        )
+    if constraints_json.strip() == "[]":
+        synthesis_items.append(
+            "- CONSTRAINTS input is [] → synthesize 1 Constraint using SYNTHESIS RULES above."
+        )
+    try:
+        proc_obj = json.loads(proc_json)
+        if isinstance(proc_obj, dict) and not proc_obj.get("dataProcessed"):
+            synthesis_items.append(
+                "- processingActivity.dataProcessed is [] → synthesize 1 PersonalData item "
+                "using SYNTHESIS RULES above."
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     system, user = build_assembler_prompt(
         actor_json               = _get("Actor"),
-        purposes_json            = _get("Purpose"),
-        processing_activity_json = _get("ProcessingActivity"),
+        purposes_json            = purposes_json,
+        processing_activity_json = proc_json,
         legal_basis_json         = _get("LegalBasis"),
         regulations_json         = _synthesise_regulation_json(law, article_ref),
-        constraints_json         = _get("Constraint"),
-        rights_json              = _get("Right"),
+        constraints_json         = constraints_json,
+        rights_json              = rights_json,
         source_clause            = article_ref,
         retention_json           = _get("RetentionPolicy"),
         transfers_json           = _get("DataTransfer"),
         withdrawal_json          = _get("ConsentWithdrawal"),
     )
 
+    if synthesis_items:
+        synthesis_block = (
+            "## ACTION REQUIRED — the following required fields are empty in the input:\n"
+            + "\n".join(synthesis_items)
+            + "\n"
+            "Do NOT output [] for any of these fields. Apply the SYNTHESIS RULES.\n\n"
+        )
+        user = synthesis_block + user
+    
     # Strengthen the system prompt for local models that add wrappers or
     # underscore prefixes. Appended here rather than in prompts.py so it
     # only affects Pass-2 and does not change Pass-1 behaviour.
