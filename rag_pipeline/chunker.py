@@ -351,7 +351,7 @@ def concept_tagger(text: str) -> list[str]:
 
 # ── Text extraction from PDF ───────────────────────────────────────────────────
 
-def extract_text_from_pdf(pdf_path: Path) -> str:
+def extract_text_from_pdf(pdf_path: Path, law) -> str:
     """
     Extract raw text from a PDF preserving paragraph structure.
     Uses pdfplumber with layout-aware extraction.
@@ -365,18 +365,26 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
     pages = []
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            text = page.extract_text(x_tolerance=2, y_tolerance=3)
+            if law.upper() == "PIPEDA":
+                # PIPEDA PDF is bilingual with English on the left half.
+                # Crop to the left 50% of the page to extract English only.
+                width  = page.width
+                height = page.height
+                english_column = page.crop((0, 0, width * 0.5, height))
+                text = english_column.extract_text(x_tolerance=2, y_tolerance=3)
+            else:
+                text = page.extract_text(x_tolerance=2, y_tolerance=3)
             if text:
                 pages.append(text)
 
     return "\n\n".join(pages)
 
 
-def extract_text_from_file(path: Path) -> str:
+def extract_text_from_file(path: Path, law) -> str:
     """Route to correct extractor based on file extension."""
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        return extract_text_from_pdf(path)
+        return extract_text_from_pdf(path, law)
     elif suffix in (".txt", ".md"):
         return path.read_text(encoding="utf-8", errors="replace")
     else:
@@ -599,5 +607,5 @@ def chunk_file(
         raise FileNotFoundError(f"Input file not found: {path}")
 
     log.info(f"Loading {path.name} as {law}")
-    text = extract_text_from_file(path)
+    text = extract_text_from_file(path, law)
     return chunk_text(text, law, min_chunk_chars, max_chunk_chars)

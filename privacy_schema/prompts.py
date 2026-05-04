@@ -629,8 +629,9 @@ def build_assembler_prompt(
     user = (
         "## Task: Assemble a PolicyStatement from Pass 1 extractions\n\n"
         "Compose the Pass 1 objects below into a single PolicyStatement JSON.\n"
-        "Do NOT re-read or reinterpret the legal text. Copy field values exactly "
-        "as given — do not paraphrase, expand, or invent content.\n\n"
+        "For fields that have content: copy values exactly as given — do not paraphrase or expand.\n"
+        "EXCEPTION — required arrays that are []: you MUST synthesize at least one item "
+        "(see SYNTHESIS RULES below) rather than copying the empty array.\n\n"
 
         # ── FIX 1: full output schema ─────────────────────────────────────────
         # Previously absent — the LLM had no schema to follow and guessed
@@ -660,9 +661,26 @@ def build_assembler_prompt(
         "must contain at least one item — never [].\n"
         "- Optional arrays (retentionPolicies, dataTransfers, consentWithdrawal) "
         "may be [] if the Pass 1 input is empty.\n"
+        "- processingActivity.dataProcessed must contain at least one item — never [].\n"
         "- Use camelCase field names EXACTLY as shown. "
         "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
-
+        "SYNTHESIS RULES — apply when a required array is [] in the Pass 1 input:\n"
+        "  purposes []:       synthesize 1 item — infer category from legalBasis.type and article subject:\n"
+        "                     LegalObligation/compliance article → LegalCompliance\n"
+        "                     service/product delivery → ServiceProvision\n"
+        "                     fraud/data protection → Security\n"
+        "                     description must paraphrase what the article governs.\n"
+        "  rightImpacted []:  synthesize 1 item — infer type from actor role and article subject:\n"
+        "                     accountability/request-handling → Access\n"
+        "                     limitation/opt-out → Restriction\n"
+        "                     correction → Rectification\n"
+        "                     triggerCondition and fulfillmentProcess must reflect the article obligations.\n"
+        "  constraints []:    synthesize 1 item — infer type from the dominant obligation:\n"
+        "                     compliance/purpose-scoping → PurposeLimitation\n"
+        "                     security/protection requirement → Security\n"
+        "                     time-based rule → Temporal\n"
+        "  dataProcessed []:  synthesize 1 PersonalData item — use category=Identifier "
+        "sensitivity=Low identifiability=Identified as a safe default if article is silent on data type.\n\n"
         # ── FIX 2: ConsentWithdrawal schema ───────────────────────────────────
         # Previously absent — the LLM did not know channel is 1..* enum list,
         # or that deadline and effectOnPriorProcessing are required strings.
