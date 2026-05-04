@@ -1,5 +1,5 @@
 """
-prompts.py — LLM extraction prompt templates for PrivacyPolicyMetamodel v4.
+prompts.py — LLM extraction prompt templates for PrivacyPolicyMetamodel .
 
 Two-pass extraction strategy
   Pass 1 — one API call per metamodel concept, targeting RAG chunks for that concept.

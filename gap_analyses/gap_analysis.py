@@ -1,5 +1,5 @@
 """
-gap_analysis.py — Cross-law gap analysis for PrivacyPolicyMetamodel v4.
+gap_analysis.py — Cross-law gap analysis for PrivacyPolicyMetamodel .
 
 What this module does
 ---------------------
@@ -426,7 +426,7 @@ class GapAnalyser:
         sep = "─" * len(header)
 
         lines = [
-            "Coverage Matrix — PrivacyPolicyMetamodel v4",
+            "Coverage Matrix — PrivacyPolicyMetamodel ",
             "=" * len(header),
             header,
             sep,
@@ -493,7 +493,7 @@ class GapAnalyser:
         # Header
         sections.append("=" * 60)
         sections.append("PRIVACY POLICY GAP ANALYSIS REPORT")
-        sections.append(f"PrivacyPolicyMetamodel v4")
+        sections.append(f"PrivacyPolicyMetamodel ")
         sections.append("=" * 60)
         sections.append(f"\nRepository: {repo_stats['total']} statements across {len(laws)} laws")
         for law, n in repo_stats["by_law"].items():

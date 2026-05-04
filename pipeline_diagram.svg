@@ -62,7 +62,7 @@
 <!-- ── CORE METAMODEL (right column) ─────────────────────────────────── -->
 <rect x="460" y="92" width="180" height="470" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text x="550" y="114" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Core metamodel</text>
-<text x="550" y="132" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">PrivacyPolicyMetamodel v4</text>
+<text x="550" y="132" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">PrivacyPolicyMetamodel </text>
 
 <line x1="468" y1="146" x2="632" y2="146" stroke="#AFA9EC" stroke-width="0.5"/>
 <text x="476" y="163" dominant-baseline="central" font-size="13" font-weight="500" fill="#3C3489">Structure</text>

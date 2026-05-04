@@ -1,5 +1,5 @@
 """
-Controlled vocabularies — generated from PrivacyPolicyMetamodel v4,
+Controlled vocabularies — generated from PrivacyPolicyMetamodel ,
 package: ControlledVocabularies.
 
 13 enums, one per controlled vocabulary in the metamodel.

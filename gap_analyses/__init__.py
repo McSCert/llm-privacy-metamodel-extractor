@@ -1,5 +1,5 @@
 """
-gap_analysis — Cross-law compliance gap analysis for PrivacyPolicyMetamodel v4.
+gap_analysis — Cross-law compliance gap analysis for PrivacyPolicyMetamodel.
 
 Usage
 -----
