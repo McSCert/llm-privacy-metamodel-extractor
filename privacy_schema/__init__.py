@@ -1,5 +1,5 @@
 """
-privacy_schema — Pydantic extraction schema for PrivacyPolicyMetamodel v4.
+privacy_schema — Pydantic extraction schema for PrivacyPolicyMetamodel .
 
 Public API
 ----------

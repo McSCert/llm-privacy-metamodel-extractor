@@ -32,21 +32,6 @@ Supported laws (regex patterns pre-configured)
 - CCPA / CPRA   Section NNNN / § NNNN
 - PIPEDA        Schedule N / Principle N
 - Generic       Article N / Section N / § N  (catches most other laws)
-
-Concept tagger design
----------------------
-concept_tagger(text, law) is LAW-AWARE.
-
-GDPR/LGPD/CCPA use GDPR-derived vocabulary ("processing", "legal basis",
-"erasure", etc.). PIPEDA uses a completely different vocabulary
-("collection, use or disclosure", "knowledge and consent", "individual
-access", "render anonymous"). Using a single keyword list across laws
-causes systematic false-positive tagging that burns LLM retries on
-articles where the concept is simply not present.
-
-Each law group has its own keyword dict. Unknown laws fall back to the
-GDPR/general set. Extend _PIPEDA_CONCEPT_KEYWORDS when adding PIPEDA-like
-laws (e.g., Canada's Bill C-27 / CPPA uses similar vocabulary).
 """
 
 from __future__ import annotations
@@ -159,39 +144,26 @@ _CCPA_PATTERNS = [
     )),
 ]
 
-""" # BEFORE — overly broad, fires on any numbered line
 _PIPEDA_PATTERNS = [
     ("schedule", re.compile(
         r"^Schedule\s+\d+\b",
         re.MULTILINE | re.IGNORECASE,
     )),
+    # Principle level: "4.1 Principle 1 — Accountability", "4.2 Principle 2 — ..."
+    # PIPEDA numbers all principles as X.Y (e.g. 4.1, 4.2 ... 4.10).
+    # Previous regex (^Principle\s+\d+ | ^\d+\.\s+\w+) failed because:
+    #   - Lines start with "4.1" not "Principle"
+    #   - ^\d+\.\s+\w+ needs whitespace after dot but finds digit ("1" in "4.1")
+    # Fix: match the actual format — one or more digits, dot, one or more digits, space.
     ("principle", re.compile(
-        r"^Principle\s+\d+\b|^\d+\.\s+Accountability\b|^\d+\.\s+\w+",
-        re.MULTILINE | re.IGNORECASE,
-    )),
-    ("clause", re.compile(
-        r"^\s*\d+\.\d+\s+",
+        r"^\d+\.\d+\s+",
         re.MULTILINE,
     )),
-] """
-
-# AFTER — targets only the actual 10 PIPEDA principle headers
-_PIPEDA_PATTERNS = [
-    ("schedule", re.compile(
-        r"^Schedule\s+1\b",          # Only Schedule 1 — the privacy principles
-        re.MULTILINE | re.IGNORECASE,
-    )),
-    ("principle", re.compile(
-        # Matches "4.1 Accountability", "4.2 Identifying Purposes", etc.
-        # The \d+\.\d+ pattern is specific to the X.Y numbering PIPEDA uses.
-        # Also matches explicit "Principle N" headers if present.
-        r"^(?:Principle\s+\d+\b|"
-        r"4\.(?:1|2|3|4|5|6|7|8|9|10)\s)",
-        re.MULTILINE | re.IGNORECASE,
-    )),
+    # Clause level: sub-clauses within a principle
+    #   "4.3.1 An organization shall..."  — numbered sub-clause
+    #   "(a) implementing procedures..."  — lettered sub-clause (common in PIPEDA)
     ("clause", re.compile(
-        # Matches sub-clauses like "4.1.1", "4.3.2", etc.
-        r"^\s*4\.\d+\.\d+\s+",
+        r"^\s*\d+\.\d+\.\d+\s+|^\s*\([a-z]\)\s+",
         re.MULTILINE,
     )),
 ]
@@ -220,321 +192,158 @@ _LAW_PATTERNS: dict[str, list] = {
 }
 
 
-# ── Concept keyword sets ──────────────────────────────────────────────────────
-#
-# Two separate keyword dicts: one for GDPR-family laws, one for PIPEDA.
-#
-# Design principle: prefer MULTI-WORD phrases over single words wherever
-# possible. Single words ("access", "transfer", "retain") are the primary
-# source of false-positive tagging. A multi-word phrase that is specific
-# to a concept beats three single-word keywords that fire on everything.
-#
-# Recall vs precision trade-off:
-#   - The tagger is the FIRST filter. False negatives here mean the concept
-#     is never extracted (silent miss). False positives cause wasted LLM
-#     calls, caught by the absence check in run_pipeline.py.
-#   - Err slightly toward recall (add a keyword when unsure), but not with
-#     words so generic they fire on every article.
+# ── Concept tagger ────────────────────────────────────────────────────────────
 
-# ── GDPR / LGPD / CCPA / generic ─────────────────────────────────────────────
+# Keyword sets per metamodel class — deliberately broad to maximise recall.
+# Precision is handled by the cosine similarity re-ranking step in retriever.py.
 
-_GDPR_CONCEPT_KEYWORDS: dict[str, list[str]] = {
+_CONCEPT_KEYWORDS: dict[str, list[str]] = {
+    # ── Actor ─────────────────────────────────────────────────────────────────
+    # Previously MISSING — caused Actor to never be extracted from any chunk.
+    # PIPEDA: "organization", "accountable", "responsible", "designate"
+    # GDPR:   "controller", "processor", "data subject"
+    # CCPA:   "business", "service provider", "third party"
+    "Actor": [
+        # GDPR / LGPD
+        "controller", "processor", "data subject", "third party",
+        "controlador", "operador", "titular",
+        # PIPEDA
+        "organization", "accountable", "accountability", "responsible",
+        "designate", "designated individual", "compliance officer",
+        # CCPA
+        "business", "service provider", "contractor",
+        # Generic
+        "data fiduciary", "data principal", "individual",
+    ],
 
     "LegalBasis": [
-        "lawful", "legal basis", "legal ground",
-        "consent", "contract", "legitimate interest",
+        # GDPR
+        "lawful", "legal basis", "consent", "contract", "legitimate interest",
         "legal obligation", "vital interest", "public task",
         # LGPD
-        "consentimento", "base legal", "hipótese",
+        "consentimento", "base legal", "hipótese", "legítimo interesse",
+        # PIPEDA — uses "knowledge and consent" not "legal basis"
+        "knowledge and consent", "without knowledge", "without consent",
+        "implied consent", "express consent", "opt-in", "opt-out",
         # CCPA
-        "business purpose", "commercial purpose",
+        "business purpose", "commercial purpose", "authorized",
     ],
 
     "ProcessingActivity": [
+        # Generic
         "collect", "store", "use", "share", "transfer", "delete", "process",
-        "processing", "disclose", "handle", "transmit",
+        "processing", "disclose", "retain", "handle", "record", "transmit",
+        "gather", "compile", "aggregate", "combine", "analyse", "analyze",
+        # PIPEDA
+        "collecting", "using", "disclosing", "personal information",
+        "make use of",
         # LGPD
-        "colet", "tratar", "tratamento",
+        "colet", "tratar", "tratamento", "armazenar", "compartilhar",
+    ],
+
+    # ── Constraint ────────────────────────────────────────────────────────────
+    # Previously MISSING — caused Constraint to never be extracted from any chunk.
+    # PIPEDA: "limiting", "safeguard", "only for the purpose", "shall not"
+    # GDPR:   "purpose limitation", "data minimisation", "necessity"
+    "Constraint": [
+        # GDPR
+        "purpose limitation", "data minimisation", "minimization",
+        "necessity", "adequate", "relevant", "not excessive",
+        "shall not", "must not", "prohibited", "restricted",
+        "only for", "solely for", "limited to",
+        # PIPEDA
+        "limiting", "safeguard", "only for the purpose", "not use",
+        "not disclose", "not collect", "beyond the purposes",
+        "shall not use", "shall not disclose",
+        # CCPA
+        "may not", "cannot sell", "do not sell",
+        # LGPD
+        "não poderá", "vedado", "limitado",
+        # Generic
+        "restriction", "prohibited from", "compliance", "obligation",
+        "must", "shall", "policy", "procedure", "implement",
     ],
 
     "RetentionPolicy": [
-        "retention", "storage limitation", "no longer than necessary",
-        "delete", "deletion", "erase", "erasure",
-        "retention period", "as long as necessary",
+        # GDPR
+        "retain", "retention", "storage limitation", "no longer than necessary",
+        "delete", "deletion", "erase", "erasure", "keep", "period", "duration",
+        # PIPEDA
+        "as long as necessary", "destroy", "destroyed", "no longer required",
+        "kept only", "retained only", "retention schedule",
         # LGPD
-        "prazo de conservação", "conservação", "armazenamento",
+        "prazo", "conservação", "armazenamento", "eliminação",
+        # Generic
+        "archive", "purge", "dispose",
     ],
 
     "ConsentWithdrawal": [
+        # GDPR
         "withdraw", "withdrawal", "revoke", "revocation",
-        "opt out", "opt-out", "unsubscribe",
-        "as easy as", "as easy to withdraw",
+        "as easy as", "at any time",
+        # PIPEDA
+        "opt out", "opt-out", "unsubscribe", "withdraw consent",
+        "right to withdraw", "challenge compliance",
         # LGPD
-        "retirar", "revogar",
+        "retirar", "revogar", "reti",
+        # CCPA
+        "opt-out of sale", "do not sell my",
     ],
 
     "DataTransfer": [
-        "third country", "international transfer", "cross-border transfer",
-        "adequacy decision", "adequacy", "standard contractual clauses",
-        "binding corporate rules", "bcr", "sccs",
-        "recipient country", "transfer outside", "transferred outside",
-        "transfer to a third country",
+        # GDPR
+        "third country", "international transfer", "adequacy",
+        "standard contractual", "binding corporate rules", "bcr", "sccs",
+        "cross-border", "recipient country",
+        # PIPEDA
+        "transfer to a third party", "third-party",
+        "transferred outside", "transferred to",
         # LGPD
         "transferência internacional", "país terceiro",
+        # Generic
+        "transfer", "international",
     ],
 
     "Right": [
-        "right to access", "right of access",
-        "right to erasure", "right to be forgotten",
-        "right to rectification", "right to correction",
-        "right to portability", "data portability",
-        "right to object", "right to restriction",
-        "automated decision", "automated processing",
+        # GDPR
+        "right to", "rights of", "access", "rectification", "erasure",
+        "restriction", "portability", "objection", "automated",
+        # PIPEDA
+        "challenge", "individual access", "access to personal",
+        "make a complaint", "right of access",
         # CCPA
-        "opt-out of sale", "right to know", "right to delete",
+        "opt-out", "right to know", "right to delete", "right to correct",
         # LGPD
-        "direito de acesso", "direito de retificação",
-        "direito à exclusão", "direito de portabilidade",
+        "direito", "acesso", "retificação", "exclusão",
     ],
 
     "Purpose": [
-        "purpose", "purposes", "objective",
-        "specific purpose", "processing purpose", "business purpose",
-        "identified purpose", "stated purpose",
+        # Generic
+        "purpose", "purposes", "objective", "goal",
+        "specific purpose", "processing purpose",
+        # PIPEDA — "identifying purposes" is Principle 2
+        "identifying purposes", "identified purpose", "stated purpose",
+        "for which", "intended purpose", "business purpose",
         # LGPD
-        "finalidade",
+        "finalidade", "específica",
     ],
 
     "PersonalData": [
-        "personal data", "personal information",
-        "sensitive", "special category",
-        "biometric", "health data", "financial data",
-        "location data", "behavioral data",
-        # LGPD
+        "personal data", "personal information", "sensitive", "special category",
+        "biometric", "health", "financial", "location",
         "dados pessoais", "dados sensíveis", "informação pessoal",
     ],
-
-    "Constraint": [
-        "purpose limitation", "data minimisation", "data minimization",
-        "storage limitation", "accuracy", "integrity and confidentiality",
-        "security measure", "technical measure", "organisational measure",
-        "safeguard", "encryption", "pseudonymisation",
-        # CCPA
-        "reasonable security",
-    ],
 }
 
 
-# ── PIPEDA ────────────────────────────────────────────────────────────────────
-#
-# PIPEDA Schedule 1 has 10 Principles (4.1–4.10). The vocabulary is almost
-# entirely different from GDPR. Key differences:
-#
-#   GDPR "processing"           → PIPEDA "collection, use or disclosure"
-#   GDPR "data subject"         → PIPEDA "individual"
-#   GDPR "personal data"        → PIPEDA "personal information"
-#   GDPR "legal basis"          → PIPEDA "knowledge and consent"
-#   GDPR "right to erasure"     → PIPEDA does not have this right
-#   GDPR "right to portability" → PIPEDA does not have this right
-#   GDPR "data transfer (SCC)"  → PIPEDA "transfer to third party
-#                                          + comparable protection"
-#
-# Principle mapping to metamodel concepts:
-#   4.1 Accountability        → Actor, Constraint (org responsibility)
-#   4.2 Identifying Purposes  → Purpose
-#   4.3 Consent               → LegalBasis, ConsentWithdrawal
-#   4.4 Limiting Collection   → Constraint, ProcessingActivity
-#   4.5 Use, Disclosure, Ret. → ProcessingActivity, RetentionPolicy
-#   4.6 Accuracy              → Constraint
-#   4.7 Safeguards            → Constraint
-#   4.8 Openness              → (metadata — no direct metamodel concept)
-#   4.9 Individual Access     → Right
-#  4.10 Challenging Compliance → (metadata — no direct metamodel concept)
-
-_PIPEDA_CONCEPT_KEYWORDS: dict[str, list[str]] = {
-
-    "LegalBasis": [
-        # Principle 4.3 — Consent is the primary legal basis in PIPEDA
-        "knowledge and consent",
-        "consent of the individual",
-        "implied consent",
-        "express consent",
-        "meaningful consent",
-        "without the knowledge and consent",
-        "consent is required",
-        "require consent",
-        # Exceptions to consent requirement (alternative bases)
-        "without consent",
-        "reasonable person would consider appropriate",
-        "legitimate business purpose",
-        "collected without the knowledge",
-    ],
-
-    "ProcessingActivity": [
-        # PIPEDA's canonical phrase — appears with AND without Oxford comma
-        # "collection, use, or disclosure" (Oxford comma — Schedule 1 text)
-        # "collection, use or disclosure" (no Oxford comma — some sections)
-        "collection, use",           # matches both variants from the start
-        "use, or disclosure",        # Oxford comma variant
-        "use or disclosure",         # non-Oxford variant
-        "use and disclosure",        # alternate conjunction
-        "collect personal information",
-        "use personal information",
-        "disclose personal information",
-        "disclosed to third parties",
-        "collection of personal information",
-        "handling of personal information",
-        # Principle 4.4 — Limiting Collection
-        "limiting collection",
-        "limit the collection",
-        "collected by fair and lawful means",
-        "collected for purposes",
-    ],
-
-    "RetentionPolicy": [
-        # Principle 4.5 — Limiting Use, Disclosure, and Retention
-        "retain only as long as necessary",
-        "no longer required",
-        "retention of personal information",
-        "retention period",
-        "retention schedule",
-        "destroy", "erase", "render anonymous",
-        "as long as necessary for the fulfilment",
-        "no longer needed",
-        "minimum and maximum retention",
-    ],
-
-    "ConsentWithdrawal": [
-        # Principle 4.3 — Consent withdrawal
-        "withdraw consent",
-        "withdrawal of consent",
-        "individual may withdraw",
-        "refuse or withdraw",
-        "notification of the implications of withdrawing",
-        "reasonable notice",
-        "opt out",
-        "consequences of withdrawing",
-    ],
-
-    "DataTransfer": [
-        # Principle 4.1 — Accountability for third-party transfers
-        # PIPEDA does not use "adequacy decision" or "SCCs" — it uses
-        # "comparable level of protection" and "contractual means"
-        "transfer to a third party",
-        "transfer personal information",
-        "comparable level of protection",
-        "contractual or other means",
-        "transferred outside",
-        "transfer outside canada",
-        "third-party organization",
-        "organization to which the information is transferred",
-        "accountability for transfers",
-    ],
-
-    "Right": [
-        # Principle 4.9 — Individual Access
-        # PIPEDA rights are limited compared to GDPR: mainly access + correction
-        "individual access",
-        "access to personal information",
-        "access request",
-        "right of access",
-        "informed of the existence",
-        "existence, use and disclosure",
-        "challenge the accuracy",
-        "correction or amendment",
-        "annotation",
-        "right to challenge",
-        # Principle 4.10 — Challenging Compliance (right to complain)
-        "challenge compliance",
-        "address a complaint",
-        "file a complaint",
-        "privacy commissioner",
-    ],
-
-    "Purpose": [
-        # Principle 4.2 — Identifying Purposes
-        "identifying purposes",
-        "purposes for which information is collected",
-        "specified at or before the time of collection",
-        "stated purpose",
-        "identified purpose",
-        "new purpose",
-        "primary purpose",
-        "secondary purpose",
-        "purposes identified",
-        "purpose of the collection",
-        "purpose for collecting",
-    ],
-
-    "PersonalData": [
-        # PIPEDA uses "personal information" exclusively — never "personal data"
-        "personal information",
-        "sensitive information",
-        "identifiable individual",
-        "about an identifiable individual",
-        "information about an individual",
-        # Sensitive personal information (PIPEDA does not use "special category")
-        "medical information", "health information",
-        "financial information",
-        "ethnic origin", "racial origin",
-        "religious beliefs", "political opinions",
-        "biometric information",
-    ],
-
-    "Constraint": [
-        # Principle 4.6 — Accuracy
-        "accuracy", "as accurate, complete",
-        "update personal information",
-        # Principle 4.7 — Safeguards
-        "security safeguards",
-        "appropriate safeguards",
-        "protect personal information",
-        "unauthorized access",
-        "loss or theft",
-        "unauthorized disclosure",
-        "physical measures", "organizational measures", "technological measures",
-        # Principle 4.4 — Limiting Collection
-        "limited to that which is necessary",
-        "collected by fair and lawful means",
-        "not collected indiscriminately",
-        # Principle 4.8 — Openness
-        "readily available",
-        "make available",
-    ],
-}
-
-
-# ── Dispatch table ────────────────────────────────────────────────────────────
-
-# Maps law name (upper-case) to its keyword dict.
-# Unknown laws fall back to the GDPR/general set.
-_LAW_CONCEPT_KEYWORDS: dict[str, dict[str, list[str]]] = {
-    "GDPR":   _GDPR_CONCEPT_KEYWORDS,
-    "LGPD":   _GDPR_CONCEPT_KEYWORDS,   # LGPD keywords included in GDPR set
-    "CCPA":   _GDPR_CONCEPT_KEYWORDS,
-    "CPRA":   _GDPR_CONCEPT_KEYWORDS,
-    "PIPEDA": _PIPEDA_CONCEPT_KEYWORDS,
-}
-
-
-def concept_tagger(text: str, law: str = "") -> list[str]:
+def concept_tagger(text: str) -> list[str]:
     """
     Return a list of metamodel class names likely present in the chunk text.
-
-    Uses case-insensitive keyword matching — fast, deterministic, no model.
-    Law-aware: uses PIPEDA-specific keywords for PIPEDA chunks, GDPR-derived
-    keywords for all other laws.
-
-    Parameters
-    ----------
-    text : raw chunk text
-    law  : canonical law name, e.g. "GDPR", "PIPEDA". Empty string falls
-           back to the GDPR/general keyword set.
+    Uses case-insensitive keyword matching — fast, deterministic, no model needed.
     """
-    keyword_dict = _LAW_CONCEPT_KEYWORDS.get(law.upper(), _GDPR_CONCEPT_KEYWORDS)
-    text_lower   = text.lower()
+    text_lower = text.lower()
     tags = []
-    for concept, keywords in keyword_dict.items():
+    for concept, keywords in _CONCEPT_KEYWORDS.items():
         if any(kw in text_lower for kw in keywords):
             tags.append(concept)
     return tags
@@ -542,30 +351,32 @@ def concept_tagger(text: str, law: str = "") -> list[str]:
 
 # ── Text extraction from PDF ───────────────────────────────────────────────────
 
-def extract_text_from_pdf(pdf_path: Path, law: str = "") -> str:
-    import pdfplumber
+def extract_text_from_pdf(pdf_path: Path) -> str:
+    """
+    Extract raw text from a PDF preserving paragraph structure.
+    Uses pdfplumber with layout-aware extraction.
+    Falls back to a simple join on extraction failure.
+    """
+    try:
+        import pdfplumber
+    except ImportError:
+        raise ImportError("pdfplumber is required for PDF extraction. pip install pdfplumber")
+
     pages = []
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            if law.upper() == "PIPEDA":
-                # PIPEDA PDF is bilingual with English on the left half.
-                # Crop to the left 55% of the page to extract English only.
-                width  = page.width
-                height = page.height
-                english_column = page.crop((0, 0, width * 0.5, height))
-                text = english_column.extract_text()
-            else:
-                text = page.extract_text(x_tolerance=2, y_tolerance=3)
+            text = page.extract_text(x_tolerance=2, y_tolerance=3)
             if text:
                 pages.append(text)
+
     return "\n\n".join(pages)
 
 
-def extract_text_from_file(path: Path, law: Law) -> str:
+def extract_text_from_file(path: Path) -> str:
     """Route to correct extractor based on file extension."""
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        return extract_text_from_pdf(path, law)
+        return extract_text_from_pdf(path)
     elif suffix in (".txt", ".md"):
         return path.read_text(encoding="utf-8", errors="replace")
     else:
@@ -629,7 +440,7 @@ def chunk_text(
     Parameters
     ----------
     text            : full document text (from extract_text_from_file)
-    law             : canonical law name — drives regex patterns AND keyword set
+    law             : canonical law name — drives which regex patterns are used
     min_chunk_chars : segments shorter than this are merged into their parent
     max_chunk_chars : segments longer than this are split at paragraph boundaries
 
@@ -651,6 +462,8 @@ def chunk_text(
         text, top_level_regex, top_level_name, law, parent_ref="", base_offset=0
     )
 
+    # If the document has no detectable top-level structure, treat entire text
+    # as one top-level chunk and fall through to article splitting.
     if not top_chunks:
         log.debug(f"No {top_level_name} boundaries found — treating as flat document")
         top_chunks = [Chunk.make(
@@ -670,6 +483,7 @@ def chunk_text(
             )
 
             if not art_chunks:
+                # No articles found — keep the top-level chunk as-is
                 all_chunks.append(top)
                 continue
 
@@ -697,12 +511,12 @@ def chunk_text(
         all_chunks.extend(top_chunks)
 
     # ── Post-processing: tag concepts and split oversized chunks ─────────────
-    # Pass `law` to concept_tagger so it uses the correct keyword set.
     final: list[Chunk] = []
     for ch in all_chunks:
-        ch.concept_tags = concept_tagger(ch.text, law=law)
+        ch.concept_tags = concept_tagger(ch.text)
 
         if len(ch.text) > max_chunk_chars:
+            # Split at paragraph boundary (\n\n) without losing metadata
             for sub in _split_large_chunk(ch, max_chunk_chars):
                 final.append(sub)
         else:
@@ -751,9 +565,9 @@ def _split_large_chunk(chunk: Chunk, max_chars: int) -> list[Chunk]:
             char_offset=current_offset,
         ))
 
-    # Pass chunk.law so sub-chunks get the same law-appropriate tags
+    # Re-tag the sub-chunks
     for sc in sub_chunks:
-        sc.concept_tags = concept_tagger(sc.text, law=chunk.law)
+        sc.concept_tags = concept_tagger(sc.text)
 
     return sub_chunks if sub_chunks else [chunk]
 
@@ -772,7 +586,7 @@ def chunk_file(
     Parameters
     ----------
     path            : path to .pdf or .txt file
-    law             : canonical law name, e.g. "GDPR", "CCPA", "LGPD", "PIPEDA"
+    law             : canonical law name, e.g. "GDPR", "CCPA", "LGPD"
     min_chunk_chars : minimum chunk size (shorter chunks merged to parent)
     max_chunk_chars : maximum chunk size (longer chunks split at paragraphs)
 
@@ -785,5 +599,5 @@ def chunk_file(
         raise FileNotFoundError(f"Input file not found: {path}")
 
     log.info(f"Loading {path.name} as {law}")
-    text = extract_text_from_file(path, law)
+    text = extract_text_from_file(path)
     return chunk_text(text, law, min_chunk_chars, max_chunk_chars)

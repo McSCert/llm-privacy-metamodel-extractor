@@ -1,5 +1,5 @@
 """
-Pydantic extraction schema — generated from PrivacyPolicyMetamodel v4.
+Pydantic extraction schema — generated from PrivacyPolicyMetamodel .
 
 Design rules (metamodel → Python):
   multiplicity "1"    → required field, no default

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-run_pipeline.py — Privacy Policy Extraction Pipeline (PrivacyPolicyMetamodel v4)
+run_pipeline.py — Privacy Policy Extraction Pipeline (PrivacyPolicyMetamodel)
 
 PLACEMENT
 ---------
@@ -1367,7 +1367,7 @@ def _make_backend(args: argparse.Namespace) -> LLMBackend:
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="run_pipeline.py",
-        description="Privacy Policy Extraction Pipeline (PrivacyPolicyMetamodel v4)",
+        description="Privacy Policy Extraction Pipeline (PrivacyPolicyMetamodel)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Prototype on one PIPEDA principle (local Ollama):\n"
@@ -1501,7 +1501,7 @@ def main() -> None:
     article_filter = _build_article_filter(args.articles)
 
     log.info("─" * 60)
-    log.info("Privacy Policy Extraction Pipeline  (PrivacyPolicyMetamodel v4)")
+    log.info("Privacy Policy Extraction Pipeline  (PrivacyPolicyMetamodel)")
     log.info("─" * 60)
     log.info(f"  Backend        : {args.backend}  (dry-run={args.dry_run})")
     if args.backend == "anthropic" and not args.dry_run:
