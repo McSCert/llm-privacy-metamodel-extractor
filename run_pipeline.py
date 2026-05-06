@@ -534,7 +534,21 @@ class LocalBackend(LLMBackend):
 
                 raw = data["choices"][0]["message"]["content"]
                 return self._strip_fences(raw)
+                
+            except TimeoutError:             
+                if attempt < 3:
+                    log.warning(
+                        f"  Request timed out (attempt {attempt+1}/3) — retrying..."
+                    )
+                    continue
+                log.error("  Request timed out after 3 attempts.")
+                raise
 
+            except urllib.error.URLError as exc:
+                if "timed out" in str(exc) and attempt < 3:
+                    log.warning(f"  URLError timeout (attempt {attempt+1}/3) — retrying...")
+                    continue
+                raise
             except urllib.error.HTTPError as exc:
                 if exc.code == 503 and attempt < 3:
                     wait = 5 * (attempt + 1)
@@ -1244,10 +1258,12 @@ def _assemble_one_statement(
             prefix = (
                 "## CORRECTION NEEDED — the PolicyStatement failed validation:\n\n"
                 + "\n".join(f"  - {e}" for e in last_errors)
-                + "\n\nPREVIOUS (INVALID) OUTPUT:\n"
+                + "\n\nREMINDER — valid enum values only:\n"
+                "  constraints[].type   : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
+                "  purposes[].category  : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
+                "\nPREVIOUS (INVALID) OUTPUT:\n"
                 + last_raw
                 + "\n\nReturn ONLY the corrected PolicyStatement JSON.\n\n"
-                "──────────────────────────────────────────────────────────────\n\n"
             )
             user = prefix + user
 
