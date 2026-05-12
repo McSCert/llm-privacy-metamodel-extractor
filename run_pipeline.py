@@ -108,6 +108,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
+from datetime import datetime
 
 
 # =============================================================================
@@ -1501,8 +1502,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help="SQLite ChunkStore path (default: data/chunks.db)")
     io.add_argument("--repo",   default="data/model_repo.db", metavar="PATH",
                     help="SQLite ModelRepository path (default: data/model_repo.db)")
-    io.add_argument("--report", default="data/gap_report.txt", metavar="PATH",
-                    help="Gap analysis report output (default: data/gap_report.txt)")
+    io.add_argument("--report", default=None, metavar="PATH",
+                help="Gap analysis report output (default: auto-named data/gap_report_<laws>_<datetime>.txt)")
     io.add_argument("--xmi-out", default=None, metavar="DIR",
                     help=(
                         "Directory to write one XMI file per PolicyStatement "
@@ -1598,7 +1599,17 @@ def main() -> None:
 
     db_path     = Path(args.db)
     repo_path   = Path(args.repo)
-    report_path = Path(args.report)
+    data_dir    = Path(args.data_dir)
+    law_files   = _parse_law_files(args.input or [])
+
+    # ── Auto-name the report if --report was not set ──────────────────────
+    if args.report is None:
+        laws_slug = "_".join(sorted(k.lower() for k in law_files.keys())) \
+                    if law_files else "unknown"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_path = Path("data") / f"gap_report_{laws_slug}_{timestamp}.txt"
+    else:
+        report_path = Path(args.report)
     data_dir    = Path(args.data_dir)
     law_files   = _parse_law_files(args.input or [])
     stats       = PipelineStats()

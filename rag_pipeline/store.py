@@ -292,8 +292,18 @@ def ingest_file(
 
     # ── Step 2: fit embedder ──────────────────────────────────────────────────
     if embedder_path.exists():
-        log.info(f"Loading existing embedder from {embedder_path}")
-        embedder = TFIDFEmbedder.load(embedder_path)
+        try:
+            log.info(f"Loading existing embedder from {embedder_path}")
+            embedder = TFIDFEmbedder.load(embedder_path)
+        except Exception as exc:
+            log.warning(
+                f"Embedder at {embedder_path} is corrupted ({exc}) — "
+                f"deleting and refitting."
+            )
+            embedder_path.unlink(missing_ok=True)
+            embedder = TFIDFEmbedder(max_features=4096, ngram_range=(1, 2))
+            embedder.fit([ch.text for ch in chunks])
+            embedder.save(embedder_path)
     else:
         embedder = TFIDFEmbedder(max_features=4096, ngram_range=(1, 2))
         embedder.fit([ch.text for ch in chunks])

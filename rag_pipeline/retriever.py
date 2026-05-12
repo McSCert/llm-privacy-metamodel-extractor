@@ -151,7 +151,18 @@ class Retriever:
                     f"No embedder registered for law '{law}'. "
                     f"Available: {list(self._embedder_paths)}"
                 )
-            self._embedders[law] = TFIDFEmbedder.load(path)
+            try:
+                self._embedders[law] = TFIDFEmbedder.load(path)
+            except Exception as exc:
+                log.warning(
+                    f"Embedder for {law} is corrupted ({exc}) — "
+                    f"re-run --stage ingest to rebuild it."
+                )
+                raise RuntimeError(
+                    f"Corrupted embedder for {law} at {path}. "
+                    f"Delete it and re-run: python run_pipeline.py "
+                    f"--input {law}=laws/{law.lower()}.pdf --stage ingest"
+                ) from exc
         return self._embedders[law]
 
     def retrieve(
