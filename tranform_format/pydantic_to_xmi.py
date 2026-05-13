@@ -161,20 +161,20 @@ class PolicyXMIWriter:
             if raw_key in _PIPELINE_FIELDS:
                 continue
             if value is None:
-                continue  # optional field absent — leave as default
+                warnings.warn(f"SKIP {eclass.name}.{raw_key} — value is None")
+                continue
 
             ecore_key = _ALIAS_TO_ECORE.get(raw_key, raw_key)
             feature = self._find_feature(eclass, ecore_key)
 
             if feature is None:
-                # Field in Pydantic dict has no Ecore counterpart — skip silently.
-                # This handles fields that exist in Pydantic models but were
-                # intentionally excluded from the .ecore (like source_clause).
+                warnings.warn(f"SKIP {eclass.name}.{raw_key} — feature not found in Ecore")
                 continue
 
+            warnings.warn(f"SET  {eclass.name}.{raw_key} = {repr(value)[:60]}")
             if isinstance(feature, EReference):
                 self._set_reference(obj, feature, ecore_key, value)
-            else:  # EAttribute
+            else:
                 self._set_attribute(obj, feature, ecore_key, value)
 
         return obj
@@ -226,11 +226,12 @@ class PolicyXMIWriter:
             if is_enum:
                 resolved = self._resolve_enum(feature.eType, value)
                 if resolved is not None:
-                    setattr(obj, key, resolved)
+                    obj.eSet(feature, resolved)        
             else:
-                # Primitive: string, int, long
-                # Empty string IDs are kept as-is; pyecore assigns xmi:id separately
-                setattr(obj, key, value)
+                try:
+                    obj.eSet(feature, value)           
+                except Exception:
+                    setattr(obj, key, value) 
 
     @staticmethod
     def _resolve_enum(eenum, value: str):

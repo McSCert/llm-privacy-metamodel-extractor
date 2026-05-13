@@ -1,5 +1,5 @@
 """
-prompts.py — LLM extraction prompt templates for PrivacyPolicyMetamodel .
+prompts.py — LLM extraction prompt templates for PrivacyPolicyMetamodel.
 
 Two-pass extraction strategy
   Pass 1 — one API call per metamodel concept, targeting RAG chunks for that concept.
@@ -45,6 +45,11 @@ SYSTEM_PROMPT = (
     "   \"_extraction_confidence\": \"medium\".\n"
     "5. IDs: leave all *Id fields as empty string \"\"."
 )
+
+
+# =============================================================================
+# PASS 1 — CONCEPT PROMPT BUILDERS
+# =============================================================================
 
 def _legal_basis_prompt(law: str, ref: str, text: str) -> str:
     eg = _enum_block(["LegalBasisType"])
@@ -122,109 +127,87 @@ def _processing_activity_prompt(law: str, ref: str, text: str) -> str:
         '  "dataProcessed": [\n'
         '    {\n'
         '      "dataId": "",\n'
-        '      "description": "<data category e.g. email address>",\n'
-        '      "source": "<how obtained e.g. provided by user>",\n'
+        '      "description": "<data type description — e.g. email address, location data>",\n'
+        '      "source": "<how obtained — e.g. directly from data subject, third party>",\n'
         '      "category": "<PersonalDataCategory>",\n'
         '      "sensitivity": "<SensitivityLevel>",\n'
         '      "identifiability": "<Identifiability>",\n'
+        '      "specialCategory": false,\n'
         '      "source_clause": "<article reference>"\n'
         '    }\n'
         '  ],\n'
         '  "source_clause": "<article reference>"\n'
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
-        "### OCL constraint_3 — riskAssessmentReference\n"
-        "If action is Transfer or Share AND any data has sensitivity High or SpecialCategory:\n"
-        "search the text for DPIA/RIPD/risk assessment/Art.35 mention.\n"
-        "Populate if found; set null if absent (validator will emit a warning).\n\n"
-        "### Sensitivity guide\n"
-        "Name, email, phone          ContactInformation  Low\n"
-        "IP address, device ID       TechnicalData       Low\n"
-        "Precise location (GPS)      LocationData        Medium\n"
-        "Financial / card data       FinancialData       High\n"
-        "Health / medical records    HealthData          SpecialCategory\n"
-        "Biometric data              BiometricData       SpecialCategory\n"
-        "Racial / ethnic origin      Identifier          SpecialCategory\n"
-        "Behavioural / profiling     BehavioralData      Medium\n\n"
-        f"### Now extract from the following text:\n"
-        f"LAW: {law}\n"
-        f"ARTICLE/SECTION: {ref}\n"
-        "---\n"
-        f"{text}\n"
-        "---\n"
-    )
-
-
-def _retention_policy_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["RetentionUnit","RetentionTrigger"])
-    return (
-        "## Task: Extract a RetentionPolicy instance\n\n"
-        "Maps to: GDPR Art.5(1)(e) | LGPD Art.15 | CCPA §1798.100(e) | PIPEDA Principle 5\n\n"
-        "If NO retention period is stated, return exactly:\n"
-        '{"_no_retention_stated": true}\n\n'
-        "### Output schema\n"
-        "{\n"
-        '  "retentionId": "",\n'
-        '  "duration": <integer — -1 for indefinite>,\n'
-        '  "unit": "<RetentionUnit>",\n'
-        '  "trigger": "<RetentionTrigger>",\n'
-        '  "basisArticle": "<legal article citation or null>",\n'
-        '  "source_clause": "<article reference>"\n'
-        "}\n\n"
-        "### Enum grammar\n" + eg + "\n\n"
-        "### Parsing guide\n"
-        '"no longer than necessary"           -1  Indefinite  LastActivity\n'
-        '"deleted within 30 days of request"  30  Days        AccountDeletion\n'
-        '"3 years after contract end"          3  Years       ContractEnd\n'
-        '"6 months from collection"            6  Months      CollectionDate\n'
-        '"until consent withdrawn"            -1  Indefinite  ConsentWithdrawal\n\n'
-        "### Few-shot example\n"
-        'INPUT: "Personal data shall be kept no longer than necessary (Art.5(1)(e) GDPR)."\n\n'
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "retentionId":"","duration":-1,"unit":"Indefinite","trigger":"LastActivity",\n'
-        '  "basisArticle":"GDPR Art.5(1)(e)","source_clause":"GDPR Art.5(1)(e)"\n'
-        "}\n\n"
-        f"### Now extract from the following text:\n"
-        f"LAW: {law}\n"
-        f"ARTICLE/SECTION: {ref}\n"
-        "---\n"
-        f"{text}\n"
-        "---\n"
-    )
-
-
-def _consent_withdrawal_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["WithdrawalChannel"])
-    return (
-        "## Task: Extract a ConsentWithdrawal instance\n\n"
-        "Maps to: GDPR Art.7(3) | LGPD Art.8§5 | CCPA §1798.120 | PIPEDA Principle 3\n\n"
-        "If NO withdrawal mechanics are described, return exactly:\n"
-        '{"_no_withdrawal_stated": true}\n\n'
-        "### Output schema\n"
-        "{\n"
-        '  "withdrawalId": "",\n'
-        '  "channel": ["<WithdrawalChannel>", ...],\n'
-        '  "deadline": "<e.g. without undue delay | 30 days | immediately>",\n'
-        '  "effectOnPriorProcessing": "<law position on prior processing>",\n'
-        '  "source_clause": "<article reference>"\n'
-        "}\n\n"
-        "### Enum grammar\n" + eg + "\n\n"
         "### Key rules\n"
-        "- channel is a LIST — include ALL channels mentioned.\n"
-        "- effectOnPriorProcessing: always state the law position explicitly.\n"
-        "  GDPR Art.7(3): withdrawal does NOT affect prior processing lawfulness.\n"
-        "  LGPD Art.8§5: requires confirmation of cessation impossibility.\n\n"
-        "### Few-shot example\n"
-        'INPUT: "Consent may be withdrawn via account settings or written request.\n'
-        'Withdrawal does not affect lawfulness of prior processing."\n\n'
-        "CORRECT OUTPUT:\n"
+        "- dataProcessed is 1..* — always include at least one item.\n"
+        "- description and source in each dataProcessed item are REQUIRED non-empty strings.\n"
+        "- If the article does not name a specific data type, use:\n"
+        '  description="personal data of data subjects", source="DataSubject", category="Identifier"\n'
+        f"### Now extract from the following text:\n"
+        f"LAW: {law}\n"
+        f"ARTICLE/SECTION: {ref}\n"
+        "---\n"
+        f"{text}\n"
+        "---\n"
+    )
+
+
+def _actor_prompt(law: str, ref: str, text: str) -> str:
+    eg = _enum_block(["ActorRole"])
+    return (
+        "## Task: Extract an Actor instance\n\n"
+        "### What you are extracting\n"
+        "The primary actor whose obligations or rights are described.\n"
+        "Maps to: GDPR Art.4(7-8) | LGPD Art.5 | CCPA 'business' | PIPEDA 'organization'\n\n"
+        "### Output schema\n"
         "{\n"
-        '  "withdrawalId":"","channel":["InAppToggle","WrittenRequest"],\n'
-        '  "deadline":"without undue delay",\n'
-        '  "effectOnPriorProcessing":"Does not affect lawfulness of processing prior to withdrawal (GDPR Art.7(3))",\n'
-        f'  "source_clause":"{ref}"\n'
+        '  "actorId": "",\n'
+        '  "name": "<actor name — e.g. Data Controller, Organization, Business>",\n'
+        '  "role": "<ActorRole>",\n'
+        '  "source_clause": "<article reference>"\n'
         "}\n\n"
+        "### Enum grammar\n" + eg + "\n\n"
+        "### Decision guide for `role`\n"
+        "Text refers to...                           role\n"
+        "--------------------------------------------------\n"
+        "controller / organization / business        DataController\n"
+        "processor / service provider                DataProcessor\n"
+        "data subject / individual / consumer        DataSubject\n"
+        "third party / recipient                     ThirdParty\n\n"
+        f"### Now extract from the following text:\n"
+        f"LAW: {law}\n"
+        f"ARTICLE/SECTION: {ref}\n"
+        "---\n"
+        f"{text}\n"
+        "---\n"
+    )
+
+
+def _purpose_prompt(law: str, ref: str, text: str) -> str:
+    eg = _enum_block(["PurposeCategory"])
+    return (
+        "## Task: Extract a Purpose instance\n\n"
+        "### What you are extracting\n"
+        "The reason or objective for which personal data is processed.\n"
+        "Maps to: GDPR Art.5(1)(b) | LGPD Art.6 | CCPA business-purpose | PIPEDA Principle 2\n\n"
+        "### Output schema\n"
+        "{\n"
+        '  "purposeId": "",\n'
+        '  "description": "<specific purpose as stated in the legal text>",\n'
+        '  "category": "<PurposeCategory>",\n'
+        '  "source_clause": "<article reference>"\n'
+        "}\n\n"
+        "### Enum grammar\n" + eg + "\n\n"
+        "### Decision guide for `category`\n"
+        "Text contains...                            category\n"
+        "--------------------------------------------------\n"
+        "provide service / fulfil contract           ServiceProvision\n"
+        "security / fraud prevention / protection    Security\n"
+        "legal obligation / comply with law          LegalCompliance\n"
+        "marketing / advertising / promotion         Marketing\n"
+        "analytics / statistics / research           Analytics\n"
+        "research / scientific / academic            Research\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -267,146 +250,8 @@ def _right_prompt(law: str, ref: str, text: str) -> str:
         "- triggerCondition: the circumstance that activates the right\n"
         "  (e.g. 'data subject makes a written request', 'processing is based on consent').\n"
         "- fulfillmentProcess: what the controller must do and within what timeframe\n"
-        "  (e.g. 'provide copy within 30 days', 'erase without undue delay').\n\n"
-        "### Few-shot example\n"
-        "INPUT:\n"
-        "Article 17 — The data subject shall have the right to obtain erasure of\n"
-        "personal data without undue delay where the data are no longer necessary\n"
-        "for the purposes for which they were collected.\n\n"
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "rightId": "",\n'
-        '  "type": "Erasure",\n'
-        '  "triggerCondition": "Personal data are no longer necessary for the purposes for which they were collected",\n'
-        '  "fulfillmentProcess": "Controller must erase personal data without undue delay",\n'
-        f'  "source_clause": "{ref}"\n'
-        "}\n\n"
-        f"### Now extract from the following text:\n"
-        f"LAW: {law}\n"
-        f"ARTICLE/SECTION: {ref}\n"
-        "---\n"
-        f"{text}\n"
-        "---\n"
-    )
-
-
-def _purpose_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["PurposeCategory"])
-    return (
-        "## Task: Extract a Purpose instance\n\n"
-        "### What you are extracting\n"
-        "The processing purpose — WHY personal data is being processed.\n"
-        "Maps to: GDPR Art.5(1)(b) purpose limitation | LGPD Art.6 | CCPA disclosed purpose\n"
-        "         | PIPEDA Principle 2\n\n"
-        "### Output schema\n"
-        "{\n"
-        '  "purposeId": "",\n'
-        '  "description": "<specific purpose as stated in the legal text>",\n'
-        '  "category": "<PurposeCategory>",\n'
-        '  "source_clause": "<article reference>"\n'
-        "}\n\n"
-        "### Enum grammar\n" + eg + "\n\n"
-        "### Decision guide for `category`\n"
-        "Text contains...                                    category\n"
-        "------------------------------------------------------------\n"
-        "provide service / fulfil contract / deliver         ServiceProvision\n"
-        "fraud prevention / security / protect system        Security\n"
-        "comply with law / legal obligation / tax / audit    LegalCompliance\n"
-        "marketing / advertising / promote / direct mail     Marketing\n"
-        "analytics / statistics / improve service / measure  Analytics\n"
-        "research / scientific / academic / study            Research\n\n"
-        "### Key rules\n"
-        "- description must quote or closely paraphrase the text — not a generic label.\n"
-        "- If multiple purposes are stated, extract the PRIMARY one for this call.\n"
-        "- 'Legitimate interest' is a legal BASIS, not a purpose category — do not\n"
-        "  map it to any PurposeCategory; instead describe the actual underlying purpose.\n\n"
-        "### Few-shot example\n"
-        "INPUT:\n"
-        "We process your contact information to send you promotional emails about\n"
-        "our products and services that may interest you.\n\n"
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "purposeId": "",\n'
-        '  "description": "Send promotional emails about products and services",\n'
-        '  "category": "Marketing",\n'
-        f'  "source_clause": "{ref}"\n'
-        "}\n\n"
-        f"### Now extract from the following text:\n"
-        f"LAW: {law}\n"
-        f"ARTICLE/SECTION: {ref}\n"
-        "---\n"
-        f"{text}\n"
-        "---\n"
-    )
-
-
-def _data_transfer_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["TransferMechanism"])
-    return (
-        "## Task: Extract a DataTransfer instance\n\n"
-        "### What you are extracting\n"
-        "A cross-border transfer of personal data — structurally distinct from\n"
-        "domestic processing. Only extract when the text explicitly governs an\n"
-        "international or cross-border transfer.\n"
-        "Maps to: GDPR Art.44-49 | LGPD Art.33 | CCPA data sale/share | PIPEDA Principle 1\n\n"
-        "If NO cross-border transfer is described, return exactly:\n"
-        '{"_no_transfer_stated": true}\n\n'
-        "### Output schema\n"
-        "{\n"
-        '  "transferId": "",\n'
-        '  "mechanism": "<TransferMechanism>",\n'
-        '  "adequacyDecisionRef": "<EC adequacy decision citation or null>",\n'
-        '  "destinationJurisdiction": [\n'
-        '    {\n'
-        '      "jurisdictionId": "<short code: JP | US | UK | BR | IN | AU | CA | SG>",\n'
-        '      "name": "<full country/region name>",\n'
-        '      "description": "",\n'
-        '      "source_clause": "<article reference>"\n'
-        '    }\n'
-        '  ],\n'
-        '  "dataTransferred": [\n'
-        '    {\n'
-        '      "dataId": "",\n'
-        '      "description": "<data category transferred>",\n'
-        '      "source": "<origin of the data>",\n'
-        '      "category": "<PersonalDataCategory>",\n'
-        '      "sensitivity": "<SensitivityLevel>",\n'
-        '      "identifiability": "<Identifiability>",\n'
-        '      "source_clause": "<article reference>"\n'
-        '    }\n'
-        '  ],\n'
-        '  "source_clause": "<article reference>"\n'
-        "}\n\n"
-        "### Enum grammar\n" + eg + "\n\n"
-        "### Decision guide for `mechanism`\n"
-        "Text contains...                                      mechanism\n"
-        "----------------------------------------------------------------\n"
-        "adequacy decision / adequate level of protection      AdequacyDecision\n"
-        "standard contractual clauses / SCCs / model clauses   StandardContractualClauses\n"
-        "binding corporate rules / BCR / intra-group           BindingCorporateRules\n"
-        "explicit consent / data subject consents to transfer  Consent\n"
-        "necessary for contract / contract performance         ContractNecessity\n"
-        "legitimate interest / compelling legitimate grounds   LegitimateInterest\n"
-        "none of the above / other safeguard                   Other\n\n"
-        "### OCL constraint hint — adequacyDecisionRef (constraint_dt1)\n"
-        "If mechanism=AdequacyDecision, you MUST populate adequacyDecisionRef\n"
-        "with the EC decision citation (e.g. 'EC Decision 2019/419 for Japan').\n"
-        "If the text mentions adequacy but does not name the decision, use the\n"
-        "country name as the reference (e.g. 'Adequacy — Japan').\n\n"
-        "### Few-shot example\n"
-        "INPUT:\n"
-        "Article 46(2)(c) — Standard data protection clauses adopted by the\n"
-        "Commission may be used to transfer personal data to recipients in the\n"
-        "United States.\n\n"
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "transferId": "",\n'
-        '  "mechanism": "StandardContractualClauses",\n'
-        '  "adequacyDecisionRef": null,\n'
-        '  "destinationJurisdiction": [{"jurisdictionId": "US", "name": "United States", "description": "", "source_clause": "GDPR Art.46(2)(c)"}],\n'
-        '  "dataTransferred": [{"dataId": "", "description": "personal data", "source": "controller", "category": "Identifier", "sensitivity": "Low", "identifiability": "Identified", "source_clause": "GDPR Art.46(2)(c)"}],\n'
-        f'  "source_clause": "{ref}"\n'
-        "}\n\n"
+        "  (e.g. 'controller must respond within 30 days', 'delete data without undue delay').\n"
+        "- Both triggerCondition and fulfillmentProcess are REQUIRED non-empty strings.\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -421,8 +266,7 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
     return (
         "## Task: Extract a Constraint instance\n\n"
         "### What you are extracting\n"
-        "A data-handling constraint — a restriction or obligation on HOW personal\n"
-        "data may be processed. Not the legal basis (why), not the purpose (what for),\n"
+        "Not the legal basis (why), not the purpose (what for),\n"
         "but a specific operational rule that limits or shapes processing.\n"
         "Examples: retention limits, geographic restrictions, encryption requirements,\n"
         "purpose-limitation rules, usage restrictions.\n\n"
@@ -449,21 +293,7 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
         "  compliance engineer could evaluate — not just a paraphrase of the heading.\n"
         "- enforcementLevel: 'Mandatory' for SHALL/MUST, 'Recommended' for SHOULD,\n"
         "  'BestEffort' for MAY/CAN.\n"
-        "- Extract the PRIMARY constraint for this call. If the article contains\n"
-        "  multiple constraints of different types, prefer the most restrictive.\n\n"
-        "### Few-shot example\n"
-        "INPUT:\n"
-        "Personal data shall be processed in a manner that ensures appropriate\n"
-        "security, including protection against unauthorised or unlawful processing\n"
-        "and against accidental loss using appropriate technical measures (Art.5(1)(f)).\n\n"
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "constraintId": "",\n'
-        '  "type": "Security",\n'
-        '  "expression": "Personal data must be protected against unauthorised processing and accidental loss using appropriate technical and organisational measures",\n'
-        '  "enforcementLevel": "Mandatory",\n'
-        f'  "source_clause": "{ref}"\n'
-        "}\n\n"
+        "- Extract the PRIMARY constraint for this call.\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -473,55 +303,103 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
     )
 
 
-def _actor_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["ActorRole"])
+def _retention_policy_prompt(law: str, ref: str, text: str) -> str:
+    eg = _enum_block(["RetentionUnit","RetentionTrigger"])
     return (
-        "## Task: Extract an Actor instance\n\n"
+        "## Task: Extract a RetentionPolicy instance\n\n"
         "### What you are extracting\n"
-        "The entity that is the subject of this processing statement — who is\n"
-        "collecting, processing, or subject to the data activity.\n"
-        "Maps to: GDPR Art.4(7-8) | LGPD Art.5(V-VII) | CCPA §1798.140 | PIPEDA Sch.1\n\n"
+        "A rule specifying how long personal data must or may be retained.\n"
+        "Maps to: GDPR Art.5(1)(e) | LGPD Art.15 | CCPA retention | PIPEDA Principle 5\n\n"
+        "If NO retention rule is stated, return exactly:\n"
+        '{"_no_retention_stated": true}\n\n'
         "### Output schema\n"
         "{\n"
-        '  "actorId": "",\n'
-        '  "name": "<name of the entity, e.g. \'Data Controller\', \'Third-Party Processor\'>",\n'
-        '  "role": "<ActorRole>",\n'
+        '  "policyId": "",\n'
+        '  "duration": <integer or null>,\n'
+        '  "unit": "<RetentionUnit or null>",\n'
+        '  "trigger": "<RetentionTrigger>",\n'
+        '  "description": "<plain-language retention rule>",\n'
         '  "source_clause": "<article reference>"\n'
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
-        "### Decision guide for `role`\n"
-        "Text contains...                                    role\n"
+        f"### Now extract from the following text:\n"
+        f"LAW: {law}\n"
+        f"ARTICLE/SECTION: {ref}\n"
+        "---\n"
+        f"{text}\n"
+        "---\n"
+    )
+
+
+def _data_transfer_prompt(law: str, ref: str, text: str) -> str:
+    eg = _enum_block(["TransferMechanism"])
+    return (
+        "## Task: Extract a DataTransfer instance\n\n"
+        "### What you are extracting\n"
+        "A cross-border transfer of personal data, including the legal mechanism.\n"
+        "Maps to: GDPR Art.44-49 | LGPD Art.33-36 | CCPA §1798.140(ad) | PIPEDA Principle 1\n\n"
+        "If NO cross-border transfer is described, return exactly:\n"
+        '{"_no_transfer_stated": true}\n\n'
+        "### Output schema\n"
+        "{\n"
+        '  "transferId": "",\n'
+        '  "destinationCountry": "<country or region name>",\n'
+        '  "mechanism": "<TransferMechanism>",\n'
+        '  "adequacyReference": "<adequacy decision name or null>",\n'
+        '  "source_clause": "<article reference>"\n'
+        "}\n\n"
+        "### Enum grammar\n" + eg + "\n\n"
+        "### Decision guide for `mechanism`\n"
+        "Text contains...                                    mechanism\n"
         "------------------------------------------------------------\n"
-        "data subject / individual / consumer / user         DataSubject\n"
-        "controller / organization / company / business      DataController\n"
-        "processor / service provider / vendor / agent       DataProcessor\n"
-        "third party / recipient / partner / affiliate       ThirdParty\n\n"
-        "### Cross-law terminology map\n"
-        "GDPR 'controller'          → DataController\n"
-        "LGPD 'controlador'         → DataController\n"
-        "CCPA 'business'            → DataController\n"
-        "GDPR 'processor'           → DataProcessor\n"
-        "LGPD 'operador'            → DataProcessor\n"
-        "CCPA 'service provider'    → DataProcessor\n"
-        "GDPR/LGPD 'data subject'   → DataSubject\n"
-        "CCPA 'consumer'            → DataSubject\n"
-        "PIPEDA 'individual'        → DataSubject\n\n"
+        "adequacy decision / adequate protection             AdequacyDecision\n"
+        "standard contractual clauses / SCCs                StandardContractualClauses\n"
+        "binding corporate rules / BCRs                     BindingCorporateRules\n"
+        "consent of data subject                            Consent\n"
+        "necessary for contract performance                 ContractNecessity\n"
+        "legitimate interest                                LegitimateInterest\n"
+        "other safeguard / derogation                       Other\n\n"
+        f"### Now extract from the following text:\n"
+        f"LAW: {law}\n"
+        f"ARTICLE/SECTION: {ref}\n"
+        "---\n"
+        f"{text}\n"
+        "---\n"
+    )
+
+
+def _consent_withdrawal_prompt(law: str, ref: str, text: str) -> str:
+    eg = _enum_block(["WithdrawalChannel"])
+    return (
+        "## Task: Extract a ConsentWithdrawal instance\n\n"
+        "### What you are extracting\n"
+        "The mechanism by which a data subject may withdraw consent.\n"
+        "Maps to: GDPR Art.7(3) | LGPD Art.8§5 | CCPA §1798.120 | PIPEDA Principle 3\n\n"
+        "If NO withdrawal mechanism is described, return exactly:\n"
+        '{"_no_withdrawal_stated": true}\n\n'
+        "### Output schema\n"
+        "{\n"
+        '  "withdrawalId": "",\n'
+        '  "channel": ["<WithdrawalChannel>"],\n'
+        '  "deadline": "<time the controller has to act — e.g. without undue delay>",\n'
+        '  "effectOnPriorProcessing": "<whether withdrawal affects prior processing>",\n'
+        '  "source_clause": "<article reference>"\n'
+        "}\n\n"
+        "### Enum grammar\n" + eg + "\n\n"
         "### Key rules\n"
-        "- name should be the generic role title from the text, not a company name,\n"
-        "  unless the article explicitly names a specific organisation.\n"
-        "- If the article describes an obligation on the controller about the data\n"
-        "  subject, the Actor is the controller (the entity bearing the obligation).\n\n"
+        "- channel is a LIST — always use [...] even for a single channel.\n"
+        "- deadline and effectOnPriorProcessing are REQUIRED non-empty strings.\n\n"
         "### Few-shot example\n"
         "INPUT:\n"
-        "Article 4(7) — 'Controller' means the natural or legal person, public\n"
-        "authority, agency or other body which, alone or jointly with others,\n"
-        "determines the purposes and means of the processing of personal data.\n\n"
+        "Article 7(3) — The data subject shall have the right to withdraw his or her\n"
+        "consent at any time. The withdrawal of consent shall not affect the lawfulness\n"
+        "of processing based on consent before its withdrawal.\n\n"
         "CORRECT OUTPUT:\n"
         "{\n"
-        '  "actorId": "",\n'
-        '  "name": "Data Controller",\n'
-        '  "role": "DataController",\n'
-        f'  "source_clause": "{ref}"\n'
+        '  "withdrawalId":"","channel":["InAppToggle","WrittenRequest"],\n'
+        '  "deadline":"without undue delay",\n'
+        '  "effectOnPriorProcessing":"Does not affect lawfulness of processing prior to withdrawal (GDPR Art.7(3))",\n'
+        f'  "source_clause":"{ref}"\n'
         "}\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
@@ -533,58 +411,27 @@ def _actor_prompt(law: str, ref: str, text: str) -> str:
 
 
 def _personal_data_prompt(law: str, ref: str, text: str) -> str:
-    eg = _enum_block(["PersonalDataCategory", "SensitivityLevel", "Identifiability"])
+    eg = _enum_block(["PersonalDataCategory","SensitivityLevel","Identifiability"])
     return (
         "## Task: Extract a PersonalData instance\n\n"
         "### What you are extracting\n"
-        "A category of personal data named or implied in the article.\n"
-        "Maps to: GDPR Art.4(1) + Art.9 | LGPD Art.5(I) + Art.11 | CCPA §1798.140(v)\n\n"
-        "Extract the MOST SPECIFIC data category described. If multiple categories\n"
-        "are named, extract the most sensitive one for this call.\n\n"
+        "A category of personal data mentioned in the article.\n\n"
         "### Output schema\n"
         "{\n"
         '  "dataId": "",\n'
-        '  "description": "<specific data description, e.g. \'email address\', \'GPS location\'>",\n'
-        '  "source": "<how the data is obtained, e.g. \'provided by user\', \'automatically collected\'>",\n'
         '  "category": "<PersonalDataCategory>",\n'
+        '  "description": "<specific data type — e.g. email address, GPS coordinates>",\n'
+        '  "source": "<how obtained — e.g. directly from data subject>",\n'
         '  "sensitivity": "<SensitivityLevel>",\n'
         '  "identifiability": "<Identifiability>",\n'
+        '  "specialCategory": false,\n'
         '  "source_clause": "<article reference>"\n'
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
-        "### Classification guide\n"
-        "description                      category              sensitivity      identifiability\n"
-        "----------------------------------------------------------------------------------------\n"
-        "Name, email, phone number        ContactInformation    Low              Identified\n"
-        "National ID, passport number     Identifier            High             Identified\n"
-        "IP address, cookie ID            TechnicalData         Low              Pseudonymous\n"
-        "GPS / precise location           LocationData          Medium           Identified\n"
-        "General area / city              LocationData          Low              Pseudonymous\n"
-        "Bank account, credit card        FinancialData         High             Identified\n"
-        "Medical records, diagnoses       HealthData            SpecialCategory  Identified\n"
-        "Fingerprint, face scan           BiometricData         SpecialCategory  Identified\n"
-        "Racial / ethnic origin           Identifier            SpecialCategory  Identified\n"
-        "Browsing history / clicks        BehavioralData        Medium           Pseudonymous\n"
-        "User-generated content / posts   ContentData           Low              Identified\n\n"
         "### Key rules\n"
-        "- description must be specific — 'personal data' alone is not acceptable.\n"
-        "- source: 'provided by user', 'automatically collected', 'obtained from third party',\n"
-        "  'inferred from behaviour', or 'generated by system'.\n"
-        "- sensitivity=SpecialCategory only for GDPR Art.9 / LGPD Art.11 categories:\n"
-        "  health, biometric, racial/ethnic, religious, political, sexual orientation, genetic.\n\n"
-        "### Few-shot example\n"
-        "INPUT:\n"
-        "We collect your full name and email address when you create an account.\n\n"
-        "CORRECT OUTPUT:\n"
-        "{\n"
-        '  "dataId": "",\n'
-        '  "description": "Email address",\n'
-        '  "source": "Provided by user at account creation",\n'
-        '  "category": "ContactInformation",\n'
-        '  "sensitivity": "Low",\n'
-        '  "identifiability": "Identified",\n'
-        f'  "source_clause": "{ref}"\n'
-        "}\n\n"
+        "- description and source are REQUIRED non-empty strings.\n"
+        "- If the article does not name a specific data type, use:\n"
+        '  description="personal data of data subjects", source="directly from data subject"\n\n'
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -613,18 +460,34 @@ _CONCEPT_PROMPTS = {
 }
 
 
-def build_concept_prompt(concept: str, law_name: str, article_ref: str, legal_text: str) -> tuple[str, str]:
+def build_concept_prompt(
+    concept: str, law_name: str, article_ref: str, legal_text: str
+) -> tuple[str, str]:
     builder = _CONCEPT_BUILDERS.get(concept)
     if builder is None:
-        raise ValueError(f"No prompt builder for '{concept}'. Available: {list(_CONCEPT_BUILDERS)}")
+        raise ValueError(
+            f"No prompt builder for '{concept}'. "
+            f"Available: {list(_CONCEPT_BUILDERS)}"
+        )
     return SYSTEM_PROMPT, builder(law_name, article_ref, legal_text)
 
 
+# =============================================================================
+# PASS 2 — ASSEMBLER PROMPT
+# =============================================================================
+
 def build_assembler_prompt(
-    actor_json: str, purposes_json: str, processing_activity_json: str,
-    legal_basis_json: str, regulations_json: str, constraints_json: str,
-    rights_json: str, source_clause: str,
-    retention_json: str = "[]", transfers_json: str = "[]", withdrawal_json: str = "[]",
+    actor_json: str,
+    purposes_json: str,
+    processing_activity_json: str,
+    legal_basis_json: str,
+    regulations_json: str,
+    constraints_json: str,
+    rights_json: str,
+    source_clause: str,
+    retention_json: str = "[]",
+    transfers_json: str = "[]",
+    withdrawal_json: str = "[]",
 ) -> tuple[str, str]:
     user = (
         "## Task: Assemble a PolicyStatement from Pass 1 extractions\n\n"
@@ -633,91 +496,111 @@ def build_assembler_prompt(
         "EXCEPTION — required arrays that are []: you MUST synthesize at least one item "
         "(see SYNTHESIS RULES below) rather than copying the empty array.\n\n"
 
-        # ── FIX 1: full output schema ─────────────────────────────────────────
-        # Previously absent — the LLM had no schema to follow and guessed
-        # field names, nesting, and required vs optional. This caused
-        # Pydantic rejections on every field the LLM got wrong.
+        # ── Output schema ─────────────────────────────────────────────────────
         "## Output schema — you MUST return exactly this structure\n\n"
         "```json\n"
         "{\n"
-        "  \"statementId\": \"\",\n"
-        "  \"description\": \"<one-sentence summary of what this statement covers>\",\n"
-        "  \"source_clause\": \"<top-level article reference>\",\n\n"
-        "  \"actor\": { <copy ACTOR object exactly> },\n\n"
-        "  \"purposes\": [ <copy PURPOSES array exactly> ],\n\n"
-        "  \"processingActivity\": { <copy PROCESSING ACTIVITY object exactly> },\n\n"
-        "  \"legalBasis\": {\n"
-        "    \"basisId\": \"\",\n"
-        "    \"type\": \"<LegalBasisType>\",\n"
-        "    \"evidence\": \"<string>\",\n"
-        "    \"jurisdiction\": [\n"
-        "      { \"jurisdictionId\": \"CA\", \"name\": \"Canada\", \"description\": \"\", \"source_clause\": \"\" }\n"
-        "    ],\n"
-        "    \"source_clause\": \"<string>\"\n"
-        "  },\n\n"
-        "    \"basisId\": \"\",\n"
-        "    \"type\": \"<LegalBasisType enum>\",\n"
-        "    \"evidence\": \"<string>\",\n"
-        "    \"jurisdiction\": [\n"
-        "      { \"jurisdictionId\": \"CA\", \"name\": \"Canada\", \"description\": \"\", \"source_clause\": \"\" }\n"
-        "    ],\n"
-        "    \"source_clause\": \"<string>\"\n"
-        "  },\n\n"
-        "  \"governingRegulations\": [ <copy GOVERNING REGULATIONS array exactly> ],\n\n"
-        "  \"constraints\": [ <copy CONSTRAINTS array exactly> ],\n\n"
-        "  \"rightImpacted\": [ <copy RIGHTS IMPACTED array exactly — REQUIRED, never omit> ],\n\n"
-        "  \"retentionPolicies\": [ <copy RETENTION POLICIES array, or [] if empty> ],\n\n"
-        "  \"dataTransfers\": [ <copy DATA TRANSFERS array, or [] if empty> ],\n\n"
-        "  \"consentWithdrawal\": [ <copy CONSENT WITHDRAWAL array — see schema below> ]\n"
+        '  "statementId": "",\n'
+        '  "description": "<one-sentence summary of what this statement covers>",\n'
+        '  "source_clause": "<top-level article reference>",\n\n'
+        '  "actor": { <copy ACTOR object exactly> },\n\n'
+        '  "purposes": [ <copy PURPOSES array exactly> ],\n\n'
+        '  "processingActivity": { <copy PROCESSING ACTIVITY object exactly> },\n\n'
+        '  "legalBasis": {\n'
+        '    "basisId": "",\n'
+        '    "type": "<LegalBasisType>",\n'
+        '    "evidence": "<string>",\n'
+        '    "jurisdiction": [\n'
+        '      { "jurisdictionId": "EU", "name": "European Union", '
+        '"description": "", "source_clause": "" }\n'
+        '    ],\n'
+        '    "source_clause": "<string>"\n'
+        '  },\n\n'
+        '  "governingRegulations": [\n'
+        '    {\n'
+        '      "regulationId": "",\n'
+        '      "name": "<law name e.g. GDPR>",\n'
+        '      "jurisdiction": [\n'
+        '        { "jurisdictionId": "EU", "name": "European Union", '
+        '"description": "", "source_clause": "" }\n'
+        '      ],\n'
+        '      "source_clause": "<article reference>"\n'
+        '    }\n'
+        '  ],\n\n'
+        '  "constraints": [ <copy CONSTRAINTS array exactly> ],\n\n'
+        '  "rightImpacted": [ <copy RIGHTS IMPACTED array exactly — REQUIRED, never omit> ],\n\n'
+        '  "retentionPolicies": [ <copy RETENTION POLICIES array, or [] if empty> ],\n\n'
+        '  "dataTransfers": [ <copy DATA TRANSFERS array, or [] if empty> ],\n\n'
+        '  "consentWithdrawal": [ <copy CONSENT WITHDRAWAL array — see schema below> ]\n'
         "}\n"
         "```\n\n"
+
+        # ── Field rules ───────────────────────────────────────────────────────
         "FIELD RULES:\n"
         "- \"statementId\" must always be exactly \"\" (empty string — the pipeline fills it).\n"
         "- Required arrays (purposes, governingRegulations, constraints, rightImpacted) "
-"must contain at least one item — never [] and NEVER OMITTED from the output.\n"
-"- \"rightImpacted\" is ALWAYS required. Even if rights_json is [], you must "
-"synthesize one item using the SYNTHESIS RULES. Omitting this key entirely "
-"will cause a hard validation failure.\n"
+        "must contain at least one item — never [] and NEVER OMITTED from the output.\n"
+        "- \"rightImpacted\" is ALWAYS required. Even if rights input is [], synthesize "
+        "one item using SYNTHESIS RULES. Omitting this key is a hard validation failure.\n"
         "- Optional arrays (retentionPolicies, dataTransfers, consentWithdrawal) "
         "may be [] if the Pass 1 input is empty.\n"
         "- processingActivity.dataProcessed must contain at least one item — never [].\n"
         "- Use camelCase field names EXACTLY as shown. "
         "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
+
         "ENUM ENFORCEMENT — use ONLY these exact values (case-sensitive):\n"
-"  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
-"  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
-"  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
-"  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"
-"  processingActivity.action : Collect | Store | Use | Share | Transfer | Delete\n"
-"Any value not in the list above is INVALID and will cause a hard failure. "
-"If unsure, pick the closest match — never invent a new value.\n\n"
+        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
+        "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
+        "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
+        "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"
+        "  processingActivity.action : Collect | Store | Use | Share | Transfer | Delete\n"
+        "Any value not in the list above is INVALID and will cause a hard failure. "
+        "If unsure, pick the closest match — never invent a new value.\n\n"
+
+        # ── Synthesis rules ───────────────────────────────────────────────────
         "SYNTHESIS RULES — apply when a required array is [] in the Pass 1 input:\n"
-        "  purposes []:    synthesize 1 item — ALL fields required:\n"
-        "    { \"purposeId\": \"\", \"description\": \"<non-empty summary>\", "
-        "\"category\": \"<PurposeCategory>\", \"source_clause\": \"\" }\n"
-        "  constraints []: synthesize 1 item — ALL fields required:\n"
-        "    { \"constraintId\": \"\", \"type\": \"<ConstraintType>\", "
-        "\"expression\": \"<non-empty rule text>\", "
-        "\"enforcementLevel\": \"Mandatory\", \"source_clause\": \"\" }\n"
+
+        "  rightImpacted []:  synthesize 1 item — ALL fields required:\n"
+        "    { \"rightId\": \"\", "
+        "\"type\": \"<RightType — infer: accountability/request-handling→Access, "
+        "limitation/opt-out→Restriction, correction→Rectification>\", "
+        "\"triggerCondition\": \"<REQUIRED non-empty — e.g. 'Upon written request by data subject'>\", "
+        "\"fulfillmentProcess\": \"<REQUIRED non-empty — e.g. 'Organization must respond within 30 days'>\", "
+        "\"source_clause\": \"\" }\n"
+        "    triggerCondition and fulfillmentProcess are REQUIRED — "
+        "never empty string, never omitted.\n\n"
+
+        "  purposes []:       synthesize 1 item — infer category from legalBasis.type and article subject:\n"
         "                     LegalObligation/compliance article → LegalCompliance\n"
         "                     service/product delivery → ServiceProvision\n"
         "                     fraud/data protection → Security\n"
-        "                     description must paraphrase what the article governs.\n"
-        "  rightImpacted []:  synthesize 1 item — infer type from actor role and article subject:\n"
-        "                     accountability/request-handling → Access\n"
-        "                     limitation/opt-out → Restriction\n"
-        "                     correction → Rectification\n"
-        "                     triggerCondition and fulfillmentProcess must reflect the article obligations.\n"
+        "                     description must paraphrase what the article governs.\n\n"
+
         "  constraints []:    synthesize 1 item — infer type from the dominant obligation:\n"
         "                     compliance/purpose-scoping → PurposeLimitation\n"
         "                     security/protection requirement → Security\n"
         "                     time-based rule → Temporal\n"
-        "  dataProcessed []:  synthesize 1 PersonalData item — use category=Identifier "
-        "sensitivity=Low identifiability=Identified as a safe default if article is silent on data type.\n\n"
-        # ── FIX 2: ConsentWithdrawal schema ───────────────────────────────────
-        # Previously absent — the LLM did not know channel is 1..* enum list,
-        # or that deadline and effectOnPriorProcessing are required strings.
-        # This caused Pydantic rejections on every consent-based article.
+        "                     expression MUST be a non-empty natural-language rule\n"
+        "                     derived from the article — e.g.:\n"
+        "                     PurposeLimitation → 'Personal data must only be used\n"
+        "                       for the purpose identified at time of collection.'\n"
+        "                     Security → 'Organization must protect personal data\n"
+        "                       against loss, theft, and unauthorized access.'\n"
+        "                     enforcementLevel MUST be 'Mandatory' unless article\n"
+        "                     uses 'should' or 'may' — never empty string.\n\n"
+
+        "  dataProcessed []:  synthesize 1 item — ALL fields required:\n"
+        "    { \"dataId\": \"\", "
+        "\"category\": \"Identifier\", "
+        "\"description\": \"<REQUIRED non-empty — e.g. 'personal data of data subjects'>\", "
+        "\"source\": \"<REQUIRED non-empty — e.g. 'directly from data subject'>\", "
+        "\"sensitivity\": \"Low\", "
+        "\"identifiability\": \"Identified\", "
+        "\"specialCategory\": false, "
+        "\"source_clause\": \"\" }\n"
+        "    description and source are REQUIRED — never leave them empty.\n\n"
+
+        # ── ConsentWithdrawal schema ──────────────────────────────────────────
         "## ConsentWithdrawal object schema (required when consentWithdrawal is not [])\n\n"
         "Each item in the consentWithdrawal array MUST have exactly these fields:\n"
         "```json\n"
@@ -740,6 +623,7 @@ def build_assembler_prompt(
         "never null or omitted.\n"
         "- \"withdrawalId\" must always be \"\" (pipeline fills it).\n\n"
 
+        # ── Consistency checks ────────────────────────────────────────────────
         "## Consistency checks — add \"_warnings\":[...] to the root object if any fire\n"
         "1. legalBasis.type==\"Consent\" and consentWithdrawal==[]\n"
         "   → \"constraint_4: Consent basis present but no withdrawal mechanics extracted\"\n"
@@ -750,6 +634,7 @@ def build_assembler_prompt(
         "3. Any governingRegulation has empty jurisdiction list\n"
         "   → \"constraint_2: Regulation missing jurisdiction\"\n\n"
 
+        # ── Pass 1 inputs ─────────────────────────────────────────────────────
         "## Pass 1 inputs — copy these into the output schema above\n\n"
         f"ACTOR:\n{actor_json}\n\n"
         f"PURPOSES:\n{purposes_json}\n\n"
@@ -757,7 +642,7 @@ def build_assembler_prompt(
         f"LEGAL BASIS:\n{legal_basis_json}\n\n"
         f"GOVERNING REGULATIONS:\n{regulations_json}\n\n"
         f"CONSTRAINTS:\n{constraints_json}\n\n"
-        f"## RIGHTS IMPACTED  ⚠ rightImpacted is a REQUIRED top-level key in your output\n"
+        f"RIGHTS IMPACTED:  ⚠ rightImpacted is a REQUIRED top-level key in your output\n"
         f"{rights_json}\n\n"
         f"RETENTION POLICIES:\n{retention_json}\n\n"
         f"DATA TRANSFERS:\n{transfers_json}\n\n"
