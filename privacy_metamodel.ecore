@@ -1,0 +1,212 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ecore:EPackage xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="privacyPolicy" nsURI="http://www.example.org/privacypolicy" nsPrefix="pp" xmi:version="2.0">
+  <eClassifiers xsi:type="ecore:EEnum" name="ActorRole">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="DataSubject" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="DataController" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="DataProcessor" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ThirdParty" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="ProcessingAction">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Collect" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Store" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Use" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Share" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Transfer" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Delete" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="LegalBasisType">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Consent" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Contract" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LegalObligation" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LegitimateInterest" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="VitalInterest" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="PublicTask" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="PurposeCategory">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ServiceProvision" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Security" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LegalCompliance" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Marketing" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Analytics" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Research" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="ConstraintType">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Temporal" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Geographic" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Usage" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Security" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Retention" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="PurposeLimitation" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="RightType">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Access" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Rectification" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Erasure" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Restriction" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Portability" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Objection" value="6"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="AutomatedDecisionOptOut" value="7"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="RetentionUnit">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Days" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Months" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Years" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Indefinite" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="RetentionTrigger">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="CollectionDate" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ContractEnd" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LastActivity" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LegalObligationExpiry" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ConsentWithdrawal" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="AccountDeletion" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="WithdrawalChannel">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="OnlineForm" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Email" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="WrittenRequest" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="InAppToggle" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="PhoneRequest" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="InPerson" value="6"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="TransferMechanism">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="AdequacyDecision" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="StandardContractualClauses" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="BindingCorporateRules" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Consent" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ContractNecessity" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LegitimateInterest" value="6"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Other" value="7"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="PersonalDataCategory">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Identifier" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ContactInformation" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="LocationData" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="FinancialData" value="4"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="HealthData" value="5"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="BiometricData" value="6"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="BehavioralData" value="7"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="TechnicalData" value="8"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="ContentData" value="9"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="SensitivityLevel">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Low" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Medium" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="High" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="SpecialCategory" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Identifiability">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Identified" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Pseudonymous" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Anonymous" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PrivacyPolicy">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validFrom" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validTo" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="statements" eType="#//PolicyStatement" lowerBound="1" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PolicyStatement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="statementId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actor" eType="#//Actor" lowerBound="1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="purposes" eType="#//Purpose" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processingActivity" eType="#//ProcessingActivity" lowerBound="1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="legalBasis" eType="#//LegalBasis" lowerBound="1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="governingRegulations" eType="#//Regulation" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="constraints" eType="#//Constraint" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rightImpacted" eType="#//Right" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="retentionPolicies" eType="#//RetentionPolicy" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataTransfers" eType="#//DataTransfer" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="consentWithdrawal" eType="#//ConsentWithdrawal" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Actor">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="actorId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="role" eType="#//ActorRole" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LegalBasis">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="basisId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//LegalBasisType" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="evidence" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ProcessingActivity">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="activityId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="action" eType="#//ProcessingAction" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="riskAssessmentReference" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataProcessed" eType="#//PersonalData" lowerBound="1" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataTransfer">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transferId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="mechanism" eType="#//TransferMechanism" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="adequacyDecisionRef" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="destinationJurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataTransferred" eType="#//PersonalData" lowerBound="1" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Purpose">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="purposeId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="category" eType="#//PurposeCategory" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PersonalData">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dataId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="category" eType="#//PersonalDataCategory" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="sensitivity" eType="#//SensitivityLevel" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="identifiability" eType="#//Identifiability" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Constraint">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="constraintId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//ConstraintType" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="expression" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="enforcementLevel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Right">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="rightId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//RightType" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="triggerCondition" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fulfillmentProcess" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RetentionPolicy">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="retentionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="duration" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unit" eType="#//RetentionUnit" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="trigger" eType="#//RetentionTrigger" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="basisArticle" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ConsentWithdrawal">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="withdrawalId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="channel" eType="#//WithdrawalChannel" lowerBound="1" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="deadline" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="effectOnPriorProcessing" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Regulation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="regulationId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Jurisdiction">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="jurisdictionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+</ecore:EPackage>

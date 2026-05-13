@@ -42,64 +42,77 @@ def _make_enum(name, literals):
     return e
 
 ActorRole = _make_enum("ActorRole", [
+    "_Unset",
     "DataSubject", "DataController", "DataProcessor", "ThirdParty",
 ])
 
 ProcessingAction = _make_enum("ProcessingAction", [
+    "_Unset",
     "Collect", "Store", "Use", "Share", "Transfer", "Delete",
 ])
 
 LegalBasisType = _make_enum("LegalBasisType", [
+    "_Unset",
     "Consent", "Contract", "LegalObligation",
     "LegitimateInterest", "VitalInterest", "PublicTask",
 ])
 
 PurposeCategory = _make_enum("PurposeCategory", [
+    "_Unset",
     "ServiceProvision", "Security", "LegalCompliance",
     "Marketing", "Analytics", "Research",
 ])
 
 ConstraintType = _make_enum("ConstraintType", [
+    "_Unset",
     "Temporal", "Geographic", "Usage", "Security",
     "Retention", "PurposeLimitation",
 ])
 
 RightType = _make_enum("RightType", [
+    "_Unset",
     "Access", "Rectification", "Erasure", "Restriction",
     "Portability", "Objection", "AutomatedDecisionOptOut",
 ])
 
 RetentionUnit = _make_enum("RetentionUnit", [
+    "_Unset",
     "Days", "Months", "Years", "Indefinite",
 ])
 
 RetentionTrigger = _make_enum("RetentionTrigger", [
+    "_Unset",
     "CollectionDate", "ContractEnd", "LastActivity",
     "LegalObligationExpiry", "ConsentWithdrawal", "AccountDeletion",
 ])
 
 WithdrawalChannel = _make_enum("WithdrawalChannel", [
+    "_Unset",
     "OnlineForm", "Email", "WrittenRequest",
     "InAppToggle", "PhoneRequest", "InPerson",
 ])
 
 TransferMechanism = _make_enum("TransferMechanism", [
+    "_Unset",
     "AdequacyDecision", "StandardContractualClauses",
     "BindingCorporateRules", "Consent", "ContractNecessity",
     "LegitimateInterest", "Other",
 ])
 
 PersonalDataCategory = _make_enum("PersonalDataCategory", [
+    "_Unset",
     "Identifier", "ContactInformation", "LocationData", "FinancialData",
     "HealthData", "BiometricData", "BehavioralData", "TechnicalData",
     "ContentData",
 ])
 
 SensitivityLevel = _make_enum("SensitivityLevel", [
+    "_Unset",
     "Low", "Medium", "High", "SpecialCategory",
 ])
 
 Identifiability = _make_enum("Identifiability", [
+    "_Unset",
     "Identified", "Pseudonymous", "Anonymous",
 ])
 

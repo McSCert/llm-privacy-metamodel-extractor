@@ -614,7 +614,7 @@ def _build_article_filter(articles_arg: Optional[str]) -> Optional[re.Pattern]:
     terms = [t.strip() for t in articles_arg.split(",") if t.strip()]
     if not terms:
         return None
-    pattern  = "|".join(re.escape(t) for t in terms)
+    pattern  = "|".join(re.escape(t) + r"(?![\d\.])" for t in terms)
     compiled = re.compile(pattern, re.IGNORECASE)
     log.info(f"Article filter active: '{articles_arg}'")
     return compiled
@@ -942,6 +942,7 @@ def stage_extract(
     max_retries:      int,
     article_filter:   Optional[re.Pattern],
     use_concept_tags: bool = True,
+    law_filter:       Optional[set[str]] = None,
 ) -> dict[str, list[dict]]:
     """
     Pass 1: for every (law, article, concept) triple that passes the filters,
@@ -992,6 +993,9 @@ def stage_extract(
         log.info(f"  Laws in ChunkStore : {available_laws}")
 
         for law in available_laws:
+            if law_filter and law not in law_filter:
+                log.debug(f"  Skipping {law} — not in --input for this run.")
+                continue
             if law not in embedder_paths:
                 log.warning(
                     f"  No embedder found for {law} — skipping. "
@@ -1660,6 +1664,7 @@ def main() -> None:
             max_retries      = args.max_retries,
             article_filter   = article_filter,
             use_concept_tags = not args.no_concept_tags,
+            law_filter       = set(law_files.keys()) if law_files else None,
         )
 
         stage_assemble_and_store(
