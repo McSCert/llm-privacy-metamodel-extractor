@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="Organization's obligation to store personal data securely">
+    <actor actorId="" name="Organization" role="DataController"/>
+    <purposes purposeId="" description="Comply with legal obligations regarding personal data storage" category="LegalCompliance"/>
+    <processingActivity activityId="" description="Organization is responsible for personal information in its possession or custody" action="Store">
+      <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="EU" name="European Union" description=""/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="">
+      <jurisdiction jurisdictionId="CA" name="Canada" description=""/>
+    </governingRegulations>
+    <constraints constraintId="" type="Temporal" expression="An organization shall comply with the obligations set out in Schedule 1 within a reasonable timeframe." enforcementLevel="Mandatory"/>
+    <rightImpacted rightId="" type="Access" triggerCondition="data subject makes a written request" fulfillmentProcess="controller must retain data long enough for access after decision made"/>
+  </statements>
+</pp:PrivacyPolicy>

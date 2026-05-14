@@ -161,17 +161,17 @@ class PolicyXMIWriter:
             if raw_key in _PIPELINE_FIELDS:
                 continue
             if value is None:
-                warnings.warn(f"SKIP {eclass.name}.{raw_key} — value is None")
+                #warnings.warn(f"SKIP {eclass.name}.{raw_key} — value is None")
                 continue
 
             ecore_key = _ALIAS_TO_ECORE.get(raw_key, raw_key)
             feature = self._find_feature(eclass, ecore_key)
 
             if feature is None:
-                warnings.warn(f"SKIP {eclass.name}.{raw_key} — feature not found in Ecore")
+                #warnings.warn(f"SKIP {eclass.name}.{raw_key} — feature not found in Ecore")
                 continue
 
-            warnings.warn(f"SET  {eclass.name}.{raw_key} = {repr(value)[:60]}")
+            #warnings.warn(f"SET  {eclass.name}.{raw_key} = {repr(value)[:60]}")
             if isinstance(feature, EReference):
                 self._set_reference(obj, feature, ecore_key, value)
             else:

@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="Organization's responsibility for personal information">
-    <actor actorId="" name="Organization" role="DataController"/>
+  <statements statementId="" description="Organization's obligation to store personal information responsibly under PIPEDA">
+    <actor actorId="" name="Individual" role="DataSubject"/>
     <purposes purposeId="" description="To use personal information for a new purpose" category="ServiceProvision"/>
     <processingActivity activityId="" description="Organization is responsible for personal information in its possession or custody" action="Store">
       <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
     </processingActivity>
-    <legalBasis basisId="" type="Consent" evidence="The knowledge and consent of the individual are required for the collection, use, or disclosure of personal information, except where inappropriate.">
-      <jurisdiction jurisdictionId="CA" name="Canada" description="PIPEDA jurisdiction"/>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="" name="" description=""/>
     </legalBasis>
     <governingRegulations regulationId="" name="PIPEDA" version="" description="">
       <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
