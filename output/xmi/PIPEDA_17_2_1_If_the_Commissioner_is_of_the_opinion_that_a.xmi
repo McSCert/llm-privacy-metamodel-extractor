@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="Organization's legal obligation to use personal data for specified purposes under PIPEDA">
+    <actor actorId="" name="Organization" role="DataController"/>
+    <purposes purposeId="" description="To comply with legal obligations under PIPEDA" category="LegalCompliance"/>
+    <processingActivity activityId="" description="" action="Use">
+      <dataProcessed dataId="" description="personal data of data subjects" source="directly from data subject" category="Identifier" sensitivity="Low" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </governingRegulations>
+    <constraints constraintId="" type="Temporal" expression="The Commissioner shall return the information to the organization that provided the information within 10 days after the certificate is published in the Canada Gazette." enforcementLevel="Mandatory"/>
+    <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by data subject" fulfillmentProcess="Organization must respond within 30 days"/>
+    <consentWithdrawal withdrawalId="" channel="WrittenRequest" deadline="without undue delay" effectOnPriorProcessing="Does not affect lawfulness of processing prior to withdrawal (PIPEDA Art.7(3))"/>
+  </statements>
+</pp:PrivacyPolicy>

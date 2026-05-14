@@ -1,18 +1,18 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="Organization's responsibility for personal information storage">
+  <statements statementId="" description="Organization's responsibility for personal information transferred to a third party">
     <actor actorId="" name="Organization" role="DataController"/>
     <purposes purposeId="" description="To use personal information for a new purpose" category="ServiceProvision"/>
-    <processingActivity activityId="" description="Organization is responsible for personal information in its possession or custody" action="Store">
+    <processingActivity activityId="" description="Organization is responsible for personal information transferred to a third party for processing." action="Transfer">
       <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
     </processingActivity>
-    <legalBasis basisId="" type="Consent" evidence="The knowledge and consent of the individual are required for the collection, use, or disclosure of personal information, except where inappropriate.">
-      <jurisdiction jurisdictionId="CA" name="Canada" description=""/>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="EU" name="European Union" description=""/>
     </legalBasis>
     <governingRegulations regulationId="" name="PIPEDA" version="" description="">
       <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </governingRegulations>
-    <constraints constraintId="con_5e62fb6e" type="PurposeLimitation" expression="Personal data must only be used for the purpose identified at time of collection." enforcementLevel="Mandatory"/>
+    <constraints constraintId="" type="PurposeLimitation" expression="An organization may collect, use or disclose personal information only for purposes that a reasonable person would consider are appropriate in the circumstances." enforcementLevel="Recommended"/>
     <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by data subject" fulfillmentProcess="Organization must respond within 30 days"/>
   </statements>
 </pp:PrivacyPolicy>
