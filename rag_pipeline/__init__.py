@@ -24,13 +24,13 @@ Files
 """
 
 from .chunker  import Chunk, chunk_file, chunk_text, concept_tagger
-from .embedder import TFIDFEmbedder, SentenceTransformerEmbedder, cosine_similarity
+from .embedder import BM25Embedder, SentenceTransformerEmbedder, cosine_similarity
 from .store    import ChunkStore, ingest_file
 from .retriever import Retriever, RetrievedChunk, build_retriever_from_files, CONCEPT_QUERIES
 
 __all__ = [
     "Chunk", "chunk_file", "chunk_text", "concept_tagger",
-    "TFIDFEmbedder", "SentenceTransformerEmbedder", "cosine_similarity",
+    "BM25Embedder", "SentenceTransformerEmbedder", "cosine_similarity",
     "ChunkStore", "ingest_file",
     "Retriever", "RetrievedChunk", "build_retriever_from_files", "CONCEPT_QUERIES",
 ]
