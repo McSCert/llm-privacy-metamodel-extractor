@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="Organization's transfer of personal data to third parties for processing">
+  <statements statementId="" description="Collection of personal information within a province with substantially similar legislation">
     <actor actorId="" name="Organization" role="DataController"/>
-    <purposes purposeId="" description="Organization transfers personal data to third parties for processing as part of its service provision." category="ServiceProvision"/>
-    <processingActivity activityId="" description="Organization is responsible for personal information transferred to a third party for processing." action="Transfer">
+    <purposes purposeId="" description="Collection of personal information within a province with substantially similar legislation" category="ServiceProvision"/>
+    <processingActivity activityId="" description="Collection of personal information within a province with substantially similar legislation" action="Collect">
       <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
     </processingActivity>
     <legalBasis basisId="" type="Consent" evidence="The knowledge and consent of the individual are required for the collection, use, or disclosure of personal information, except where inappropriate.">
@@ -12,7 +12,7 @@
     <governingRegulations regulationId="" name="PIPEDA" version="" description="">
       <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </governingRegulations>
-    <constraints constraintId="" type="Temporal" expression="Personal data must be retained only as long as necessary for the fulfillment of its purpose." enforcementLevel="Mandatory"/>
+    <constraints constraintId="" type="Temporal" expression="Personal data must only be used for the purpose identified at time of collection." enforcementLevel="Mandatory"/>
     <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by data subject" fulfillmentProcess="Organization must respond within 30 days"/>
   </statements>
 </pp:PrivacyPolicy>
