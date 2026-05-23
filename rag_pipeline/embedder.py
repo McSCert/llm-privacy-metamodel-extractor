@@ -26,7 +26,7 @@ import logging
 import pickle
 from pathlib import Path
 from typing import Protocol
-
+import bm25s
 import numpy as np
 
 log = logging.getLogger(__name__)
@@ -133,9 +133,106 @@ class TFIDFEmbedder:
         log.info(f"Embedder loaded from {path}")
         return instance
 
+# ── BM25 Embedder ─────────────────────────────────────────────────
+class BM25Embedder:
+    """
+    BM25 embedder that produces L2 normalized query vectors. 
+
+    Parameters
+    ----------
+    k1  : TF saturation, how quickly more occurances of the same token lose value (default 1.2)
+    b   : length penatlty, how much longer documents are penalized relative to average doc legnth (default 0.75)
+    """
+    def __init__(self, k1: float = 1.2, b: float = 0.75):
+        self._bm25: bm25s.BM25 
+        self._fitted = False
+        self.k1 = k1
+        self.b = b
+
+    def fit(self, texts: list[str]) -> None:
+        """Fit BM25 index on a corpus of texts. Must be called before embed()."""
+        log.info(f"Fitting BM25 on {len(texts)} texts")
+
+        # tokenize text (required for BM25)
+        tokens = bm25s.tokenize(texts)
+
+        # create BM25 index 
+        self._bm25 = bm25s.BM25(k1=self.k1, b=self.b)
+        self._bm25.index(tokens)
+
+        # create matrix of scores
+        self._create_score_matrix()
+        self._fitted = True
+        log.info(f"BM25 vocabulary size: {self._n_vocab} terms")
+
+    def embed(self, text: str) -> list[float]:
+        """Return a normalised dense float vector for one text."""
+        if not self._fitted:
+            raise RuntimeError("Call fit() before embed()")
+        
+        # tokenize
+        query_tokens = bm25s.tokenize([text], return_ids=False)
+
+        # construct indicator vector
+        vec = np.zeros(self._n_vocab, dtype=np.float32)
+        for token in query_tokens[0]:
+            token_id = self._bm25.vocab_dict.get(token)
+            if token_id is not None and token_id < self._n_vocab:
+                vec[token_id] = 1.0
+
+        # normalize
+        norm = np.linalg.norm(vec)
+        dense = (vec / norm if norm > 0 else vec)
+        return dense.tolist()
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Batch embed — more efficient than calling embed() in a loop."""
+        # call tokenize once for all texts for efficiency
+        token_lists = bm25s.tokenize(texts, return_ids=False)
+
+        matrix = np.zeros((len(texts), self._n_vocab), dtype=np.float32)
+        for i, tokens in enumerate(token_lists):
+            for token in tokens:
+                token_id = self._bm25.vocab_dict.get(token)
+                if token_id is not None and token_id < self._n_vocab:
+                    matrix[i, token_id] = 1.0
+
+        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return (matrix / norms).tolist()
+
+    def save(self, path: Path) -> None:
+        """Persist BM25 index to disk."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._bm25.save(str(path), corpus=None)
+        log.info(f"BM25 embedder saved to {path}")
+
+    @classmethod
+    def load(cls, path: Path) -> "BM25Embedder":
+        """Load a previously fitted BM25 index from disk."""
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"BM25 embedder not found: {path}")
+        instance = cls.__new__(cls)
+        instance._bm25 = bm25s.BM25.load(str(path), load_corpus=False)
+        instance._fitted = True
+        instance._create_score_matrix()
+        log.info(f"BM25 embedder loaded from {path}")
+        return instance
+
+    def _create_score_matrix(self):
+        import scipy.sparse as sp
+        """BM25 specific helper method that builds a scipy sparse matrix of scores"""
+        scores = self._bm25.scores
+        self._n_vocab = len(self._bm25.vocab_dict) - 1 #exclude empty string
+        n_docs = scores["num_docs"]
+        self._scores_matrix = sp.csc_matrix(
+            (scores["data"], scores["indices"], scores["indptr"]),
+            shape=(n_docs, self._n_vocab),
+        )
 
 # ── Sentence-Transformer stub (swap-in when network available) ────────────────
-
 class SentenceTransformerEmbedder:
     """
     Drop-in replacement for TFIDFEmbedder using sentence-transformers.
