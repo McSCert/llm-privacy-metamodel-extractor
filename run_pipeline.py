@@ -33,8 +33,16 @@ Quick-start examples
 Prototype on one PIPEDA principle, local Ollama:
     python run_pipeline.py \\
         --input PIPEDA=laws/pipeda.pdf \\
-        --articles "4.1 Principle 1" \\
+        --articles "4.1" \\
         --backend local --local-model llama3.1:70b-instruct-q4
+
+Generate XMI files for the stored statements
+    python run_pipeline.py \\
+    --stage all \\
+    --input PIPEDA=laws/pipeda.pdf \\
+    --articles "4.1,4.2,4.3" \\
+    --backend local --local-model mistral-nemo:latest \\
+    --xmi-out output/xmi
 
 Full run, Anthropic API:
     python run_pipeline.py \\
