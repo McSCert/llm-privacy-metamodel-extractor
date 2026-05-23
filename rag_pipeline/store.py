@@ -48,7 +48,7 @@ from pathlib import Path
 from typing import Optional
 
 from .chunker import Chunk
-from .embedder import TFIDFEmbedder
+from .embedder import BM25Embedder
 
 log = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class ChunkStore:
     def ingest(
         self,
         chunks: list[Chunk],
-        embedder: TFIDFEmbedder,
+        embedder: BM25Embedder,
         batch_size: int = 256,
         replace: bool = False,
     ) -> int:
@@ -294,18 +294,18 @@ def ingest_file(
     if embedder_path.exists():
         try:
             log.info(f"Loading existing embedder from {embedder_path}")
-            embedder = TFIDFEmbedder.load(embedder_path)
+            embedder = BM25Embedder.load(embedder_path)
         except Exception as exc:
             log.warning(
                 f"Embedder at {embedder_path} is corrupted ({exc}) — "
                 f"deleting and refitting."
             )
             embedder_path.unlink(missing_ok=True)
-            embedder = TFIDFEmbedder(max_features=4096, ngram_range=(1, 2))
+            embedder = BM25Embedder()
             embedder.fit([ch.text for ch in chunks])
             embedder.save(embedder_path)
     else:
-        embedder = TFIDFEmbedder(max_features=4096, ngram_range=(1, 2))
+        embedder = BM25Embedder()
         embedder.fit([ch.text for ch in chunks])
         embedder.save(embedder_path)
 

@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import Optional
 
 from .chunker import Chunk
-from .embedder import TFIDFEmbedder, cosine_similarity
+from .embedder import BM25Embedder, cosine_similarity
 from .store import ChunkStore
 
 log = logging.getLogger(__name__)
@@ -139,10 +139,10 @@ class Retriever:
         self._embedder_paths = {
             law.upper(): Path(p) for law, p in embedder_paths.items()
         }
-        self._embedders: dict[str, TFIDFEmbedder] = {}   # lazy-loaded
+        self._embedders: dict[str, BM25Embedder] = {}   # lazy-loaded
         self._store = ChunkStore(self.db_path)
 
-    def _get_embedder(self, law: str) -> TFIDFEmbedder:
+    def _get_embedder(self, law: str) -> BM25Embedder:
         law = law.upper()
         if law not in self._embedders:
             path = self._embedder_paths.get(law)
@@ -152,7 +152,7 @@ class Retriever:
                     f"Available: {list(self._embedder_paths)}"
                 )
             try:
-                self._embedders[law] = TFIDFEmbedder.load(path)
+                self._embedders[law] = BM25Embedder.load(path)
             except Exception as exc:
                 log.warning(
                     f"Embedder for {law} is corrupted ({exc}) — "
