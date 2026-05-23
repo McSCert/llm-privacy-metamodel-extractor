@@ -93,6 +93,7 @@ data/*.pkl
 data/*.txt
 data/*.html
 data/*.csv
+TFIDF-data/*.*
 
 # Ensure the data/ directory itself is tracked (empty placeholder)
 !data/.gitkeep
