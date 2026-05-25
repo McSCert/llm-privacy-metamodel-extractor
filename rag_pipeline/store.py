@@ -181,144 +181,6 @@ class ChunkStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_DDL)
         self._conn.commit()
-
-    # ── Ingest ────────────────────────────────────────────────────────────────
-
-    def ingest(
-        self,
-        chunks: list[Chunk],
-        embedder: BM25Embedder,
-        batch_size: int = 256,
-        replace: bool = False,
-    ) -> int:
-        """
-        Embed and store a list of Chunk objects.
-
-        Parameters
-        ----------
-        chunks     : output of chunker.chunk_file()
-        embedder   : a fitted TFIDFEmbedder (or any Embedder)
-        batch_size : embedding batch size
-        replace    : if True, replace existing chunks with same chunk_id
-
-        Returns
-        -------
-        Number of chunks written.
-        """
-        if not chunks:
-            log.warning("ingest() called with empty chunk list")
-            return 0
-
-        now = datetime.now(timezone.utc).isoformat()
-        texts = [ch.text for ch in chunks]
-
-        log.info(f"Embedding {len(chunks)} chunks in batches of {batch_size}")
-        all_vectors: list[list[float]] = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            all_vectors.extend(embedder.embed_batch(batch))
-
-        insert_sql = (
-            "INSERT OR REPLACE INTO chunks "
-            "(chunk_id, law, article_ref, parent_ref, level, "
-            " concept_tags, text, vector, char_offset, ingested_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)"
-            if replace else
-            "INSERT OR IGNORE INTO chunks "
-            "(chunk_id, law, article_ref, parent_ref, level, "
-            " concept_tags, text, vector, char_offset, ingested_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)"
-        )
-
-        rows = [
-            (
-                ch.chunk_id,
-                ch.law,
-                ch.article_ref,
-                ch.parent_ref,
-                ch.level,
-                json.dumps(ch.concept_tags),
-                ch.text,
-                json.dumps(vec),
-                ch.char_offset,
-                now,
-            )
-            for ch, vec in zip(chunks, all_vectors)
-        ]
-
-        cur = self._conn.cursor()
-        cur.executemany(insert_sql, rows)
-        self._conn.commit()
-        written = cur.rowcount
-        log.info(f"Wrote {written} chunks to {self.db_path}")
-        return written
-
-    # ── Query helpers ─────────────────────────────────────────────────────────
-
-    def get_chunks_by_concept(
-        self,
-        concept: str,
-        law: Optional[str] = None,
-    ) -> list[sqlite3.Row]:
-        """
-        Return all chunks tagged with `concept`, optionally filtered by law.
-        concept_tags is stored as a JSON array — we use a LIKE search.
-        """
-        cur = self._conn.cursor()
-        if law:
-            cur.execute(
-                "SELECT * FROM chunks WHERE law=? AND concept_tags LIKE ?",
-                (law.upper(), f'%"{concept}"%'),
-            )
-        else:
-            cur.execute(
-                "SELECT * FROM chunks WHERE concept_tags LIKE ?",
-                (f'%"{concept}"%',),
-            )
-        return cur.fetchall()
-
-    def get_chunk_by_id(self, chunk_id: str) -> Optional[sqlite3.Row]:
-        cur = self._conn.cursor()
-        cur.execute("SELECT * FROM chunks WHERE chunk_id=?", (chunk_id,))
-        return cur.fetchone()
-
-    def get_chunks_by_article(
-        self,
-        article_ref: str,
-        law: Optional[str] = None,
-    ) -> list[sqlite3.Row]:
-        cur = self._conn.cursor()
-        if law:
-            cur.execute(
-                "SELECT * FROM chunks WHERE law=? AND article_ref LIKE ?",
-                (law.upper(), f"%{article_ref}%"),
-            )
-        else:
-            cur.execute(
-                "SELECT * FROM chunks WHERE article_ref LIKE ?",
-                (f"%{article_ref}%",),
-            )
-        return cur.fetchall()
-
-    def laws(self) -> list[str]:
-        """Return list of distinct law names in the store."""
-        cur = self._conn.cursor()
-        cur.execute("SELECT DISTINCT law FROM chunks ORDER BY law")
-        return [row[0] for row in cur.fetchall()]
-
-    def stats(self) -> dict:
-        """Return a summary dict of what is stored."""
-        cur = self._conn.cursor()
-        cur.execute("SELECT law, COUNT(*) as n FROM chunks GROUP BY law")
-        law_counts = {row["law"]: row["n"] for row in cur.fetchall()}
-        cur.execute("SELECT COUNT(*) FROM chunks")
-        total = cur.fetchone()[0]
-        return {"total": total, "by_law": law_counts}
-
-    def close(self) -> None:
-        self._conn.close()
-
-    def __enter__(self):
         return self
 
     def __exit__(self, *_) -> None:
@@ -361,6 +223,27 @@ class ChunkStore:
             )
         return [{"article_ref": row["article_ref"], "level": row["level"]}
                 for row in cur.fetchall()]
+
+    def list_articles(
+        self,
+        law: str,
+        levels: Optional[list[str]] = None,
+    ) -> list[dict]:
+        """
+        Return a sorted list of unique articles for *law* as dicts.
+
+        Each dict has keys: {"article_ref": str, "level": str}
+        This matches the format run_pipeline.stage_extract() iterates over:
+            for a in store.list_articles(law):
+                ref = a["article_ref"]
+
+        Parameters
+        ----------
+        law    : Law name, e.g. "PIPEDA".
+        levels : Optional list of level values to filter by
+                 (e.g. ["article", "principle"]).  None = all levels.
+        """
+        return self.article_refs(law=law, levels=levels)
 
     def get_chunks(
         self,
@@ -462,7 +345,7 @@ class ChunkStore:
 def ingest_file(
     path: Path,
     law: str,
-    db_path: Path,
+    db_path: "Path | str | ChunkStore",
     embedder_path: Path,
 ) -> dict:
     """
@@ -472,25 +355,24 @@ def ingest_file(
     -----
     1. chunk_file() → hierarchical chunks (article/principle/clause level).
     2. Keyword tagger annotates each chunk with relevant concept tags.
-    3. BM25Embedder.fit(all_texts) — one index per law file.
-    4. doc_vectors() → L2-normalised BM25 score rows (one per chunk).
+    3. EMBEDDER_CLASS().fit(all_texts) — one index per law file.
+    4. doc_vectors() → L2-normalised score rows (one per chunk).
     5. Chunks + vectors → SQLite via ChunkStore.insert_chunks().
-    6. BM25Embedder pickled to *embedder_path* for query-time retrieval.
+    6. Fitted embedder pickled to *embedder_path* for query-time retrieval.
 
     Parameters
     ----------
     path          : Path to the input PDF or TXT file.
     law           : Short law name, e.g. "PIPEDA" or "GDPR".
-    db_path       : Path to the SQLite chunks database.
-    embedder_path : Path where the fitted BM25Embedder will be pickled.
-                    Must end in .pkl (same convention as run_pipeline.py).
+    db_path       : Path to the SQLite chunks database, OR an already-open
+                    ChunkStore instance (run_pipeline.py may pass either).
+    embedder_path : Path where the fitted embedder will be pickled.
 
     Returns
     -------
     {"chunks_produced": int, "chunks_written": int}
     """
     path = Path(path)
-    db_path = Path(db_path)
     embedder_path = Path(embedder_path)
 
     log.info(f"[ingest] {law} ← {path}")
@@ -506,8 +388,6 @@ def ingest_file(
 
     # ── 1b. Normalise to plain dicts ──────────────────────────────────────────
     # chunk_file() may return dataclass instances (Chunk), namedtuples, or dicts
-    # depending on the chunker version.  Convert everything to plain dicts so
-    # the rest of ingest_file() can use dict operations safely.
     import dataclasses
     chunks: list[dict] = []
     for c in raw_chunks:
@@ -515,14 +395,12 @@ def ingest_file(
             chunks.append(c)
         elif dataclasses.is_dataclass(c) and not isinstance(c, type):
             chunks.append(dataclasses.asdict(c))
-        elif hasattr(c, "_asdict"):          # namedtuple
+        elif hasattr(c, "_asdict"):
             chunks.append(c._asdict())
-        else:                               # fallback: grab __dict__
+        else:
             chunks.append(vars(c))
 
     # ── 2. Concept-tag annotation ─────────────────────────────────────────────
-    # Use tags already provided by the chunker's concept_tagger if present;
-    # fall back to our keyword matcher for any chunk that has none.
     texts: list[str] = []
     for chunk in chunks:
         if not chunk.get("concept_tags"):
@@ -534,21 +412,13 @@ def ingest_file(
     embedder.fit(texts)
 
     # ── 4. Extract per-document vectors ───────────────────────────────────────
-    #
-    # doc_vectors() returns shape (n_docs, n_vocab), L2-normalised.
-    # Row i is the score profile for the i-th chunk passed to fit().
-    # Storing the row means at query time:
-    #   cosine(query_indicator_vec, doc_row) ≡ BM25(query, doc)
-    #
     doc_vecs: np.ndarray = embedder.doc_vectors()  # (n_docs, n_dims)
 
     for i, chunk in enumerate(chunks):
-        # Assign a stable, content-derived ID if the chunker did not supply one
         if not chunk.get("id"):
             chunk["id"] = _chunk_id(
                 law, chunk.get("article_ref", ""), i, chunk.get("text", "")
             )
-
         if i < doc_vecs.shape[0]:
             chunk["vector"] = doc_vecs[i].tolist()
         else:
@@ -559,10 +429,20 @@ def ingest_file(
             )
 
     # ── 5. Persist chunks ─────────────────────────────────────────────────────
-    with ChunkStore(db_path) as store:
-        n_written = store.insert_chunks(chunks)
+    # Accept either an open ChunkStore or a db path — run_pipeline.py may
+    # pass either depending on version.
+    if isinstance(db_path, ChunkStore):
+        # Already-open store: use directly, don't close it
+        n_written = db_path.insert_chunks(chunks)
+        db_name = str(getattr(db_path, '_db_path', 'store'))
+    else:
+        # Path: open, write, close
+        _db_path = Path(db_path)
+        with ChunkStore(_db_path) as store:
+            n_written = store.insert_chunks(chunks)
+        db_name = _db_path.name
 
-    log.info(f"[ingest] {law}: {n_written}/{n_produced} chunks written to {db_path.name}")
+    log.info(f"[ingest] {law}: {n_written}/{n_produced} chunks written to {db_name}")
 
     # ── 6. Pickle the fitted embedder ─────────────────────────────────────────
     embedder_path.parent.mkdir(parents=True, exist_ok=True)

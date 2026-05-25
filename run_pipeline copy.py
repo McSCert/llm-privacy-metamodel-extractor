@@ -33,16 +33,8 @@ Quick-start examples
 Prototype on one PIPEDA principle, local Ollama:
     python run_pipeline.py \\
         --input PIPEDA=laws/pipeda.pdf \\
-        --articles "4.1" \\
+        --articles "4.1 Principle 1" \\
         --backend local --local-model llama3.1:70b-instruct-q4
-
-Generate XMI files for the stored statements
-    python run_pipeline.py \\
-    --stage all \\
-    --input PIPEDA=laws/pipeda.pdf \\
-    --articles "4.1,4.2,4.3" \\
-    --backend local --local-model mistral-nemo:latest \\
-    --xmi-out output/xmi
 
 Full run, Anthropic API:
     python run_pipeline.py \\
@@ -91,6 +83,9 @@ KNOWN ISSUES
   Under-extracts multi-value concepts (Right, Purpose, Constraint).
   Increase --top-k for more context. Future fix: multi-instance prompt.
 
+[ISSUE-6] Corrective retry prompt is minimal.
+  Set --max-retries 3-4 with local models. Monitor failure rate in summary.
+
 [ISSUE-LOCAL] Local model size guidance:
    7B  — high JSON failure rate, smoke-testing only
   13B  — acceptable for prototypes
@@ -101,7 +96,6 @@ KNOWN ISSUES
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import logging
 import re
@@ -114,12 +108,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
-
-from pydantic import BaseModel
+from datetime import datetime
 
 
 # =============================================================================
 # PATH SETUP
+# Add the project root to sys.path so the three sub-packages are importable.
+# run_pipeline.py is already AT the project root, so __file__'s parent IS root.
 # =============================================================================
 
 _PROJECT_ROOT = Path(__file__).resolve().parent
@@ -128,12 +123,14 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 
 # =============================================================================
-# IMPORTS
+# IMPORTS  —  clean sub-package imports, no stubs needed
 # =============================================================================
 
-from rag_pipeline.store     import ChunkStore, ingest_file
+# rag_pipeline sub-package
+from rag_pipeline.store    import ChunkStore, ingest_file
 from rag_pipeline.retriever import Retriever
 
+# privacy_schema sub-package
 from privacy_schema.prompts import (
     build_concept_prompt,
     build_assembler_prompt,
@@ -152,9 +149,11 @@ from privacy_schema.models import (
     PolicyStatementModel,
 )
 
-from gap_analyses.repository   import ModelRepository
+# gap_analysis sub-package
+from gap_analyses.repository  import ModelRepository
 from gap_analyses.gap_analysis import GapAnalyser
 
+# XMI serialisation
 from tranform_format.pydantic_to_xmi import PolicyXMIWriter
 
 
@@ -174,12 +173,13 @@ log = logging.getLogger("pipeline")
 # CONSTANTS
 # =============================================================================
 
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5-20251001"
-DEFAULT_LOCAL_URL       = "http://localhost:11434/v1"
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_LOCAL_URL       = "http://localhost:11434/v1"   # Ollama default
 DEFAULT_LOCAL_MODEL     = "llama3.1:8b"
 DEFAULT_TOP_K           = 3
 DEFAULT_RETRIES         = 2
 
+# Concepts extracted in Pass 1.
 PASS1_CONCEPTS = [
     "LegalBasis",
     "ProcessingActivity",
@@ -192,11 +192,15 @@ PASS1_CONCEPTS = [
     "ConsentWithdrawal",
 ]
 
+# These concepts produce a list in the assembler even though Pass-1
+# returns one object per call. See ISSUE-5.
 LIST_CONCEPTS = {
     "Purpose", "Right", "Constraint",
     "RetentionPolicy", "DataTransfer", "ConsentWithdrawal",
 }
 
+# Jurisdiction metadata for synthesising regulation objects. See ISSUE-4.
+# Add your law here when you add a new input law.
 JURISDICTION_MAP: dict[str, dict] = {
     "GDPR": {
         "jurisdictionId": "EU",
@@ -230,6 +234,7 @@ JURISDICTION_MAP: dict[str, dict] = {
     },
 }
 
+# Structurally valid empty fallbacks used when all retries are exhausted.
 EMPTY_FALLBACKS: dict[str, str] = {
     "LegalBasis": json.dumps({
         "basisId": "", "type": "LegalObligation",
@@ -251,15 +256,28 @@ EMPTY_FALLBACKS: dict[str, str] = {
 }
 
 
-# =============================================================================
-# HELPERS
-# =============================================================================
-
 def _strip_underscores(obj: Any) -> Any:
     """
     Recursively strip leading underscores from dict keys.
-    Used in Pass-2 assembler to normalise local-model quirks.
-    Only strips a SINGLE leading underscore; double-underscore keys untouched.
+
+    Some local LLMs prefix field names with _ (e.g. "_source_clause",
+    "_dataProcessed"). This breaks Pydantic alias matching because the
+    models use camelCase aliases ("source_clause", "dataProcessed").
+
+    Only strips a SINGLE leading underscore. Double-underscore keys
+    ("__something") are left unchanged.
+
+    Called in _assemble_one_statement() after json.loads() and before
+    PolicyStatementModel.model_validate().
+
+    Parameters
+    ----------
+    obj : the parsed JSON value — dict, list, or scalar.
+          json.loads() always returns one of these three types.
+
+    Returns
+    -------
+    The same structure with underscore-prefixed keys renamed.
     """
     if isinstance(obj, dict):
         return {
@@ -269,39 +287,7 @@ def _strip_underscores(obj: Any) -> Any:
         }
     if isinstance(obj, list):
         return [_strip_underscores(item) for item in obj]
-    return obj
-
-
-def _inline_refs(schema: dict) -> dict:
-    """
-    Recursively inline all $defs / $ref entries in a JSON Schema dict.
-
-    Both Anthropic tool input_schema and Ollama/vLLM response_format reject
-    schemas that use $ref / $defs — they require a fully inlined (flat) schema.
-    Pydantic's model_json_schema() always emits $defs for nested models, so
-    this function must be called before passing the schema to any backend.
-
-    This is a single-pass by-value resolver. Pydantic never emits circular
-    refs for normal dataclass-style models, so no cycle protection is needed.
-    """
-    defs = schema.get("$defs", {})
-    if not defs:
-        return schema  # nothing to inline — fast path
-
-    def resolve(node: Any) -> Any:
-        if isinstance(node, dict):
-            if "$ref" in node:
-                ref_name = node["$ref"].split("/")[-1]
-                if ref_name in defs:
-                    return resolve(copy.deepcopy(defs[ref_name]))
-            return {k: resolve(v) for k, v in node.items() if k != "$defs"}
-        if isinstance(node, list):
-            return [resolve(item) for item in node]
-        return node
-
-    result = resolve(copy.deepcopy(schema))
-    result.pop("$defs", None)
-    return result
+    return obj   # scalar (str, int, float, bool, None) — unchanged
 
 
 # =============================================================================
@@ -321,23 +307,23 @@ class ExtractionResult:
 
 @dataclass
 class PipelineStats:
-    laws_ingested:               list[str] = field(default_factory=list)
-    articles_processed:          int = 0
-    articles_skipped:            int = 0
-    pass1_attempts:              int = 0
-    pass1_success:               int = 0
-    pass1_absent:                int = 0   # concept genuinely not in text
-    pass1_failed:                int = 0   # OCL / semantic violation
-    pass1_structural_failures:   int = 0   # JSON / structural failures (expect 0 with structured outputs)
-    pass1_ocl_violations:        int = 0   # semantic OCL violations (the only failures that remain)
-    pass2_attempts:              int = 0
-    pass2_success:               int = 0
-    pass2_failed:                int = 0
-    statements_stored:           int = 0
-    xmi_files_written:           int = 0
-    api_calls:                   int = 0
-    tokens_in:                   int = 0
-    tokens_out:                  int = 0
+    laws_ingested:      list[str] = field(default_factory=list)
+    articles_processed: int = 0
+    articles_skipped:   int = 0
+    pass1_structural_failures: int = 0  # ← was the old json/pydantic retry target
+    pass1_ocl_violations:      int = 0  # ← semantic failures that remain
+    pass1_attempts:     int = 0
+    pass1_success:      int = 0
+    pass1_absent:       int = 0   # concept genuinely not in text (tagger false positive)
+    pass1_failed:       int = 0   # real model failure — wrong enum, missing required field
+    pass2_attempts:     int = 0
+    pass2_success:      int = 0
+    pass2_failed:       int = 0
+    statements_stored:  int = 0
+    xmi_files_written:  int = 0
+    api_calls:          int = 0
+    tokens_in:          int = 0
+    tokens_out:         int = 0
 
     def log_summary(self) -> None:
         b = "=" * 60
@@ -355,17 +341,14 @@ class PipelineStats:
             f"absent={self.pass1_absent}  "
             f"failed={self.pass1_failed})"
         )
-        log.info(
-            f"  Structural failures  : {self.pass1_structural_failures}"
-            + ("  ✓ (expect 0 with structured outputs)" if self.pass1_structural_failures == 0 else "  ← unexpected with structured outputs active")
-        )
-        log.info(f"  OCL violations       : {self.pass1_ocl_violations}")
+        # Failure rate excludes absent — those are not real failures
         real_attempts = self.pass1_attempts - self.pass1_absent
         if real_attempts > 0:
             fail_pct = 100 * self.pass1_failed / real_attempts
             log.info(
                 f"  Pass-1 failure rate  : {fail_pct:.1f}%  "
                 f"(excludes {self.pass1_absent} absent-concept skips)"
+                + ("  ← model may be too small (ISSUE-LOCAL)" if fail_pct > 20 else "")
             )
         log.info(
             f"  Pass-2 calls         : {self.pass2_attempts}  "
@@ -374,6 +357,8 @@ class PipelineStats:
         log.info(f"  Statements stored    : {self.statements_stored}")
         log.info(f"  XMI files written    : {self.xmi_files_written}")
         log.info(f"  Total LLM calls      : {self.api_calls}")
+        log.info(f"  Structural failures  : {self.pass1_structural_failures}  (expect 0 with structured outputs)")
+        log.info(f"  OCL violations       : {self.pass1_ocl_violations}")
         if self.tokens_in or self.tokens_out:
             log.info(f"  Tokens  in / out     : {self.tokens_in} / {self.tokens_out}")
         log.info(b)
@@ -382,34 +367,54 @@ class PipelineStats:
 # =============================================================================
 # LLM BACKENDS
 # =============================================================================
+def _inline_refs(schema: dict) -> dict:
+    """
+    Recursively inline all $defs/$ref entries in a JSON Schema dict.
+
+    Anthropic's tool input_schema and Ollama's json_schema mode both reject
+    schemas that use $ref / $defs — they require a fully inlined schema.
+
+    This is a simple single-pass resolver: definitions are inlined by value,
+    not by reference (circular refs would loop, but Pydantic never emits those
+    for flat dataclass-style models).
+    """
+    import copy
+
+    defs = schema.get("$defs", {})
+    if not defs:
+        return schema  # nothing to inline — fast path
+
+    def resolve(node):
+        if isinstance(node, dict):
+            if "$ref" in node:
+                ref_name = node["$ref"].split("/")[-1]
+                if ref_name in defs:
+                    return resolve(copy.deepcopy(defs[ref_name]))
+            return {k: resolve(v) for k, v in node.items() if k != "$defs"}
+        if isinstance(node, list):
+            return [resolve(item) for item in node]
+        return node
+
+    result = resolve(copy.deepcopy(schema))
+    result.pop("$defs", None)
+    return result
+
 
 class LLMBackend(ABC):
-    """
-    Abstract interface shared by all LLM backends.
-
-    The pipeline calls .call(system, user, stats, schema=ValidatorClass).
-    When schema is provided, the backend enforces structured output at the
-    decoding layer — the response is guaranteed to be valid JSON matching
-    the schema, eliminating all structural retries.
-
-    When schema=None (e.g. DryRunBackend, Pass-2 assembler fallback),
-    the backend returns raw text and _strip_fences() is applied.
-    """
-
     @abstractmethod
     def call(
         self,
         system:     str,
         user:       str,
-        stats:      "PipelineStats",
-        schema:     type[BaseModel] | None = None,
+        stats:      PipelineStats,
+        schema:     type[BaseModel] | None = None,  # ← NEW
         max_tokens: int = 2048,
     ) -> str: ...
 
     @staticmethod
     def _strip_fences(raw: str) -> str:
         """Strip accidental markdown code fences from model output.
-        Only called when schema=None (text-mode fallback).
+        Only used when schema=None (text-mode fallback).
         """
         raw = raw.strip()
         if raw.startswith("```"):
@@ -423,11 +428,6 @@ class LLMBackend(ABC):
 class AnthropicBackend(LLMBackend):
     """
     Calls the Anthropic Messages API.
-
-    Structured output strategy: tool use with tool_choice={"type":"tool"}.
-    Anthropic forces a single tool_use block whose .input dict is already
-    parsed — no JSON string, no fences, no retries needed.
-
     Reads ANTHROPIC_API_KEY from the environment.
     Applies exponential back-off on 429 rate-limit errors.
     """
@@ -443,20 +443,14 @@ class AnthropicBackend(LLMBackend):
         self.model = model
         log.info(f"Backend: Anthropic API  (model={model})")
 
-    def call(
-        self,
-        system:     str,
-        user:       str,
-        stats:      PipelineStats,
-        schema:     type[BaseModel] | None = None,
-        max_tokens: int = 2048,
-    ) -> str:
+    def call(self, system, user, stats, schema=None, max_tokens=2048) -> str:
         for attempt in range(4):
             try:
                 # ── Structured output via tool use ────────────────────────────
                 if schema is not None:
                     json_schema = schema.model_json_schema()
-                    json_schema = _inline_refs(json_schema)   # flatten $defs
+                    # Anthropic rejects $defs — inline all nested definitions
+                    json_schema = _inline_refs(json_schema)
                     tool_def = {
                         "name":         schema.__name__,
                         "description":  f"Extract a {schema.__name__} instance.",
@@ -475,11 +469,10 @@ class AnthropicBackend(LLMBackend):
                     stats.tokens_out += resp.usage.output_tokens
                     for block in resp.content:
                         if block.type == "tool_use":
-                            # block.input is already a dict — serialise for uniform interface
                             return json.dumps(block.input)
                     raise RuntimeError("Anthropic tool_use block missing in response.")
 
-                # ── Text mode fallback (schema=None) ──────────────────────────
+                # ── Text mode fallback (no schema) ────────────────────────────
                 resp = self._client.messages.create(
                     model      = self.model,
                     max_tokens = max_tokens,
@@ -496,7 +489,6 @@ class AnthropicBackend(LLMBackend):
                 wait = 2 ** attempt
                 log.warning(f"Rate limit — waiting {wait}s (retry {attempt+1}/3)")
                 time.sleep(wait)
-
             except self._anthropic.APIError as exc:
                 log.error(f"Anthropic API error: {exc}")
                 raise
@@ -508,22 +500,21 @@ class AnthropicBackend(LLMBackend):
 
 class LocalBackend(LLMBackend):
     """
-    Calls any OpenAI-compatible /v1/chat/completions endpoint via urllib.
-
-    Structured output strategy: response_format with type=json_schema.
-    Grammar-constrained decoding in Ollama/vLLM/llama.cpp physically prevents
-    the model from producing tokens that would invalidate the schema.
+    Calls any OpenAI-compatible /v1/chat/completions endpoint via urllib
+    (no extra dependency).
 
     Compatible runners and their default base URLs:
       Ollama      http://localhost:11434/v1    (ollama serve)
       llama.cpp   http://localhost:8080/v1     (./server -m model.gguf)
       LM Studio   http://localhost:1234/v1     (local server tab)
       vLLM        http://localhost:8000/v1     (python -m vllm.entrypoints.openai.api_server)
+
+    See ISSUE-LOCAL for model size guidance.
     """
 
     def __init__(self, base_url: str, model: str):
-        self.model       = model
-        self._endpoint   = base_url.rstrip("/") + "/chat/completions"
+        self.model     = model
+        self._endpoint = base_url.rstrip("/") + "/chat/completions"
         self._models_url = base_url.rstrip("/") + "/models"
         self._check_connection()
         log.info(f"Backend: Local LLM  (endpoint={self._endpoint}  model={model})")
@@ -561,25 +552,17 @@ class LocalBackend(LLMBackend):
         except Exception:
             log.debug("Models endpoint not available — skipping model check.")
 
-    def call(
-        self,
-        system:     str,
-        user:       str,
-        stats:      PipelineStats,
-        schema:     type[BaseModel] | None = None,
-        max_tokens: int = 2048,
-    ) -> str:
+    def call(self, system, user, stats, schema=None, max_tokens=2048) -> str:
         body: dict = {
             "model":       self.model,
             "max_tokens":  max_tokens,
-            "temperature": 0.0,        # deterministic output — critical for JSON
+            "temperature": 0.0,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user",   "content": user},
             ],
         }
 
-        # ── Inject JSON Schema into decoding constraints ───────────────────────
         if schema is not None:
             json_schema = schema.model_json_schema()
             json_schema.pop("title", None)          # Ollama rejects top-level title
@@ -613,31 +596,20 @@ class LocalBackend(LLMBackend):
                 stats.tokens_out += usage.get("completion_tokens", 0)
 
                 raw = data["choices"][0]["message"]["content"]
-                # _strip_fences only needed in text-mode (schema=None)
+                # _strip_fences only needed when schema=None
                 return raw if schema is not None else self._strip_fences(raw)
 
             except urllib.error.HTTPError as exc:
                 if exc.code == 503 and attempt < 3:
                     wait = 5 * (attempt + 1)
-                    log.warning(
-                        f"Server 503 (model loading?) — waiting {wait}s "
-                        f"(attempt {attempt+1}/3)"
-                    )
+                    log.warning(f"Server 503 — waiting {wait}s (attempt {attempt+1}/3)")
                     time.sleep(wait)
                 else:
                     body_text = exc.read().decode("utf-8", errors="replace")
                     log.error(f"Local LLM HTTP {exc.code}: {body_text[:300]}")
                     raise
-
             except urllib.error.URLError as exc:
                 log.error(f"Local LLM connection error: {exc}")
-                raise
-
-            except KeyError:
-                log.error(
-                    f"Unexpected response from local LLM. "
-                    f"Raw: {str(data)[:300]}"
-                )
                 raise
 
         raise RuntimeError("Exhausted local LLM retries.")
@@ -648,14 +620,8 @@ class LocalBackend(LLMBackend):
 class DryRunBackend(LLMBackend):
     """Returns '{}' without any network call. Used with --dry-run."""
 
-    def call(
-        self,
-        system:     str,
-        user:       str,
-        stats:      PipelineStats,
-        schema:     type[BaseModel] | None = None,
-        max_tokens: int = 2048,
-    ) -> str:
+    def call(self, system: str, user: str, stats: PipelineStats,
+             shcema=None, max_tokens: int = 2048) -> str:
         stats.api_calls += 1
         log.debug("[DRY RUN] skipping LLM call — returning '{}'")
         return "{}"
@@ -668,15 +634,25 @@ class DryRunBackend(LLMBackend):
 def _build_article_filter(articles_arg: Optional[str]) -> Optional[re.Pattern]:
     """
     Build a compiled regex from the --articles argument.
-    Accepts a comma-separated list of substrings matched case-insensitively.
-    Returns None when --articles is not set (all articles processed).
+
+    --articles accepts a comma-separated list of substrings matched
+    case-insensitively against article_ref. Each term is treated as a
+    literal string (dots, parentheses, etc. are not regex metacharacters).
+
+    Examples:
+      --articles "Principle 4.1"         matches PIPEDA Principle 4.1 only
+      --articles "4.1,4.2,4.3"           matches three PIPEDA principles
+      --articles "Art.6,Art.7"           matches GDPR Art.6 and Art.7
+      --articles "Art.6(1)(a)"           matches that specific GDPR sub-article
+
+    Returns None when --articles is not set (all articles are processed).
     """
     if not articles_arg:
         return None
     terms = [t.strip() for t in articles_arg.split(",") if t.strip()]
     if not terms:
         return None
-    pattern  = "|".join(re.escape(t) for t in terms)
+    pattern  = "|".join(re.escape(t) + r"(?![\d\.])" for t in terms)
     compiled = re.compile(pattern, re.IGNORECASE)
     log.info(f"Article filter active: '{articles_arg}'")
     return compiled
@@ -704,6 +680,8 @@ def stage_ingest(
     Delegates to rag_pipeline.store.ingest_file() which:
       1. Extracts text — PDF via pdfplumber, or plain .txt.
       2. Hierarchically chunks: chapter/schedule -> article/principle -> clause.
+         PIPEDA -> schedule -> principle -> clause  (level="principle")
+         GDPR   -> chapter  -> article   -> clause  (level="article")
       3. Fits a TF-IDF embedder on the chunk corpus (one model per law).
       4. Embeds and persists chunks to the SQLite ChunkStore.
 
@@ -748,8 +726,21 @@ def stage_ingest(
 # STAGE 2 — EXTRACT  (Pass 1: one concept per article per LLM call)
 # =============================================================================
 
+
 # Signal fields per concept: if ALL of these are empty/null/missing in the
-# LLM's response, the concept is genuinely absent from the text.
+# LLM's response, the concept is genuinely absent from the text rather than
+# being a model failure. This handles tagger false-positives gracefully.
+#
+# Rationale per concept:
+#   LegalBasis         — "evidence" must be quoted/paraphrased text; empty = not found
+#   ProcessingActivity — "description" summarises the activity; empty = nothing described
+#   Actor              — "name" is the entity name; empty = no actor mentioned
+#   Purpose            — "description" is the purpose text; empty = no purpose found
+#   Right              — "type" is an enum; if LLM cannot pick one, concept is absent
+#   Constraint         — "expression" is the constraint text; empty = none found
+#   RetentionPolicy    — "duration" is the time value; 0 or missing = not specified
+#   DataTransfer       — "mechanism" is a required enum; missing = not a transfer article
+#   ConsentWithdrawal  — "channel" is a required enum; missing = not a withdrawal article
 _ABSENCE_SIGNAL_FIELDS: dict[str, list[str]] = {
     "LegalBasis":         ["evidence"],
     "ProcessingActivity": ["description"],
@@ -766,63 +757,57 @@ _ABSENCE_SIGNAL_FIELDS: dict[str, list[str]] = {
 def _is_concept_absent(concept: str, parsed: dict) -> bool:
     """
     Return True when the LLM response indicates the concept is genuinely
-    not present in the text (tagger false-positive), as opposed to a real
-    extraction failure.
+    not present in the text — as opposed to a real extraction failure.
 
     A concept is considered absent when ALL its signal fields are either
-    missing, empty string, zero, or null.
+    missing from the parsed dict, empty string, zero, or null.
+
+    This prevents tagger false-positives from burning retries and inflating
+    the failure rate. An absent concept is immediately returned as an empty
+    fallback WITHOUT retrying — retrying would waste tokens on text that
+    simply does not contain the concept.
+
+    Examples that return True (absent):
+      DataTransfer:       {} or {"mechanism": "", "destinationJurisdiction": ""}
+      RetentionPolicy:    {"duration": 0} or {"duration": None}
+      Right:              {} or {"type": ""}
+
+    Examples that return False (real failure — should retry):
+      DataTransfer:       {"mechanism": "INVALID_VALUE"}   <- wrong enum, retry
+      LegalBasis:         {"type": "BadType"}              <- wrong enum, retry
     """
     signal_fields = _ABSENCE_SIGNAL_FIELDS.get(concept, [])
     if not signal_fields:
-        return False
+        return False   # unknown concept — do not suppress
 
     for field_name in signal_fields:
         value = parsed.get(field_name)
+        # If any signal field has a non-empty value, the concept IS present
+        # (even if the value turns out to be wrong — that's a real failure)
         if value is not None and value != "" and value != 0 and value != [] and value != {}:
             return False
 
-    return True  # all signal fields empty — concept absent
+    # All signal fields are empty/missing — concept is absent
+    return True
 
 
 def _extract_one_concept(
-    concept:     str,
-    law:         str,
-    article_ref: str,
-    rag_text:    str,
-    backend:     LLMBackend,
-    stats:       PipelineStats,
-    max_retries: int,            # retained in signature; used only for OCL violations
-    validators:  dict[str, Any],
-) -> ExtractionResult:
-    """
-    Extract one metamodel concept from one article via a single LLM call.
-
-    With structured outputs active (schema passed to backend.call), the
-    response is guaranteed to be structurally valid JSON — json.loads()
-    cannot fail and Pydantic only needs to check semantic OCL constraints.
-
-    The corrective retry loop has been removed. The only remaining source
-    of failure is an OCL semantic violation (e.g. wrong enum value that the
-    grammar constraint missed), which is logged but not retried in Pass 1.
-    """
+    concept, law, article_ref, rag_text, backend, stats, max_retries, validators,
+):
     validator    = validators[concept]
     system, user = build_concept_prompt(concept, law, article_ref, rag_text)
     stats.pass1_attempts += 1
 
-    # ── Single call — structure guaranteed by schema-constrained decoding ──────
+    # ── Single call — structure guaranteed by schema-constrained decoding ──
     raw = backend.call(system, user, stats, schema=validator)
 
     # json.loads() cannot fail when structured output is active.
-    # Still wrapped for DryRunBackend (returns '{}') and edge cases.
+    # Still wrapped for DryRunBackend (returns '{}') and text-mode fallback.
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError as exc:
-        stats.pass1_structural_failures += 1
         stats.pass1_failed += 1
-        log.warning(
-            f"  JSON parse error {concept}@{article_ref}: {exc}  "
-            f"← unexpected with structured outputs active"
-        )
+        log.warning(f"  JSON error {concept}@{article_ref}: {exc}")
         return ExtractionResult(
             law=law, article=article_ref, concept=concept,
             success=False,
@@ -831,13 +816,10 @@ def _extract_one_concept(
             attempts=1,
         )
 
-    # ── Absence check — semantic, not structural ───────────────────────────────
+    # ── Absence check (semantic, not structural) ───────────────────────────
     if _is_concept_absent(concept, parsed):
         stats.pass1_absent += 1
-        log.debug(
-            f"    {concept}@{article_ref}: concept absent in text "
-            f"(tagger false-positive) — skipping"
-        )
+        log.debug(f"    {concept}@{article_ref}: concept absent — skipping")
         return ExtractionResult(
             law=law, article=article_ref, concept=concept,
             success=False,
@@ -846,9 +828,7 @@ def _extract_one_concept(
             attempts=1,
         )
 
-    # ── Pydantic: OCL constraint validation only ───────────────────────────────
-    # With structured outputs, structure is guaranteed. Pydantic now only
-    # checks semantic OCL constraints (enum values, cross-field rules, etc.)
+    # ── Pydantic: OCL constraint validation only (structure already guaranteed)
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -860,12 +840,10 @@ def _extract_one_concept(
             law=law, article=article_ref, concept=concept,
             success=True, json_str=raw, attempts=1,
         )
-
     except Exception as exc:
-        # Only OCL/semantic violations reach here — not structural failures.
-        stats.pass1_ocl_violations += 1
-        stats.pass1_failed += 1
+        # This should now only fire on OCL/semantic violations, not structure.
         log.warning(f"  OCL violation {concept}@{article_ref}: {exc}")
+        stats.pass1_failed += 1
         return ExtractionResult(
             law=law, article=article_ref, concept=concept,
             success=False,
@@ -884,10 +862,17 @@ def stage_extract(
     max_retries:      int,
     article_filter:   Optional[re.Pattern],
     use_concept_tags: bool = True,
+    law_filter:       Optional[set[str]] = None,
 ) -> dict[str, list[dict]]:
     """
     Pass 1: for every (law, article, concept) triple that passes the filters,
     retrieve RAG context and run one LLM extraction call.
+
+    Article levels handled:
+      "article"   — GDPR, LGPD, CCPA
+      "section"   — CCPA variant
+      "principle" — PIPEDA
+      "document"  — fallback when no structure detected
 
     Returns:
         {
@@ -928,6 +913,9 @@ def stage_extract(
         log.info(f"  Laws in ChunkStore : {available_laws}")
 
         for law in available_laws:
+            if law_filter and law not in law_filter:
+                log.debug(f"  Skipping {law} — not in --input for this run.")
+                continue
             if law not in embedder_paths:
                 log.warning(
                     f"  No embedder found for {law} — skipping. "
@@ -935,21 +923,68 @@ def stage_extract(
                 )
                 continue
 
-            all_articles = store.list_articles(
-                law=law,
-                levels=["article", "section", "principle", "document"],
+            # ── Enumerate structural chunks ───────────────────────────────────
+            # "principle" covers PIPEDA; "article"/"section" covers GDPR/CCPA.
+            # We work at this level (not clause) to avoid duplicate extractions.
+            cur = store._conn.execute(
+                """
+                SELECT DISTINCT article_ref, concept_tags
+                FROM   chunks
+                WHERE  law   = ?
+                  AND  level IN ('article', 'section', 'principle', 'document')
+                ORDER  BY article_ref
+                """,
+                (law,),
             )
-
-            to_process = [
-                a for a in all_articles
-                if _article_passes_filter(a["article_ref"], article_filter)
+            all_articles = [
+                {
+                    "article_ref":  row["article_ref"],
+                    "concept_tags": set(json.loads(row["concept_tags"])),
+                }
+                for row in cur.fetchall()
             ]
-            skipped = len(all_articles) - len(to_process)
-            stats.articles_skipped += skipped
+
+            # Fallback if chunker produced no article/principle-level chunks
+            if not all_articles:
+                log.warning(
+                    f"  No article/principle-level chunks for {law}. "
+                    f"Falling back to all levels — extraction may be coarse."
+                )
+                cur = store._conn.execute(
+                    "SELECT DISTINCT article_ref, concept_tags "
+                    "FROM chunks WHERE law=? ORDER BY article_ref LIMIT 100",
+                    (law,),
+                )
+                all_articles = [
+                    {
+                        "article_ref":  row["article_ref"],
+                        "concept_tags": set(json.loads(row["concept_tags"])),
+                    }
+                    for row in cur.fetchall()
+                ]
+
+            # ── Apply article filter ──────────────────────────────────────────
+            to_process = []
+            for art in all_articles:
+                if _article_passes_filter(art["article_ref"], article_filter):
+                    to_process.append(art)
+                else:
+                    stats.articles_skipped += 1
+
+            if not to_process:
+                log.warning(
+                    f"  Article filter matched 0 articles for {law}.\n"
+                    f"  Available article_refs (first 20):\n"
+                    + "\n".join(
+                        f"    '{a['article_ref']}'"
+                        for a in all_articles[:20]
+                    )
+                    + ("\n    ..." if len(all_articles) > 20 else "")
+                )
+                continue
 
             log.info(
-                f"  {law}: {len(to_process)} article(s) to process "
-                f"({skipped} skipped by filter)"
+                f"  {law}: processing {len(to_process)} / {len(all_articles)} article(s)"
             )
 
             retriever   = Retriever(db_path, {law: embedder_paths[law]})
@@ -958,7 +993,7 @@ def stage_extract(
             for art in to_process:
                 stats.articles_processed += 1
                 article_ref  = art["article_ref"]
-                article_tags = art.get("concept_tags", [])
+                article_tags = art["concept_tags"]
                 art_record   = {"article_ref": article_ref, "concepts": {}}
 
                 log.info(f"  [{law}] {article_ref}")
@@ -985,7 +1020,7 @@ def stage_extract(
                         )
                         continue
 
-                    # ── LLM extraction (single call, schema-constrained) ───────
+                    # ── LLM extraction + Pydantic validation ──────────────────
                     result = _extract_one_concept(
                         concept, law, article_ref, rag_text,
                         backend, stats, max_retries, validators,
@@ -999,7 +1034,7 @@ def stage_extract(
 
                 law_results.append(art_record)
 
-            retriever.close()
+            retriever.close()   # close once after ALL articles for this law
             results[law] = law_results
 
     return results
@@ -1060,11 +1095,10 @@ def _assemble_one_statement(
 
     The LLM is NOT re-reading the legal text. It receives the already-
     validated concept JSONs and assembles them, applying cross-concept
-    OCL consistency checks.
+    OCL consistency checks (e.g. Consent without ConsentWithdrawal).
 
-    Note: Pass-2 still uses text-mode (no schema parameter) because
-    PolicyStatementModel is a complex nested model. Migration to structured
-    output for Pass-2 is planned for a future sprint.
+    OCL warnings are logged but do not block storage.
+    Returns None if all retries fail — the article is then not stored.
     """
     stats.pass2_attempts += 1
 
@@ -1077,6 +1111,10 @@ def _assemble_one_statement(
     constraints_json = _get("Constraint")
     proc_json        = _get("ProcessingActivity")
 
+    # Detect required list fields that are empty and build a targeted synthesis
+    # block. The assembler prompt's generic SYNTHESIS RULES section handles the
+    # "what to produce" guidance; this block tells it "these specific fields
+    # ARE empty in your input — you must synthesize, not copy".
     synthesis_items: list[str] = []
     if purposes_json.strip() == "[]":
         synthesis_items.append(
@@ -1086,29 +1124,46 @@ def _assemble_one_statement(
         synthesis_items.append(
             "- RIGHTS IMPACTED input is [] → synthesize 1 Right using SYNTHESIS RULES above."
         )
+    if constraints_json.strip() == "[]":
+        synthesis_items.append(
+            "- CONSTRAINTS input is [] → synthesize 1 Constraint using SYNTHESIS RULES above."
+        )
+    try:
+        proc_obj = json.loads(proc_json)
+        if isinstance(proc_obj, dict) and not proc_obj.get("dataProcessed"):
+            synthesis_items.append(
+                "- processingActivity.dataProcessed is [] → synthesize 1 PersonalData item "
+                "using SYNTHESIS RULES above."
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
 
     system, user = build_assembler_prompt(
-        actor_json              = _get("Actor"),
-        purposes_json           = purposes_json,
-        processing_activity_json= proc_json,
-        legal_basis_json        = _get("LegalBasis"),
-        regulations_json        = _synthesise_regulation_json(law, article_ref),
-        constraints_json        = constraints_json,
-        rights_json             = rights_json,
-        source_clause           = article_ref,
-        retention_json          = _get("RetentionPolicy"),
-        transfers_json          = _get("DataTransfer"),
-        withdrawal_json         = _get("ConsentWithdrawal"),
+        actor_json               = _get("Actor"),
+        purposes_json            = purposes_json,
+        processing_activity_json = proc_json,
+        legal_basis_json         = _get("LegalBasis"),
+        regulations_json         = _synthesise_regulation_json(law, article_ref),
+        constraints_json         = constraints_json,
+        rights_json              = rights_json,
+        source_clause            = article_ref,
+        retention_json           = _get("RetentionPolicy"),
+        transfers_json           = _get("DataTransfer"),
+        withdrawal_json          = _get("ConsentWithdrawal"),
     )
 
     if synthesis_items:
         synthesis_block = (
-            "## SYNTHESIS REQUIRED FOR THESE FIELDS\n"
+            "## ACTION REQUIRED — the following required fields are empty in the input:\n"
             + "\n".join(synthesis_items)
-            + "\n\nApply the SYNTHESIS RULES.\n\n"
+            + "\n"
+            "Do NOT output [] for any of these fields. Apply the SYNTHESIS RULES.\n\n"
         )
         user = synthesis_block + user
-
+    
+    # Strengthen the system prompt for local models that add wrappers or
+    # underscore prefixes. Appended here rather than in prompts.py so it
+    # only affects Pass-2 and does not change Pass-1 behaviour.
     system = system + (
         "\n\nCRITICAL OUTPUT RULES FOR THIS CALL:\n"
         "- Return JSON fields DIRECTLY at the top level — no wrapper key.\n"
@@ -1128,16 +1183,16 @@ def _assemble_one_statement(
             prefix = (
                 "## CORRECTION NEEDED — the PolicyStatement failed validation:\n\n"
                 + "\n".join(f"  - {e}" for e in last_errors)
-                + "\n\nPREVIOUS (INVALID) OUTPUT:\n"
+                + "\n\nREMINDER — valid enum values only:\n"
+                "  constraints[].type   : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
+                "  purposes[].category  : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
+                "\nPREVIOUS (INVALID) OUTPUT:\n"
                 + last_raw
                 + "\n\nReturn ONLY the corrected PolicyStatement JSON.\n\n"
-                "──────────────────────────────────────────────────────────────\n\n"
             )
             user = prefix + user
 
-        # Pass-2 uses text-mode (schema=None) — structured output for Pass-2
-        # is a planned future improvement.
-        last_raw = backend.call(system, user, stats, schema=None, max_tokens=4096)
+        last_raw = backend.call(system, user, stats, max_tokens=4096)
 
         try:
             parsed = json.loads(last_raw)
@@ -1145,7 +1200,9 @@ def _assemble_one_statement(
             last_errors = [f"JSON parse error: {exc}"]
             continue
 
-        # Unwrap single-key wrapper (local model quirk)
+        # ── Fix 1: unwrap single-key wrapper ──────────────────────────────────
+        # Local models sometimes return {"PolicyStatement": {...}} instead of
+        # the object directly. Unwrap any single-key dict whose value is a dict.
         if isinstance(parsed, dict) and len(parsed) == 1:
             sole_key = next(iter(parsed))
             sole_val = parsed[sole_key]
@@ -1153,7 +1210,9 @@ def _assemble_one_statement(
                 log.debug(f"    Unwrapping assembler response from key '{sole_key}'")
                 parsed = sole_val
 
-        # Strip underscore-prefixed field names (local model quirk)
+        # ── Fix 2: strip leading underscores from field names ─────────────────
+        # Local models sometimes prefix field names with _ (e.g. "_source_clause").
+        # _strip_underscores is defined at module level below EMPTY_FALLBACKS.
         parsed = _strip_underscores(parsed)
 
         try:
@@ -1203,6 +1262,8 @@ def stage_assemble_and_store(
     log.info("STAGE 3 — ASSEMBLE (Pass 2)  +  STAGE 4 — STORE")
     log.info("=" * 60)
 
+    # ── XMI writer — instantiated ONCE here, reused for every statement ───────
+    # Constructing it inside the loop would re-parse the .ecore on every call.
     xmi_writer: Optional[PolicyXMIWriter] = None
     if xmi_out_dir is not None:
         ecore_path = Path(__file__).resolve().parent / "privacy_metamodel.ecore"
@@ -1230,12 +1291,15 @@ def stage_assemble_and_store(
                     stats.statements_stored += 1
                     log.info(f"  Stored [{law}] {article_ref} -> {stmt_id}")
 
+                    # ── XMI serialisation ─────────────────────────────────────
                     if xmi_writer is not None:
-                        slug     = re.sub(r"[^\w]+", "_", f"{law}_{article_ref}").strip("_")
+                        # Build a safe filename from law + article_ref.
+                        # e.g. "GDPR Art.6(1)(a)" → "GDPR_Art_6_1_a_.xmi"
+                        slug = re.sub(r"[^\w]+", "_", f"{law}_{article_ref}").strip("_")
                         xmi_path = xmi_out_dir / f"{slug}.xmi"
                         try:
-                            from privacy_schema.models import PolicyStatementModel as PSM
-                            stmt_obj = PSM.model_validate(statement)
+                            from privacy_schema.models import PolicyStatementModel
+                            stmt_obj = PolicyStatementModel.model_validate(statement)
                             xmi_writer.write_policy_statement(stmt_obj, xmi_path)
                             stats.xmi_files_written += 1
                             log.info(f"  XMI  [{law}] {article_ref} -> {xmi_path.name}")
@@ -1296,10 +1360,7 @@ def _parse_law_files(inputs: list[str]) -> dict[str, Path]:
     result: dict[str, Path] = {}
     for item in inputs:
         if "=" not in item:
-            log.error(
-                f"Bad --input item '{item}'. Expected LAW=path  "
-                f"e.g. PIPEDA=data/pipeda.pdf"
-            )
+            log.error(f"Bad --input item '{item}'. Expected LAW=path  e.g. PIPEDA=data/pipeda.pdf")
             continue
         law, path_str = item.split("=", 1)
         result[law.upper()] = Path(path_str)
@@ -1359,17 +1420,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     io = p.add_argument_group("Input / Output")
     io.add_argument(
         "--input", nargs="+", metavar="LAW=PATH",
-        help=(
-            "Legal text files as LAW=PATH pairs, e.g. "
-            "GDPR=data/gdpr.pdf PIPEDA=data/pipeda.pdf"
-        ),
+        help="Legal text files as LAW=PATH pairs, e.g. PIPEDA=data/pipeda.pdf",
     )
-    io.add_argument("--db",     default="data/chunks.db",     metavar="PATH",
+    io.add_argument("--db",     default="data/chunks.db",    metavar="PATH",
                     help="SQLite ChunkStore path (default: data/chunks.db)")
     io.add_argument("--repo",   default="data/model_repo.db", metavar="PATH",
                     help="SQLite ModelRepository path (default: data/model_repo.db)")
-    io.add_argument("--report", default="data/gap_report.txt", metavar="PATH",
-                    help="Gap analysis report output (default: data/gap_report.txt)")
+    io.add_argument("--report", default=None, metavar="PATH",
+                help="Gap analysis report output (default: auto-named data/gap_report_<laws>_<datetime>.txt)")
     io.add_argument("--xmi-out", default=None, metavar="DIR",
                     help=(
                         "Directory to write one XMI file per PolicyStatement "
@@ -1425,13 +1483,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help=f"RAG chunks per concept per article (default: {DEFAULT_TOP_K})",
     )
     ex.add_argument(
-        "--max-retries", type=int, default=DEFAULT_RETRIES,
-        help=(
-            f"Pass-2 assembler retry attempts (default: {DEFAULT_RETRIES}). "
-            "Pass-1 no longer uses retries — structured outputs eliminate structural failures."
-        ),
-    )
-    ex.add_argument(
         "--no-concept-tags", action="store_true",
         help="Disable concept-tag pre-filtering (~3x more calls, ISSUE-3).",
     )
@@ -1465,7 +1516,17 @@ def main() -> None:
 
     db_path     = Path(args.db)
     repo_path   = Path(args.repo)
-    report_path = Path(args.report)
+    data_dir    = Path(args.data_dir)
+    law_files   = _parse_law_files(args.input or [])
+
+    # ── Auto-name the report if --report was not set ──────────────────────
+    if args.report is None:
+        laws_slug = "_".join(sorted(k.lower() for k in law_files.keys())) \
+                    if law_files else "unknown"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_path = Path("data") / f"gap_report_{laws_slug}_{timestamp}.txt"
+    else:
+        report_path = Path(args.report)
     data_dir    = Path(args.data_dir)
     law_files   = _parse_law_files(args.input or [])
     stats       = PipelineStats()
@@ -1516,6 +1577,7 @@ def main() -> None:
             max_retries      = args.max_retries,
             article_filter   = article_filter,
             use_concept_tags = not args.no_concept_tags,
+            law_filter       = set(law_files.keys()) if law_files else None,
         )
 
         stage_assemble_and_store(

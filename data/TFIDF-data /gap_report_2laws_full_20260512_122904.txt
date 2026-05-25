@@ -1,0 +1,130 @@
+============================================================
+PRIVACY POLICY GAP ANALYSIS REPORT
+PrivacyPolicyMetamodel 
+============================================================
+
+Repository: 60 statements across 2 laws
+  GDPR: 19 statements
+  PIPEDA: 41 statements
+
+
+Coverage Matrix — PrivacyPolicyMetamodel 
+============================================
+Dimension                     GDPR    PIPEDA
+────────────────────────────────────────────
+Legal basis types                2         2
+Rights granted                   2         1
+Constraint types                 4         5
+Purpose categories               2         3
+Transfer mechanisms              —         —
+Retention rules               ·26%       ·5%
+DPIA/risk assessment             —         —
+Consent withdrawal               —       ·2%
+────────────────────────────────────────────
+Values: integers = distinct enum values found; ✓ = mandated (≥30% of stmts); · = occasional; — = absent
+
+
+────────────────────────────────────────────────────────────
+LegalBasisType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Consent, LegalObligation
+
+  GDPR
+    present : Consent, LegalObligation
+  PIPEDA
+    present : Consent, LegalObligation
+
+
+────────────────────────────────────────────────────────────
+RightType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Access, Rectification
+
+  GDPR
+    present : Access, Rectification
+  PIPEDA
+    present : Access
+    absent  : Rectification
+
+
+────────────────────────────────────────────────────────────
+Retention policy mandate (has_retention)
+────────────────────────────────────────────────────────────
+  GDPR     █████░░░░░░░░░░░░░░░   26%  (5/19 stmts)  [optional]
+  PIPEDA   ░░░░░░░░░░░░░░░░░░░░    5%  (2/41 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+DPIA / risk assessment mandate (has_dpia)
+────────────────────────────────────────────────────────────
+  GDPR     ░░░░░░░░░░░░░░░░░░░░    0%  (0/19 stmts)  [optional]
+  PIPEDA   ░░░░░░░░░░░░░░░░░░░░    0%  (0/41 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+TransferMechanism coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  (none)
+
+  GDPR
+    present : (none)
+  PIPEDA
+    present : (none)
+
+
+────────────────────────────────────────────────────────────
+ConstraintType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Geographic, PurposeLimitation, Retention, Security, Temporal, Usage
+
+  GDPR
+    present : Geographic, PurposeLimitation, Retention, Temporal
+    absent  : Security, Usage
+  PIPEDA
+    present : PurposeLimitation, Retention, Security, Temporal, Usage
+    absent  : Geographic
+
+
+────────────────────────────────────────────────────────────
+PurposeCategory coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Analytics, LegalCompliance, ServiceProvision
+
+  GDPR
+    present : LegalCompliance, ServiceProvision
+    absent  : Analytics
+  PIPEDA
+    present : Analytics, LegalCompliance, ServiceProvision
+
+
+────────────────────────────────────────────────────────────
+PAIRWISE GAP ANALYSIS
+
+────────────────────────────────────────────────────────────
+Gap analysis: GDPR vs PIPEDA
+(Obligations in GDPR not present in PIPEDA)
+────────────────────────────────────────────────────────────
+  data subject rights:
+    · Rectification
+    → Missing rights indicate reduced individual control.
+
+  constraint types:
+    · Geographic
+    → Missing constraint types suggest fewer operational restrictions.
+
+────────────────────────────────────────────────────────────
+Gap analysis: PIPEDA vs GDPR
+(Obligations in PIPEDA not present in GDPR)
+────────────────────────────────────────────────────────────
+  constraint types:
+    · Security
+    · Usage
+    → Missing constraint types suggest fewer operational restrictions.
+
+  purpose categories:
+    · Analytics
