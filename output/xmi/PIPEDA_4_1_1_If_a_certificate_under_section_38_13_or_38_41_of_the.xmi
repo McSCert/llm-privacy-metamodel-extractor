@@ -1,18 +1,18 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="Compliance with PIPEDA for personal information collection">
-    <actor actorId="" name="Organization" role="DataController"/>
-    <purposes purposeId="" description="for the purpose of clause 4.3" category="LegalCompliance"/>
-    <processingActivity activityId="" description="Collection of personal information" action="Collect">
-      <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
+  <statements statementId="" description="This statement covers the processing of personal data for legal compliance purposes.">
+    <actor actorId="" name="" role="DataController"/>
+    <purposes purposeId="" description="To comply with legal obligations as required by PIPEDA." category="LegalCompliance"/>
+    <processingActivity activityId="" description="Processing personal data for legal compliance purposes." action="Use">
+      <dataProcessed dataId="" description="Personal data of data subjects" source="Directly from data subject" category="Identifier" sensitivity="Low" identifiability="Identified"/>
     </processingActivity>
     <legalBasis basisId="" type="LegalObligation" evidence="">
-      <jurisdiction jurisdictionId="" name="" description=""/>
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </legalBasis>
     <governingRegulations regulationId="" name="PIPEDA" version="" description="">
       <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </governingRegulations>
-    <constraints constraintId="" type="Security" expression="The Commissioner and every person acting on behalf or under the direction of the Commissioner shall not disclose information subject to a certificate issued under section 38.13 or 38.41 of the Canada Evidence Act, and shall take every reasonable precaution to avoid the disclosure of that information." enforcementLevel="Mandatory"/>
-    <rightImpacted rightId="" type="Access" triggerCondition="data subject makes a request under PIPEDA section 4.9" fulfillmentProcess="organization must respond within time limit and provide access unless prohibited by subsection 9(1)"/>
+    <constraints constraintId="" type="PurposeLimitation" expression="Personal data must only be used for legal compliance purposes." enforcementLevel="Mandatory"/>
+    <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by data subject" fulfillmentProcess="Organization must respond within 30 days"/>
   </statements>
 </pp:PrivacyPolicy>

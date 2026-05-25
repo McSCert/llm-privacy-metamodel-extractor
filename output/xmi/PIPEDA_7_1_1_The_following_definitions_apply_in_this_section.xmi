@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="This statement covers the processing of personal data for legal obligations under PIPEDA.">
+  <statements statementId="" description="This statement covers data processing for legal obligations under PIPEDA">
     <actor actorId="" name="" role="DataController"/>
-    <purposes purposeId="" description="Processing personal data to comply with legal obligations under PIPEDA." category="LegalCompliance"/>
+    <purposes purposeId="" description="Comply with legal obligations as defined in PIPEDA" category="LegalCompliance"/>
     <processingActivity activityId="" description="" action="Use">
       <dataProcessed dataId="" description="personal data of data subjects" source="directly from data subject" category="Identifier" sensitivity="Low" identifiability="Identified"/>
     </processingActivity>

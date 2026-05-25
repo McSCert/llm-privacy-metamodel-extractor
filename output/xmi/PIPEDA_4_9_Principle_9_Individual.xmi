@@ -1,18 +1,18 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
-  <statements statementId="" description="Organization's obligation to store personal information responsibly under PIPEDA">
-    <actor actorId="" name="Individual" role="DataSubject"/>
-    <purposes purposeId="" description="To use personal information for a new purpose" category="ServiceProvision"/>
-    <processingActivity activityId="" description="Organization is responsible for personal information in its possession or custody" action="Store">
-      <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
+  <statements statementId="" description="This statement covers the processing of personal data for legal compliance purposes under PIPEDA.">
+    <actor actorId="" name="" role="DataController"/>
+    <purposes purposeId="" description="Complying with legal obligations as required by PIPEDA." category="LegalCompliance"/>
+    <processingActivity activityId="" description="" action="Use">
+      <dataProcessed dataId="" description="personal data of data subjects" source="directly from data subject" category="Identifier" sensitivity="Low" identifiability="Identified"/>
     </processingActivity>
     <legalBasis basisId="" type="LegalObligation" evidence="">
-      <jurisdiction jurisdictionId="" name="" description=""/>
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </legalBasis>
     <governingRegulations regulationId="" name="PIPEDA" version="" description="">
       <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
     </governingRegulations>
-    <constraints constraintId="" type="Temporal" expression="The Commissioner shall, within 10 days after the certificate is published in the Canada Gazette, return the information to the organization that provided the information." enforcementLevel="Mandatory"/>
-    <rightImpacted rightId="" type="Access" triggerCondition="data subject makes a written request after decision has been made using their personal information" fulfillmentProcess="controller must retain data long enough for access, minimum retention period applies"/>
+    <constraints constraintId="" type="PurposeLimitation" expression="Personal data must only be used for the purpose identified at time of collection." enforcementLevel="Mandatory"/>
+    <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by data subject" fulfillmentProcess="Organization must respond within 30 days"/>
   </statements>
 </pp:PrivacyPolicy>

@@ -42,9 +42,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .chunker import Chunk
-from .embedder import BM25Embedder, cosine_similarity
-from .store import ChunkStore
 from rag_pipeline.embedder import BM25Embedder, rank_by_similarity
 from rag_pipeline.store import ChunkStore
 

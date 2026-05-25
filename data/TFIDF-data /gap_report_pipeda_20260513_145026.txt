@@ -1,0 +1,85 @@
+============================================================
+PRIVACY POLICY GAP ANALYSIS REPORT
+PrivacyPolicyMetamodel 
+============================================================
+
+Repository: 7 statements across 1 laws
+  PIPEDA: 7 statements
+
+
+Coverage Matrix — PrivacyPolicyMetamodel 
+==================================
+Dimension                   PIPEDA
+──────────────────────────────────
+Legal basis types                2
+Rights granted                   1
+Constraint types                 2
+Purpose categories               1
+Transfer mechanisms              —
+Retention rules                  —
+DPIA/risk assessment             —
+Consent withdrawal               —
+──────────────────────────────────
+Values: integers = distinct enum values found; ✓ = mandated (≥30% of stmts); · = occasional; — = absent
+
+
+────────────────────────────────────────────────────────────
+LegalBasisType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Consent, LegalObligation
+
+  PIPEDA
+    present : Consent, LegalObligation
+
+
+────────────────────────────────────────────────────────────
+RightType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Access
+
+  PIPEDA
+    present : Access
+
+
+────────────────────────────────────────────────────────────
+Retention policy mandate (has_retention)
+────────────────────────────────────────────────────────────
+  PIPEDA   ░░░░░░░░░░░░░░░░░░░░    0%  (0/7 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+DPIA / risk assessment mandate (has_dpia)
+────────────────────────────────────────────────────────────
+  PIPEDA   ░░░░░░░░░░░░░░░░░░░░    0%  (0/7 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+TransferMechanism coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  (none)
+
+  PIPEDA
+    present : (none)
+
+
+────────────────────────────────────────────────────────────
+ConstraintType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  PurposeLimitation, Temporal
+
+  PIPEDA
+    present : PurposeLimitation, Temporal
+
+
+────────────────────────────────────────────────────────────
+PurposeCategory coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  ServiceProvision
+
+  PIPEDA
+    present : ServiceProvision
