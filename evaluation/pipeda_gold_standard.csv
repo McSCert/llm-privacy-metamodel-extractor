@@ -1,0 +1,11 @@
+principle,principle_name,LegalBasis_type,ProcessingActivity_action,Actor_role,Purpose_category,Right_type,Constraint_type,RetentionPolicy_present,DataTransfer_present,ConsentWithdrawal_present,notes
+4.1,Accountability,LegalObligation,Use,DataController,ABSENT,ABSENT,ABSENT,FALSE,FALSE,FALSE,Organization responsible for personal info under its control
+4.2,Identifying Purposes,LegalObligation,Collect,DataController,ServiceProvision,ABSENT,Transparency,FALSE,FALSE,FALSE,Purposes identified at or before time of collection
+4.3,Consent,Consent,Collect,DataController,ServiceProvision,ABSENT,PurposeLimitation,FALSE,FALSE,TRUE,Knowledge and consent required; withdrawal must be possible (4.3.8)
+4.4,Limiting Collection,LegalObligation,Collect,DataController,ABSENT,ABSENT,PurposeLimitation,FALSE,FALSE,FALSE,Collect only what is necessary for identified purposes
+4.5,"Limiting Use, Disclosure & Retention",LegalObligation,Use,DataController,ABSENT,ABSENT,PurposeLimitation,TRUE,FALSE,FALSE,Retain only as long as necessary for the purpose
+4.6,Accuracy,LegalObligation,Use,DataController,ABSENT,ABSENT,Accuracy,FALSE,FALSE,FALSE,"Information shall be as accurate, complete, and up-to-date as necessary"
+4.7,Safeguards,LegalObligation,Store,DataController,ABSENT,ABSENT,Security,FALSE,FALSE,FALSE,Security safeguards appropriate to sensitivity of information
+4.8,Openness,LegalObligation,Use,DataController,ABSENT,Access,Transparency,FALSE,FALSE,FALSE,Policies and practices relating to management of personal info
+4.9,Individual Access,LegalObligation,Use,DataController,ABSENT,Access,ABSENT,FALSE,FALSE,FALSE,"Individual shall be informed of existence, use, and disclosure of their info"
+4.1,Challenging Compliance,LegalObligation,Use,DataController,ABSENT,Access,ABSENT,FALSE,FALSE,FALSE,Individual may challenge compliance with above principles

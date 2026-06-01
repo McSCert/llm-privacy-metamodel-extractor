@@ -227,23 +227,60 @@ class ChunkStore:
     def list_articles(
         self,
         law: str,
-        levels: Optional[list[str]] = None,
+        levels: list[str] | None = None,
     ) -> list[dict]:
         """
-        Return a sorted list of unique articles for *law* as dicts.
-
-        Each dict has keys: {"article_ref": str, "level": str}
-        This matches the format run_pipeline.stage_extract() iterates over:
-            for a in store.list_articles(law):
-                ref = a["article_ref"]
-
-        Parameters
-        ----------
-        law    : Law name, e.g. "PIPEDA".
-        levels : Optional list of level values to filter by
-                 (e.g. ["article", "principle"]).  None = all levels.
+        Return one record per distinct article_ref for the given law.
+        concept_tags are aggregated (union) across ALL chunk levels for
+        the article — not just the article-level chunk — so that tags
+        found only in clause-level sub-chunks are not missed.
         """
-        return self.article_refs(law=law, levels=levels)
+        cur = self._conn.cursor()
+        if levels:
+            placeholders = ",".join("?" * len(levels))
+            # Step 1: get the canonical article_refs at the requested levels
+            cur.execute(
+                f"SELECT DISTINCT article_ref FROM chunks "
+                f"WHERE law=? AND level IN ({placeholders}) "
+                f"ORDER BY article_ref",
+                (law.upper(), *levels),
+            )
+            article_refs = [row["article_ref"] for row in cur.fetchall()]
+        else:
+            cur.execute(
+                "SELECT DISTINCT article_ref FROM chunks "
+                "WHERE law=? ORDER BY article_ref",
+                (law.upper(),),
+            )
+            article_refs = [row["article_ref"] for row in cur.fetchall()]
+
+        # Step 2: for each article_ref, aggregate concept_tags from ALL
+        # chunk levels (including clause sub-chunks) via GROUP_CONCAT
+        results = []
+        for article_ref in article_refs:
+            cur.execute(
+                """
+                SELECT GROUP_CONCAT(concept_tags, '|||') AS all_tags
+                FROM   chunks
+                WHERE  law = ? AND article_ref = ?
+                """,
+                (law.upper(), article_ref),
+            )
+            row = cur.fetchone()
+            merged_tags: set[str] = set()
+            if row and row["all_tags"]:
+                for tags_json in row["all_tags"].split("|||"):
+                    try:
+                        merged_tags.update(json.loads(tags_json))
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            results.append({
+                "article_ref":  article_ref,
+                "concept_tags": merged_tags,
+            })
+
+        return results
+
 
     def get_chunks(
         self,

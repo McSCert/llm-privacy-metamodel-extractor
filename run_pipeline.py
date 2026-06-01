@@ -756,7 +756,7 @@ _ABSENCE_SIGNAL_FIELDS: dict[str, list[str]] = {
     "Actor":              ["name"],
     "Purpose":            ["description"],
     "Right":              ["type"],
-    "Constraint":         ["expression"],
+    "Constraint":         ["expression", "_no_constraint_stated"],
     "RetentionPolicy":    ["duration"],
     "DataTransfer":       ["mechanism"],
     "ConsentWithdrawal":  ["channel"],
@@ -766,12 +766,26 @@ _ABSENCE_SIGNAL_FIELDS: dict[str, list[str]] = {
 def _is_concept_absent(concept: str, parsed: dict) -> bool:
     """
     Return True when the LLM response indicates the concept is genuinely
-    not present in the text (tagger false-positive), as opposed to a real
-    extraction failure.
+    not present in the text, as opposed to a real extraction failure.
 
-    A concept is considered absent when ALL its signal fields are either
-    missing, empty string, zero, or null.
+    Two detection paths:
+    1. Explicit sentinel — model returned {"_no_X_stated": true}
+    2. Empty signal fields — all key fields are empty/null
     """
+    # ── Path 1: explicit absent sentinel ──────────────────────────────────────
+    sentinel_keys = [
+        "_no_constraint_stated",
+        "_no_right_stated",
+        "_no_purpose_stated",
+        "_no_transfer_stated",
+        "_no_retention_stated",
+        "_no_withdrawal_stated",
+    ]
+    for key in sentinel_keys:
+        if parsed.get(key) is True:
+            return True
+
+    # ── Path 2: all signal fields empty ───────────────────────────────────────
     signal_fields = _ABSENCE_SIGNAL_FIELDS.get(concept, [])
     if not signal_fields:
         return False
@@ -781,7 +795,41 @@ def _is_concept_absent(concept: str, parsed: dict) -> bool:
         if value is not None and value != "" and value != 0 and value != [] and value != {}:
             return False
 
-    return True  # all signal fields empty — concept absent
+    return True
+
+
+_CONSTRAINT_KEYWORD_OVERRIDE: list[tuple[list[str], str]] = [
+    (["purpose", "not use", "only for", "identified purpose", "limiting collection"], "PurposeLimitation"),
+    (["accurate", "accuracy", "up-to-date", "complete", "correct", "inaccurate"],    "Accuracy"),
+    (["openness", "make available", "policies available", "inform", "transparent"],   "Transparency"),
+    (["safeguard", "security measure", "protect against", "encryption",
+      "unauthorized access", "physical security", "technical"],                       "Security"),
+    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Storage"),
+]
+
+def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
+    """
+    Post-process Constraint extraction to correct systematic Security defaults.
+    Only fires when the model extracted Security but the text signals otherwise.
+    """
+    try:
+        parsed = json.loads(extracted_json)
+    except json.JSONDecodeError:
+        return extracted_json
+
+    if parsed.get("type") != "Security":
+        return extracted_json  # model picked something else — trust it
+
+    rag_lower = rag_text.lower()
+
+    for keywords, constraint_type in _CONSTRAINT_KEYWORD_OVERRIDE:
+        if constraint_type == "Security":
+            continue
+        if any(kw in rag_lower for kw in keywords):
+            parsed["type"] = constraint_type
+            return json.dumps(parsed)
+
+    return extracted_json  # no override signal found — Security was correct
 
 
 def _extract_one_concept(
@@ -856,6 +904,11 @@ def _extract_one_concept(
         for w in caught:
             log.warning(f"  OCL warning {concept}@{article_ref}: {w.message}")
         stats.pass1_success += 1
+
+        # ── Post-process constraint type override ──────────────────────────
+        if concept == "Constraint":
+            raw = _override_constraint_type(raw, rag_text)
+
         return ExtractionResult(
             law=law, article=article_ref, concept=concept,
             success=True, json_str=raw, attempts=1,
@@ -1080,11 +1133,26 @@ def _assemble_one_statement(
     synthesis_items: list[str] = []
     if purposes_json.strip() == "[]":
         synthesis_items.append(
-            "- PURPOSES input is [] → synthesize 1 Purpose using SYNTHESIS RULES above."
+            "- PURPOSES input is []. Only synthesize a Purpose if the article "
+            "explicitly states WHY data is collected or processed (e.g. service delivery, "
+            "legal compliance). If the article is about HOW data is handled (safeguards, "
+            "accuracy, access rights) with no stated purpose, set purposes to []."
         )
     if rights_json.strip() == "[]":
         synthesis_items.append(
-            "- RIGHTS IMPACTED input is [] → synthesize 1 Right using SYNTHESIS RULES above."
+            "- RIGHTS IMPACTED input is []. Only synthesize a Right if the article "
+            "explicitly grants an individual a right to do something (access, correct, "
+            "erase, opt-out). If the article imposes obligations on the organization "
+            "without granting an individual right, set rightImpacted to []."
+        )
+    if constraints_json.strip() == "[]":
+        synthesis_items.append(
+            "- CONSTRAINTS input is []. Look at the article text and synthesize "
+            "a Constraint ONLY if the article explicitly restricts processing "
+            "(e.g. purpose limitation, security requirement, accuracy obligation, "
+            "retention limit). Use the most specific type from: "
+            "PurposeLimitation | Storage | Security | Accuracy | Transparency. "
+            "If truly no restriction is stated, set constraints to []."
         )
 
     system, user = build_assembler_prompt(
@@ -1118,6 +1186,13 @@ def _assemble_one_statement(
         "- WRONG:  \"_source_clause\", \"_dataProcessed\"\n"
         "- CORRECT: \"source_clause\", \"dataProcessed\"\n"
         "- Copy field names EXACTLY as shown in the schema.\n"
+        "- governingRegulations items MUST include ALL fields: "
+        "regulationId, name, version (use \"\" if unknown), "
+        "description (use \"\" if unknown), jurisdiction, source_clause.\n"
+        "- NEVER omit version or description from regulation objects — use \"\" as default.\n"
+        "- description MUST be a non-empty string — summarize the article in one sentence.\n"
+        "- actor MUST be present — use {\"actorId\":\"\",\"name\":\"Organization\","
+        "\"role\":\"DataController\",\"source_clause\":\"\"} if not extractable.\n"
     )
 
     last_raw     = ""
