@@ -114,7 +114,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
-
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 
@@ -502,6 +503,63 @@ class AnthropicBackend(LLMBackend):
                 raise
 
         raise RuntimeError("Exhausted Anthropic rate-limit retries.")
+
+# ── OpenAI ────────────────────────────────────────────────────────────────────
+
+class OpenAIBackend(LLMBackend):
+    """
+    Calls the OpenAI Chat Completions API.
+    Reads OPENAI_API_KEY from the environment.
+    Applies exponential back-off on 429 rate-limit errors.
+    """
+
+    def __init__(self, model: str):
+        try:
+            import openai as _oa
+            self._openai = _oa
+            load_dotenv(r"/Users/fasia/Documents/Gitlab-Work/MBE and mHealth/llm-privacy-metamodel-extractor/.env")
+            self._client = _oa.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        except ImportError:
+            log.error("openai SDK not installed.  pip install openai")
+            sys.exit(1)
+        self.model = model
+        log.info(f"Backend: OpenAI API  (model={model})")
+
+    def call(
+        self,
+        system:     str,
+        user:       str,
+        stats:      PipelineStats,
+        max_tokens: int = 2048,
+        **kwargs,
+    ) -> str:
+        for attempt in range(4):
+            try:
+                resp = self._client.chat.completions.create(
+                    model      = self.model,
+                    max_tokens = max_tokens,
+                    messages   = [
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                )
+                stats.api_calls  += 1
+                stats.tokens_in  += resp.usage.prompt_tokens
+                stats.tokens_out += resp.usage.completion_tokens
+                raw = resp.choices[0].message.content or ""
+                return self._strip_fences(raw)
+
+            except self._openai.RateLimitError:
+                wait = 2 ** attempt
+                log.warning(f"Rate limit — waiting {wait}s (retry {attempt+1}/3)")
+                time.sleep(wait)
+
+            except self._openai.APIError as exc:
+                log.error(f"OpenAI API error: {exc}")
+                raise
+
+        raise RuntimeError("Exhausted OpenAI rate-limit retries.")
+
 
 
 # ── Local OpenAI-compatible ───────────────────────────────────────────────────
@@ -1403,6 +1461,8 @@ def _make_backend(args: argparse.Namespace) -> LLMBackend:
     if args.dry_run:
         log.info("Backend: Dry-run (no network calls)")
         return DryRunBackend()
+    if args.backend == "openai":
+        return OpenAIBackend(model=args.model)
     if args.backend == "local":
         return LocalBackend(base_url=args.local_url, model=args.local_model)
     return AnthropicBackend(model=args.model)
@@ -1456,7 +1516,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     be = p.add_argument_group("LLM Backend")
     be.add_argument(
-        "--backend", choices=["anthropic", "local"], default="anthropic",
+        "--backend", choices=["anthropic", "openai", "local"], default="anthropic",
         help=(
             "LLM backend (default: anthropic). "
             "'local' uses any OpenAI-compatible server "
@@ -1551,7 +1611,7 @@ def main() -> None:
     log.info("Privacy Policy Extraction Pipeline  (PrivacyPolicyMetamodel)")
     log.info("─" * 60)
     log.info(f"  Backend        : {args.backend}  (dry-run={args.dry_run})")
-    if args.backend == "anthropic" and not args.dry_run:
+    if args.backend in ("anthropic", "openai") and not args.dry_run:
         log.info(f"  Model          : {args.model}")
     elif args.backend == "local" and not args.dry_run:
         log.info(f"  Local URL      : {args.local_url}")
