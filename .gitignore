@@ -153,3 +153,5 @@ scratch/
 *.tmp
 *.bak
 *.orig
+
+output/
