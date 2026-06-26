@@ -1,0 +1,53 @@
+{
+  "$defs": {
+    "WithdrawalChannel": {
+      "enum": [
+        "_Unset",
+        "OnlineForm",
+        "Email",
+        "WrittenRequest",
+        "InAppToggle",
+        "PhoneRequest",
+        "InPerson"
+      ],
+      "title": "WithdrawalChannel",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: ConsentWithdrawal\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "withdrawalId": {
+      "title": "Withdrawalid",
+      "type": "string"
+    },
+    "channel": {
+      "items": {
+        "$ref": "#/$defs/WithdrawalChannel"
+      },
+      "minItems": 1,
+      "title": "Channel",
+      "type": "array"
+    },
+    "deadline": {
+      "title": "Deadline",
+      "type": "string"
+    },
+    "effectOnPriorProcessing": {
+      "title": "Effectonpriorprocessing",
+      "type": "string"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "channel",
+    "deadline",
+    "effectOnPriorProcessing"
+  ],
+  "title": "ConsentWithdrawalModel",
+  "type": "object"
+}

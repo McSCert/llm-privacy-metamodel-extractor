@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "PurposeCategory": {
+      "enum": [
+        "_Unset",
+        "ServiceProvision",
+        "Security",
+        "LegalCompliance",
+        "Marketing",
+        "Analytics",
+        "Research"
+      ],
+      "title": "PurposeCategory",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: Purpose\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "purposeId": {
+      "title": "Purposeid",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/PurposeCategory"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "description",
+    "category"
+  ],
+  "title": "PurposeModel",
+  "type": "object"
+}

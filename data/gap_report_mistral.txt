@@ -1,0 +1,85 @@
+============================================================
+PRIVACY POLICY GAP ANALYSIS REPORT
+PrivacyPolicyMetamodel 
+============================================================
+
+Repository: 22 statements across 1 laws
+  PIPEDA: 22 statements
+
+
+Coverage Matrix — PrivacyPolicyMetamodel 
+==================================
+Dimension                   PIPEDA
+──────────────────────────────────
+Legal basis types                2
+Rights granted                   1
+Constraint types                 1
+Purpose categories               3
+Transfer mechanisms              1
+Retention rules               ·27%
+DPIA/risk assessment             —
+Consent withdrawal             ·5%
+──────────────────────────────────
+Values: integers = distinct enum values found; ✓ = mandated (≥30% of stmts); · = occasional; — = absent
+
+
+────────────────────────────────────────────────────────────
+LegalBasisType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Consent, LegalObligation
+
+  PIPEDA
+    present : Consent, LegalObligation
+
+
+────────────────────────────────────────────────────────────
+RightType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Access
+
+  PIPEDA
+    present : Access
+
+
+────────────────────────────────────────────────────────────
+Retention policy mandate (has_retention)
+────────────────────────────────────────────────────────────
+  PIPEDA   █████░░░░░░░░░░░░░░░   27%  (6/22 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+DPIA / risk assessment mandate (has_dpia)
+────────────────────────────────────────────────────────────
+  PIPEDA   ░░░░░░░░░░░░░░░░░░░░    0%  (0/22 stmts)  [optional]
+
+
+────────────────────────────────────────────────────────────
+TransferMechanism coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  StandardContractualClauses
+
+  PIPEDA
+    present : StandardContractualClauses
+
+
+────────────────────────────────────────────────────────────
+ConstraintType coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  PurposeLimitation
+
+  PIPEDA
+    present : PurposeLimitation
+
+
+────────────────────────────────────────────────────────────
+PurposeCategory coverage
+────────────────────────────────────────────────────────────
+Universe (all values seen across all laws):
+  Analytics, LegalCompliance, ServiceProvision
+
+  PIPEDA
+    present : Analytics, LegalCompliance, ServiceProvision

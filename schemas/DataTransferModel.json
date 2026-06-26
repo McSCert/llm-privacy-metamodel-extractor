@@ -1,0 +1,187 @@
+{
+  "$defs": {
+    "Identifiability": {
+      "enum": [
+        "_Unset",
+        "Identified",
+        "Pseudonymous",
+        "Anonymous"
+      ],
+      "title": "Identifiability",
+      "type": "string"
+    },
+    "JurisdictionModel": {
+      "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+      "properties": {
+        "jurisdictionId": {
+          "title": "Jurisdictionid",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "source_clause": {
+          "default": "",
+          "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+          "title": "Source Clause",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "JurisdictionModel",
+      "type": "object"
+    },
+    "PersonalDataCategory": {
+      "enum": [
+        "_Unset",
+        "Identifier",
+        "ContactInformation",
+        "LocationData",
+        "FinancialData",
+        "HealthData",
+        "BiometricData",
+        "BehavioralData",
+        "TechnicalData",
+        "ContentData"
+      ],
+      "title": "PersonalDataCategory",
+      "type": "string"
+    },
+    "PersonalDataModel": {
+      "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+      "properties": {
+        "dataId": {
+          "title": "Dataid",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/PersonalDataCategory"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/SensitivityLevel"
+        },
+        "identifiability": {
+          "$ref": "#/$defs/Identifiability"
+        },
+        "source_clause": {
+          "default": "",
+          "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+          "title": "Source Clause",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "source",
+        "category",
+        "sensitivity",
+        "identifiability"
+      ],
+      "title": "PersonalDataModel",
+      "type": "object"
+    },
+    "SensitivityLevel": {
+      "enum": [
+        "_Unset",
+        "Low",
+        "Medium",
+        "High",
+        "SpecialCategory"
+      ],
+      "title": "SensitivityLevel",
+      "type": "string"
+    },
+    "TransferMechanism": {
+      "enum": [
+        "_Unset",
+        "AdequacyDecision",
+        "StandardContractualClauses",
+        "BindingCorporateRules",
+        "Consent",
+        "ContractNecessity",
+        "LegitimateInterest",
+        "Other"
+      ],
+      "title": "TransferMechanism",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+  "properties": {
+    "transferId": {
+      "title": "Transferid",
+      "type": "string"
+    },
+    "mechanism": {
+      "$ref": "#/$defs/TransferMechanism",
+      "description": "Legal instrument authorising the cross-border transfer."
+    },
+    "adequacyDecisionRef": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Reference to the adequacy decision document. Required when mechanism=AdequacyDecision.",
+      "title": "Adequacydecisionref"
+    },
+    "destinationJurisdiction": {
+      "description": "Destination jurisdiction(s) for the transfer.",
+      "items": {
+        "$ref": "#/$defs/JurisdictionModel"
+      },
+      "minItems": 1,
+      "title": "Destinationjurisdiction",
+      "type": "array"
+    },
+    "dataTransferred": {
+      "description": "Personal data categories being transferred.",
+      "items": {
+        "$ref": "#/$defs/PersonalDataModel"
+      },
+      "minItems": 1,
+      "title": "Datatransferred",
+      "type": "array"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mechanism",
+    "destinationJurisdiction",
+    "dataTransferred"
+  ],
+  "title": "DataTransferModel",
+  "type": "object"
+}
