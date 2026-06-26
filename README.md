@@ -2,11 +2,7 @@
 
 A metamodel-driven pipeline for automatically extracting structured, formally validated model instances from statutory privacy law documents.
 
-Built on a formal Ecore metamodel (`PrivacyPolicyMetamodel`, M₂), the pipeline compiles the metamodel into a runtime JSON schema and uses constrained LLM token generation to guarantee syntactically valid extractions. Extracted instances are validated against OCL constraints and serialized to XMI 2.1.
-
-This repository accompanies the paper:
-> *From Legal Text to Formal Model: A Metamodel-Driven Pipeline for Privacy Policy Extraction*
-> Submitted to MDE Intelligence Workshop @ MODELS 2026
+Built on a formal Ecore metamodel (`PrivacyPolicyMetamodel`), the pipeline compiles the metamodel into a runtime JSON schema and uses constrained LLM token generation to guarantee syntactically valid extractions. Extracted instances are validated against OCL constraints and serialized to XMI 2.1.
 
 ---
 
@@ -52,7 +48,7 @@ This repository accompanies the paper:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/llm-privacy-metamodel-extractor.git
+git clone https://github.com/McSCert/llm-privacy-metamodel-extractor.git
 cd llm-privacy-metamodel-extractor
 
 # Install dependencies
@@ -128,7 +124,7 @@ Output is saved to `schemas/`.
 
 ## Metamodel
 
-The `PrivacyPolicyMetamodel` (M₂) was designed in IBM Rational Rhapsody and exported as XMI. The XMI file was converted to Ecore format for use with `pyecore`. Both files are provided in the `/metamodel` directory.
+The `PrivacyPolicyMetamodel` was designed in IBM Rational Rhapsody and exported as XMI. The XMI file was converted to Ecore format for use with `pyecore`. Both files are provided in the `/metamodel` directory.
 
 The metamodel contains:
 - **14 EClasses** organized into 6 conceptual layers (Structural, Actors, Operational, Normative, Regulatory, Vocabulary)
@@ -179,23 +175,3 @@ The pipeline was evaluated against a manually annotated gold standard covering 1
 Both configurations achieve zero structural failures, confirming that constrained token decoding eliminates schema violations regardless of model size.
 
 ---
-
-## Citation
-
-If you use this work, please cite:
-
-```bibtex
-@inproceedings{yourname2026privacy,
-  author    = {Your Name},
-  title     = {From Legal Text to Formal Model: A Metamodel-Driven Pipeline
-               for Privacy Policy Extraction},
-  booktitle = {MDE Intelligence Workshop @ MODELS 2026},
-  year      = {2026}
-}
-```
-
----
-
-## License
-
-MIT License — see `LICENSE` for details.
