@@ -1,0 +1,142 @@
+{
+  "$defs": {
+    "Identifiability": {
+      "enum": [
+        "_Unset",
+        "Identified",
+        "Pseudonymous",
+        "Anonymous"
+      ],
+      "title": "Identifiability",
+      "type": "string"
+    },
+    "PersonalDataCategory": {
+      "enum": [
+        "_Unset",
+        "Identifier",
+        "ContactInformation",
+        "LocationData",
+        "FinancialData",
+        "HealthData",
+        "BiometricData",
+        "BehavioralData",
+        "TechnicalData",
+        "ContentData"
+      ],
+      "title": "PersonalDataCategory",
+      "type": "string"
+    },
+    "PersonalDataModel": {
+      "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+      "properties": {
+        "dataId": {
+          "title": "Dataid",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/PersonalDataCategory"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/SensitivityLevel"
+        },
+        "identifiability": {
+          "$ref": "#/$defs/Identifiability"
+        },
+        "source_clause": {
+          "default": "",
+          "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+          "title": "Source Clause",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "source",
+        "category",
+        "sensitivity",
+        "identifiability"
+      ],
+      "title": "PersonalDataModel",
+      "type": "object"
+    },
+    "ProcessingAction": {
+      "enum": [
+        "_Unset",
+        "Collect",
+        "Store",
+        "Use",
+        "Share",
+        "Transfer",
+        "Delete"
+      ],
+      "title": "ProcessingAction",
+      "type": "string"
+    },
+    "SensitivityLevel": {
+      "enum": [
+        "_Unset",
+        "Low",
+        "Medium",
+        "High",
+        "SpecialCategory"
+      ],
+      "title": "SensitivityLevel",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+  "properties": {
+    "activityId": {
+      "title": "Activityid",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "action": {
+      "$ref": "#/$defs/ProcessingAction"
+    },
+    "riskAssessmentReference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Riskassessmentreference"
+    },
+    "dataProcessed": {
+      "items": {
+        "$ref": "#/$defs/PersonalDataModel"
+      },
+      "minItems": 1,
+      "title": "Dataprocessed",
+      "type": "array"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "description",
+    "action",
+    "dataProcessed"
+  ],
+  "title": "ProcessingActivityModel",
+  "type": "object"
+}

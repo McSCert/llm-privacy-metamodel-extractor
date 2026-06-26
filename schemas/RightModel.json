@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "RightType": {
+      "enum": [
+        "_Unset",
+        "Access",
+        "Rectification",
+        "Erasure",
+        "Restriction",
+        "Portability",
+        "Objection",
+        "AutomatedDecisionOptOut"
+      ],
+      "title": "RightType",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: Right\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "rightId": {
+      "title": "Rightid",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/RightType"
+    },
+    "triggerCondition": {
+      "title": "Triggercondition",
+      "type": "string"
+    },
+    "fulfillmentProcess": {
+      "title": "Fulfillmentprocess",
+      "type": "string"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "triggerCondition",
+    "fulfillmentProcess"
+  ],
+  "title": "RightModel",
+  "type": "object"
+}

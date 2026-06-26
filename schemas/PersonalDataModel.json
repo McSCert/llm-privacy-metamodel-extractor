@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "Identifiability": {
+      "enum": [
+        "_Unset",
+        "Identified",
+        "Pseudonymous",
+        "Anonymous"
+      ],
+      "title": "Identifiability",
+      "type": "string"
+    },
+    "PersonalDataCategory": {
+      "enum": [
+        "_Unset",
+        "Identifier",
+        "ContactInformation",
+        "LocationData",
+        "FinancialData",
+        "HealthData",
+        "BiometricData",
+        "BehavioralData",
+        "TechnicalData",
+        "ContentData"
+      ],
+      "title": "PersonalDataCategory",
+      "type": "string"
+    },
+    "SensitivityLevel": {
+      "enum": [
+        "_Unset",
+        "Low",
+        "Medium",
+        "High",
+        "SpecialCategory"
+      ],
+      "title": "SensitivityLevel",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "dataId": {
+      "title": "Dataid",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/PersonalDataCategory"
+    },
+    "sensitivity": {
+      "$ref": "#/$defs/SensitivityLevel"
+    },
+    "identifiability": {
+      "$ref": "#/$defs/Identifiability"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "description",
+    "source",
+    "category",
+    "sensitivity",
+    "identifiability"
+  ],
+  "title": "PersonalDataModel",
+  "type": "object"
+}

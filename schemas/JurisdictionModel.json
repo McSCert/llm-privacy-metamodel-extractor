@@ -1,0 +1,36 @@
+{
+  "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "jurisdictionId": {
+      "title": "Jurisdictionid",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "JurisdictionModel",
+  "type": "object"
+}

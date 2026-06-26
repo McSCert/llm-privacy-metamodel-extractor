@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "ActorRole": {
+      "enum": [
+        "_Unset",
+        "DataSubject",
+        "DataController",
+        "DataProcessor",
+        "ThirdParty"
+      ],
+      "title": "ActorRole",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: Actor\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "actorId": {
+      "title": "Actorid",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "role": {
+      "$ref": "#/$defs/ActorRole"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "role"
+  ],
+  "title": "ActorModel",
+  "type": "object"
+}

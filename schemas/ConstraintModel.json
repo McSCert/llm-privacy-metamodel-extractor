@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "ConstraintType": {
+      "enum": [
+        "_Unset",
+        "Temporal",
+        "Geographic",
+        "Usage",
+        "Security",
+        "Retention",
+        "PurposeLimitation"
+      ],
+      "title": "ConstraintType",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "constraintId": {
+      "title": "Constraintid",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/ConstraintType"
+    },
+    "expression": {
+      "title": "Expression",
+      "type": "string"
+    },
+    "enforcementLevel": {
+      "title": "Enforcementlevel",
+      "type": "string"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "expression",
+    "enforcementLevel"
+  ],
+  "title": "ConstraintModel",
+  "type": "object"
+}

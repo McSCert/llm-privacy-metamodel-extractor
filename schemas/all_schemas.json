@@ -1,0 +1,2432 @@
+{
+  "JurisdictionModel": {
+    "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "jurisdictionId": {
+        "title": "Jurisdictionid",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Description"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "title": "JurisdictionModel",
+    "type": "object"
+  },
+  "RegulationModel": {
+    "$defs": {
+      "JurisdictionModel": {
+        "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "jurisdictionId": {
+            "title": "Jurisdictionid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JurisdictionModel",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "regulationId": {
+        "title": "Regulationid",
+        "type": "string"
+      },
+      "name": {
+        "description": "Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.",
+        "title": "Name",
+        "type": "string"
+      },
+      "version": {
+        "default": "",
+        "description": "Version or amendment identifier.",
+        "title": "Version",
+        "type": "string"
+      },
+      "description": {
+        "default": "",
+        "description": "Brief description of the regulation's scope.",
+        "title": "Description",
+        "type": "string"
+      },
+      "jurisdiction": {
+        "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+        "items": {
+          "$ref": "#/$defs/JurisdictionModel"
+        },
+        "minItems": 1,
+        "title": "Jurisdiction",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation for this regulation reference.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "jurisdiction"
+    ],
+    "title": "RegulationModel",
+    "type": "object"
+  },
+  "ActorModel": {
+    "$defs": {
+      "ActorRole": {
+        "enum": [
+          "_Unset",
+          "DataSubject",
+          "DataController",
+          "DataProcessor",
+          "ThirdParty"
+        ],
+        "title": "ActorRole",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: Actor\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "actorId": {
+        "title": "Actorid",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "role": {
+        "$ref": "#/$defs/ActorRole"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "role"
+    ],
+    "title": "ActorModel",
+    "type": "object"
+  },
+  "PersonalDataModel": {
+    "$defs": {
+      "Identifiability": {
+        "enum": [
+          "_Unset",
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "title": "Identifiability",
+        "type": "string"
+      },
+      "PersonalDataCategory": {
+        "enum": [
+          "_Unset",
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "title": "PersonalDataCategory",
+        "type": "string"
+      },
+      "SensitivityLevel": {
+        "enum": [
+          "_Unset",
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ],
+        "title": "SensitivityLevel",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "dataId": {
+        "title": "Dataid",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "source": {
+        "title": "Source",
+        "type": "string"
+      },
+      "category": {
+        "$ref": "#/$defs/PersonalDataCategory"
+      },
+      "sensitivity": {
+        "$ref": "#/$defs/SensitivityLevel"
+      },
+      "identifiability": {
+        "$ref": "#/$defs/Identifiability"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "description",
+      "source",
+      "category",
+      "sensitivity",
+      "identifiability"
+    ],
+    "title": "PersonalDataModel",
+    "type": "object"
+  },
+  "ProcessingActivityModel": {
+    "$defs": {
+      "Identifiability": {
+        "enum": [
+          "_Unset",
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "title": "Identifiability",
+        "type": "string"
+      },
+      "PersonalDataCategory": {
+        "enum": [
+          "_Unset",
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "title": "PersonalDataCategory",
+        "type": "string"
+      },
+      "PersonalDataModel": {
+        "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "dataId": {
+            "title": "Dataid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PersonalDataCategory"
+          },
+          "sensitivity": {
+            "$ref": "#/$defs/SensitivityLevel"
+          },
+          "identifiability": {
+            "$ref": "#/$defs/Identifiability"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "source",
+          "category",
+          "sensitivity",
+          "identifiability"
+        ],
+        "title": "PersonalDataModel",
+        "type": "object"
+      },
+      "ProcessingAction": {
+        "enum": [
+          "_Unset",
+          "Collect",
+          "Store",
+          "Use",
+          "Share",
+          "Transfer",
+          "Delete"
+        ],
+        "title": "ProcessingAction",
+        "type": "string"
+      },
+      "SensitivityLevel": {
+        "enum": [
+          "_Unset",
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ],
+        "title": "SensitivityLevel",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+    "properties": {
+      "activityId": {
+        "title": "Activityid",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "action": {
+        "$ref": "#/$defs/ProcessingAction"
+      },
+      "riskAssessmentReference": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Riskassessmentreference"
+      },
+      "dataProcessed": {
+        "items": {
+          "$ref": "#/$defs/PersonalDataModel"
+        },
+        "minItems": 1,
+        "title": "Dataprocessed",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "description",
+      "action",
+      "dataProcessed"
+    ],
+    "title": "ProcessingActivityModel",
+    "type": "object"
+  },
+  "DataTransferModel": {
+    "$defs": {
+      "Identifiability": {
+        "enum": [
+          "_Unset",
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "title": "Identifiability",
+        "type": "string"
+      },
+      "JurisdictionModel": {
+        "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "jurisdictionId": {
+            "title": "Jurisdictionid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JurisdictionModel",
+        "type": "object"
+      },
+      "PersonalDataCategory": {
+        "enum": [
+          "_Unset",
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "title": "PersonalDataCategory",
+        "type": "string"
+      },
+      "PersonalDataModel": {
+        "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "dataId": {
+            "title": "Dataid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PersonalDataCategory"
+          },
+          "sensitivity": {
+            "$ref": "#/$defs/SensitivityLevel"
+          },
+          "identifiability": {
+            "$ref": "#/$defs/Identifiability"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "source",
+          "category",
+          "sensitivity",
+          "identifiability"
+        ],
+        "title": "PersonalDataModel",
+        "type": "object"
+      },
+      "SensitivityLevel": {
+        "enum": [
+          "_Unset",
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ],
+        "title": "SensitivityLevel",
+        "type": "string"
+      },
+      "TransferMechanism": {
+        "enum": [
+          "_Unset",
+          "AdequacyDecision",
+          "StandardContractualClauses",
+          "BindingCorporateRules",
+          "Consent",
+          "ContractNecessity",
+          "LegitimateInterest",
+          "Other"
+        ],
+        "title": "TransferMechanism",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+    "properties": {
+      "transferId": {
+        "title": "Transferid",
+        "type": "string"
+      },
+      "mechanism": {
+        "$ref": "#/$defs/TransferMechanism",
+        "description": "Legal instrument authorising the cross-border transfer."
+      },
+      "adequacyDecisionRef": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Reference to the adequacy decision document. Required when mechanism=AdequacyDecision.",
+        "title": "Adequacydecisionref"
+      },
+      "destinationJurisdiction": {
+        "description": "Destination jurisdiction(s) for the transfer.",
+        "items": {
+          "$ref": "#/$defs/JurisdictionModel"
+        },
+        "minItems": 1,
+        "title": "Destinationjurisdiction",
+        "type": "array"
+      },
+      "dataTransferred": {
+        "description": "Personal data categories being transferred.",
+        "items": {
+          "$ref": "#/$defs/PersonalDataModel"
+        },
+        "minItems": 1,
+        "title": "Datatransferred",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "mechanism",
+      "destinationJurisdiction",
+      "dataTransferred"
+    ],
+    "title": "DataTransferModel",
+    "type": "object"
+  },
+  "PurposeModel": {
+    "$defs": {
+      "PurposeCategory": {
+        "enum": [
+          "_Unset",
+          "ServiceProvision",
+          "Security",
+          "LegalCompliance",
+          "Marketing",
+          "Analytics",
+          "Research"
+        ],
+        "title": "PurposeCategory",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: Purpose\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "purposeId": {
+        "title": "Purposeid",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "category": {
+        "$ref": "#/$defs/PurposeCategory"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "description",
+      "category"
+    ],
+    "title": "PurposeModel",
+    "type": "object"
+  },
+  "LegalBasisModel": {
+    "$defs": {
+      "JurisdictionModel": {
+        "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "jurisdictionId": {
+            "title": "Jurisdictionid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JurisdictionModel",
+        "type": "object"
+      },
+      "LegalBasisType": {
+        "enum": [
+          "_Unset",
+          "Consent",
+          "Contract",
+          "LegalObligation",
+          "LegitimateInterest",
+          "VitalInterest",
+          "PublicTask"
+        ],
+        "title": "LegalBasisType",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: LegalBasis\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "basisId": {
+        "title": "Basisid",
+        "type": "string"
+      },
+      "type": {
+        "$ref": "#/$defs/LegalBasisType"
+      },
+      "evidence": {
+        "title": "Evidence",
+        "type": "string"
+      },
+      "jurisdiction": {
+        "items": {
+          "$ref": "#/$defs/JurisdictionModel"
+        },
+        "minItems": 1,
+        "title": "Jurisdiction",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type",
+      "evidence",
+      "jurisdiction"
+    ],
+    "title": "LegalBasisModel",
+    "type": "object"
+  },
+  "ConstraintModel": {
+    "$defs": {
+      "ConstraintType": {
+        "enum": [
+          "_Unset",
+          "Temporal",
+          "Geographic",
+          "Usage",
+          "Security",
+          "Retention",
+          "PurposeLimitation"
+        ],
+        "title": "ConstraintType",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "constraintId": {
+        "title": "Constraintid",
+        "type": "string"
+      },
+      "type": {
+        "$ref": "#/$defs/ConstraintType"
+      },
+      "expression": {
+        "title": "Expression",
+        "type": "string"
+      },
+      "enforcementLevel": {
+        "title": "Enforcementlevel",
+        "type": "string"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type",
+      "expression",
+      "enforcementLevel"
+    ],
+    "title": "ConstraintModel",
+    "type": "object"
+  },
+  "RightModel": {
+    "$defs": {
+      "RightType": {
+        "enum": [
+          "_Unset",
+          "Access",
+          "Rectification",
+          "Erasure",
+          "Restriction",
+          "Portability",
+          "Objection",
+          "AutomatedDecisionOptOut"
+        ],
+        "title": "RightType",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: Right\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "rightId": {
+        "title": "Rightid",
+        "type": "string"
+      },
+      "type": {
+        "$ref": "#/$defs/RightType"
+      },
+      "triggerCondition": {
+        "title": "Triggercondition",
+        "type": "string"
+      },
+      "fulfillmentProcess": {
+        "title": "Fulfillmentprocess",
+        "type": "string"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type",
+      "triggerCondition",
+      "fulfillmentProcess"
+    ],
+    "title": "RightModel",
+    "type": "object"
+  },
+  "RetentionPolicyModel": {
+    "$defs": {
+      "RetentionTrigger": {
+        "enum": [
+          "_Unset",
+          "CollectionDate",
+          "ContractEnd",
+          "LastActivity",
+          "LegalObligationExpiry",
+          "ConsentWithdrawal",
+          "AccountDeletion"
+        ],
+        "title": "RetentionTrigger",
+        "type": "string"
+      },
+      "RetentionUnit": {
+        "enum": [
+          "_Unset",
+          "Days",
+          "Months",
+          "Years",
+          "Indefinite"
+        ],
+        "title": "RetentionUnit",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: RetentionPolicy\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "retentionId": {
+        "title": "Retentionid",
+        "type": "string"
+      },
+      "duration": {
+        "title": "Duration",
+        "type": "integer"
+      },
+      "unit": {
+        "$ref": "#/$defs/RetentionUnit"
+      },
+      "trigger": {
+        "$ref": "#/$defs/RetentionTrigger"
+      },
+      "basisArticle": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Basisarticle"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "duration",
+      "unit",
+      "trigger"
+    ],
+    "title": "RetentionPolicyModel",
+    "type": "object"
+  },
+  "ConsentWithdrawalModel": {
+    "$defs": {
+      "WithdrawalChannel": {
+        "enum": [
+          "_Unset",
+          "OnlineForm",
+          "Email",
+          "WrittenRequest",
+          "InAppToggle",
+          "PhoneRequest",
+          "InPerson"
+        ],
+        "title": "WithdrawalChannel",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: ConsentWithdrawal\nAuto-generated from privacy_metamodel.ecore.",
+    "properties": {
+      "withdrawalId": {
+        "title": "Withdrawalid",
+        "type": "string"
+      },
+      "channel": {
+        "items": {
+          "$ref": "#/$defs/WithdrawalChannel"
+        },
+        "minItems": 1,
+        "title": "Channel",
+        "type": "array"
+      },
+      "deadline": {
+        "title": "Deadline",
+        "type": "string"
+      },
+      "effectOnPriorProcessing": {
+        "title": "Effectonpriorprocessing",
+        "type": "string"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "channel",
+      "deadline",
+      "effectOnPriorProcessing"
+    ],
+    "title": "ConsentWithdrawalModel",
+    "type": "object"
+  },
+  "PolicyStatementModel": {
+    "$defs": {
+      "ActorModel": {
+        "description": "Metamodel class: Actor\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "actorId": {
+            "title": "Actorid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/$defs/ActorRole"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "ActorModel",
+        "type": "object"
+      },
+      "ActorRole": {
+        "enum": [
+          "_Unset",
+          "DataSubject",
+          "DataController",
+          "DataProcessor",
+          "ThirdParty"
+        ],
+        "title": "ActorRole",
+        "type": "string"
+      },
+      "ConsentWithdrawalModel": {
+        "description": "Metamodel class: ConsentWithdrawal\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "withdrawalId": {
+            "title": "Withdrawalid",
+            "type": "string"
+          },
+          "channel": {
+            "items": {
+              "$ref": "#/$defs/WithdrawalChannel"
+            },
+            "minItems": 1,
+            "title": "Channel",
+            "type": "array"
+          },
+          "deadline": {
+            "title": "Deadline",
+            "type": "string"
+          },
+          "effectOnPriorProcessing": {
+            "title": "Effectonpriorprocessing",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "deadline",
+          "effectOnPriorProcessing"
+        ],
+        "title": "ConsentWithdrawalModel",
+        "type": "object"
+      },
+      "ConstraintModel": {
+        "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "constraintId": {
+            "title": "Constraintid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/ConstraintType"
+          },
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "enforcementLevel": {
+            "title": "Enforcementlevel",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "expression",
+          "enforcementLevel"
+        ],
+        "title": "ConstraintModel",
+        "type": "object"
+      },
+      "ConstraintType": {
+        "enum": [
+          "_Unset",
+          "Temporal",
+          "Geographic",
+          "Usage",
+          "Security",
+          "Retention",
+          "PurposeLimitation"
+        ],
+        "title": "ConstraintType",
+        "type": "string"
+      },
+      "DataTransferModel": {
+        "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+        "properties": {
+          "transferId": {
+            "title": "Transferid",
+            "type": "string"
+          },
+          "mechanism": {
+            "$ref": "#/$defs/TransferMechanism",
+            "description": "Legal instrument authorising the cross-border transfer."
+          },
+          "adequacyDecisionRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Reference to the adequacy decision document. Required when mechanism=AdequacyDecision.",
+            "title": "Adequacydecisionref"
+          },
+          "destinationJurisdiction": {
+            "description": "Destination jurisdiction(s) for the transfer.",
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Destinationjurisdiction",
+            "type": "array"
+          },
+          "dataTransferred": {
+            "description": "Personal data categories being transferred.",
+            "items": {
+              "$ref": "#/$defs/PersonalDataModel"
+            },
+            "minItems": 1,
+            "title": "Datatransferred",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mechanism",
+          "destinationJurisdiction",
+          "dataTransferred"
+        ],
+        "title": "DataTransferModel",
+        "type": "object"
+      },
+      "Identifiability": {
+        "enum": [
+          "_Unset",
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "title": "Identifiability",
+        "type": "string"
+      },
+      "JurisdictionModel": {
+        "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "jurisdictionId": {
+            "title": "Jurisdictionid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JurisdictionModel",
+        "type": "object"
+      },
+      "LegalBasisModel": {
+        "description": "Metamodel class: LegalBasis\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "basisId": {
+            "title": "Basisid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/LegalBasisType"
+          },
+          "evidence": {
+            "title": "Evidence",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Jurisdiction",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "evidence",
+          "jurisdiction"
+        ],
+        "title": "LegalBasisModel",
+        "type": "object"
+      },
+      "LegalBasisType": {
+        "enum": [
+          "_Unset",
+          "Consent",
+          "Contract",
+          "LegalObligation",
+          "LegitimateInterest",
+          "VitalInterest",
+          "PublicTask"
+        ],
+        "title": "LegalBasisType",
+        "type": "string"
+      },
+      "PersonalDataCategory": {
+        "enum": [
+          "_Unset",
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "title": "PersonalDataCategory",
+        "type": "string"
+      },
+      "PersonalDataModel": {
+        "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "dataId": {
+            "title": "Dataid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PersonalDataCategory"
+          },
+          "sensitivity": {
+            "$ref": "#/$defs/SensitivityLevel"
+          },
+          "identifiability": {
+            "$ref": "#/$defs/Identifiability"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "source",
+          "category",
+          "sensitivity",
+          "identifiability"
+        ],
+        "title": "PersonalDataModel",
+        "type": "object"
+      },
+      "ProcessingAction": {
+        "enum": [
+          "_Unset",
+          "Collect",
+          "Store",
+          "Use",
+          "Share",
+          "Transfer",
+          "Delete"
+        ],
+        "title": "ProcessingAction",
+        "type": "string"
+      },
+      "ProcessingActivityModel": {
+        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+        "properties": {
+          "activityId": {
+            "title": "Activityid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/$defs/ProcessingAction"
+          },
+          "riskAssessmentReference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Riskassessmentreference"
+          },
+          "dataProcessed": {
+            "items": {
+              "$ref": "#/$defs/PersonalDataModel"
+            },
+            "minItems": 1,
+            "title": "Dataprocessed",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "action",
+          "dataProcessed"
+        ],
+        "title": "ProcessingActivityModel",
+        "type": "object"
+      },
+      "PurposeCategory": {
+        "enum": [
+          "_Unset",
+          "ServiceProvision",
+          "Security",
+          "LegalCompliance",
+          "Marketing",
+          "Analytics",
+          "Research"
+        ],
+        "title": "PurposeCategory",
+        "type": "string"
+      },
+      "PurposeModel": {
+        "description": "Metamodel class: Purpose\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "purposeId": {
+            "title": "Purposeid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PurposeCategory"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "category"
+        ],
+        "title": "PurposeModel",
+        "type": "object"
+      },
+      "RegulationModel": {
+        "properties": {
+          "regulationId": {
+            "title": "Regulationid",
+            "type": "string"
+          },
+          "name": {
+            "description": "Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.",
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "",
+            "description": "Version or amendment identifier.",
+            "title": "Version",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "description": "Brief description of the regulation's scope.",
+            "title": "Description",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Jurisdiction",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation for this regulation reference.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "jurisdiction"
+        ],
+        "title": "RegulationModel",
+        "type": "object"
+      },
+      "RetentionPolicyModel": {
+        "description": "Metamodel class: RetentionPolicy\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "retentionId": {
+            "title": "Retentionid",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "integer"
+          },
+          "unit": {
+            "$ref": "#/$defs/RetentionUnit"
+          },
+          "trigger": {
+            "$ref": "#/$defs/RetentionTrigger"
+          },
+          "basisArticle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Basisarticle"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "duration",
+          "unit",
+          "trigger"
+        ],
+        "title": "RetentionPolicyModel",
+        "type": "object"
+      },
+      "RetentionTrigger": {
+        "enum": [
+          "_Unset",
+          "CollectionDate",
+          "ContractEnd",
+          "LastActivity",
+          "LegalObligationExpiry",
+          "ConsentWithdrawal",
+          "AccountDeletion"
+        ],
+        "title": "RetentionTrigger",
+        "type": "string"
+      },
+      "RetentionUnit": {
+        "enum": [
+          "_Unset",
+          "Days",
+          "Months",
+          "Years",
+          "Indefinite"
+        ],
+        "title": "RetentionUnit",
+        "type": "string"
+      },
+      "RightModel": {
+        "description": "Metamodel class: Right\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "rightId": {
+            "title": "Rightid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/RightType"
+          },
+          "triggerCondition": {
+            "title": "Triggercondition",
+            "type": "string"
+          },
+          "fulfillmentProcess": {
+            "title": "Fulfillmentprocess",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "triggerCondition",
+          "fulfillmentProcess"
+        ],
+        "title": "RightModel",
+        "type": "object"
+      },
+      "RightType": {
+        "enum": [
+          "_Unset",
+          "Access",
+          "Rectification",
+          "Erasure",
+          "Restriction",
+          "Portability",
+          "Objection",
+          "AutomatedDecisionOptOut"
+        ],
+        "title": "RightType",
+        "type": "string"
+      },
+      "SensitivityLevel": {
+        "enum": [
+          "_Unset",
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ],
+        "title": "SensitivityLevel",
+        "type": "string"
+      },
+      "TransferMechanism": {
+        "enum": [
+          "_Unset",
+          "AdequacyDecision",
+          "StandardContractualClauses",
+          "BindingCorporateRules",
+          "Consent",
+          "ContractNecessity",
+          "LegitimateInterest",
+          "Other"
+        ],
+        "title": "TransferMechanism",
+        "type": "string"
+      },
+      "WithdrawalChannel": {
+        "enum": [
+          "_Unset",
+          "OnlineForm",
+          "Email",
+          "WrittenRequest",
+          "InAppToggle",
+          "PhoneRequest",
+          "InPerson"
+        ],
+        "title": "WithdrawalChannel",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_2\nocl_constraint_4_warning",
+    "properties": {
+      "statementId": {
+        "title": "Statementid",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "actor": {
+        "$ref": "#/$defs/ActorModel"
+      },
+      "purposes": {
+        "items": {
+          "$ref": "#/$defs/PurposeModel"
+        },
+        "minItems": 1,
+        "title": "Purposes",
+        "type": "array"
+      },
+      "processingActivity": {
+        "$ref": "#/$defs/ProcessingActivityModel"
+      },
+      "legalBasis": {
+        "$ref": "#/$defs/LegalBasisModel"
+      },
+      "governingRegulations": {
+        "items": {
+          "$ref": "#/$defs/RegulationModel"
+        },
+        "minItems": 1,
+        "title": "Governingregulations",
+        "type": "array"
+      },
+      "constraints": {
+        "items": {
+          "$ref": "#/$defs/ConstraintModel"
+        },
+        "minItems": 1,
+        "title": "Constraints",
+        "type": "array"
+      },
+      "rightImpacted": {
+        "items": {
+          "$ref": "#/$defs/RightModel"
+        },
+        "minItems": 1,
+        "title": "Rightimpacted",
+        "type": "array"
+      },
+      "retentionPolicies": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/RetentionPolicyModel"
+        },
+        "title": "Retentionpolicies",
+        "type": "array"
+      },
+      "dataTransfers": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/DataTransferModel"
+        },
+        "title": "Datatransfers",
+        "type": "array"
+      },
+      "consentWithdrawal": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/ConsentWithdrawalModel"
+        },
+        "title": "Consentwithdrawal",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "description",
+      "actor",
+      "purposes",
+      "processingActivity",
+      "legalBasis",
+      "governingRegulations",
+      "constraints",
+      "rightImpacted"
+    ],
+    "title": "PolicyStatementModel",
+    "type": "object"
+  },
+  "PrivacyPolicyModel": {
+    "$defs": {
+      "ActorModel": {
+        "description": "Metamodel class: Actor\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "actorId": {
+            "title": "Actorid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/$defs/ActorRole"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "ActorModel",
+        "type": "object"
+      },
+      "ActorRole": {
+        "enum": [
+          "_Unset",
+          "DataSubject",
+          "DataController",
+          "DataProcessor",
+          "ThirdParty"
+        ],
+        "title": "ActorRole",
+        "type": "string"
+      },
+      "ConsentWithdrawalModel": {
+        "description": "Metamodel class: ConsentWithdrawal\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "withdrawalId": {
+            "title": "Withdrawalid",
+            "type": "string"
+          },
+          "channel": {
+            "items": {
+              "$ref": "#/$defs/WithdrawalChannel"
+            },
+            "minItems": 1,
+            "title": "Channel",
+            "type": "array"
+          },
+          "deadline": {
+            "title": "Deadline",
+            "type": "string"
+          },
+          "effectOnPriorProcessing": {
+            "title": "Effectonpriorprocessing",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "deadline",
+          "effectOnPriorProcessing"
+        ],
+        "title": "ConsentWithdrawalModel",
+        "type": "object"
+      },
+      "ConstraintModel": {
+        "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "constraintId": {
+            "title": "Constraintid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/ConstraintType"
+          },
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "enforcementLevel": {
+            "title": "Enforcementlevel",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "expression",
+          "enforcementLevel"
+        ],
+        "title": "ConstraintModel",
+        "type": "object"
+      },
+      "ConstraintType": {
+        "enum": [
+          "_Unset",
+          "Temporal",
+          "Geographic",
+          "Usage",
+          "Security",
+          "Retention",
+          "PurposeLimitation"
+        ],
+        "title": "ConstraintType",
+        "type": "string"
+      },
+      "DataTransferModel": {
+        "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+        "properties": {
+          "transferId": {
+            "title": "Transferid",
+            "type": "string"
+          },
+          "mechanism": {
+            "$ref": "#/$defs/TransferMechanism",
+            "description": "Legal instrument authorising the cross-border transfer."
+          },
+          "adequacyDecisionRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Reference to the adequacy decision document. Required when mechanism=AdequacyDecision.",
+            "title": "Adequacydecisionref"
+          },
+          "destinationJurisdiction": {
+            "description": "Destination jurisdiction(s) for the transfer.",
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Destinationjurisdiction",
+            "type": "array"
+          },
+          "dataTransferred": {
+            "description": "Personal data categories being transferred.",
+            "items": {
+              "$ref": "#/$defs/PersonalDataModel"
+            },
+            "minItems": 1,
+            "title": "Datatransferred",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mechanism",
+          "destinationJurisdiction",
+          "dataTransferred"
+        ],
+        "title": "DataTransferModel",
+        "type": "object"
+      },
+      "Identifiability": {
+        "enum": [
+          "_Unset",
+          "Identified",
+          "Pseudonymous",
+          "Anonymous"
+        ],
+        "title": "Identifiability",
+        "type": "string"
+      },
+      "JurisdictionModel": {
+        "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "jurisdictionId": {
+            "title": "Jurisdictionid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JurisdictionModel",
+        "type": "object"
+      },
+      "LegalBasisModel": {
+        "description": "Metamodel class: LegalBasis\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "basisId": {
+            "title": "Basisid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/LegalBasisType"
+          },
+          "evidence": {
+            "title": "Evidence",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Jurisdiction",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "evidence",
+          "jurisdiction"
+        ],
+        "title": "LegalBasisModel",
+        "type": "object"
+      },
+      "LegalBasisType": {
+        "enum": [
+          "_Unset",
+          "Consent",
+          "Contract",
+          "LegalObligation",
+          "LegitimateInterest",
+          "VitalInterest",
+          "PublicTask"
+        ],
+        "title": "LegalBasisType",
+        "type": "string"
+      },
+      "PersonalDataCategory": {
+        "enum": [
+          "_Unset",
+          "Identifier",
+          "ContactInformation",
+          "LocationData",
+          "FinancialData",
+          "HealthData",
+          "BiometricData",
+          "BehavioralData",
+          "TechnicalData",
+          "ContentData"
+        ],
+        "title": "PersonalDataCategory",
+        "type": "string"
+      },
+      "PersonalDataModel": {
+        "description": "Metamodel class: PersonalData\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "dataId": {
+            "title": "Dataid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PersonalDataCategory"
+          },
+          "sensitivity": {
+            "$ref": "#/$defs/SensitivityLevel"
+          },
+          "identifiability": {
+            "$ref": "#/$defs/Identifiability"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "source",
+          "category",
+          "sensitivity",
+          "identifiability"
+        ],
+        "title": "PersonalDataModel",
+        "type": "object"
+      },
+      "PolicyStatementModel": {
+        "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_2\nocl_constraint_4_warning",
+        "properties": {
+          "statementId": {
+            "title": "Statementid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "actor": {
+            "$ref": "#/$defs/ActorModel"
+          },
+          "purposes": {
+            "items": {
+              "$ref": "#/$defs/PurposeModel"
+            },
+            "minItems": 1,
+            "title": "Purposes",
+            "type": "array"
+          },
+          "processingActivity": {
+            "$ref": "#/$defs/ProcessingActivityModel"
+          },
+          "legalBasis": {
+            "$ref": "#/$defs/LegalBasisModel"
+          },
+          "governingRegulations": {
+            "items": {
+              "$ref": "#/$defs/RegulationModel"
+            },
+            "minItems": 1,
+            "title": "Governingregulations",
+            "type": "array"
+          },
+          "constraints": {
+            "items": {
+              "$ref": "#/$defs/ConstraintModel"
+            },
+            "minItems": 1,
+            "title": "Constraints",
+            "type": "array"
+          },
+          "rightImpacted": {
+            "items": {
+              "$ref": "#/$defs/RightModel"
+            },
+            "minItems": 1,
+            "title": "Rightimpacted",
+            "type": "array"
+          },
+          "retentionPolicies": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/RetentionPolicyModel"
+            },
+            "title": "Retentionpolicies",
+            "type": "array"
+          },
+          "dataTransfers": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/DataTransferModel"
+            },
+            "title": "Datatransfers",
+            "type": "array"
+          },
+          "consentWithdrawal": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/ConsentWithdrawalModel"
+            },
+            "title": "Consentwithdrawal",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "actor",
+          "purposes",
+          "processingActivity",
+          "legalBasis",
+          "governingRegulations",
+          "constraints",
+          "rightImpacted"
+        ],
+        "title": "PolicyStatementModel",
+        "type": "object"
+      },
+      "ProcessingAction": {
+        "enum": [
+          "_Unset",
+          "Collect",
+          "Store",
+          "Use",
+          "Share",
+          "Transfer",
+          "Delete"
+        ],
+        "title": "ProcessingAction",
+        "type": "string"
+      },
+      "ProcessingActivityModel": {
+        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+        "properties": {
+          "activityId": {
+            "title": "Activityid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/$defs/ProcessingAction"
+          },
+          "riskAssessmentReference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Riskassessmentreference"
+          },
+          "dataProcessed": {
+            "items": {
+              "$ref": "#/$defs/PersonalDataModel"
+            },
+            "minItems": 1,
+            "title": "Dataprocessed",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "action",
+          "dataProcessed"
+        ],
+        "title": "ProcessingActivityModel",
+        "type": "object"
+      },
+      "PurposeCategory": {
+        "enum": [
+          "_Unset",
+          "ServiceProvision",
+          "Security",
+          "LegalCompliance",
+          "Marketing",
+          "Analytics",
+          "Research"
+        ],
+        "title": "PurposeCategory",
+        "type": "string"
+      },
+      "PurposeModel": {
+        "description": "Metamodel class: Purpose\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "purposeId": {
+            "title": "Purposeid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/PurposeCategory"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "category"
+        ],
+        "title": "PurposeModel",
+        "type": "object"
+      },
+      "RegulationModel": {
+        "properties": {
+          "regulationId": {
+            "title": "Regulationid",
+            "type": "string"
+          },
+          "name": {
+            "description": "Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.",
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "",
+            "description": "Version or amendment identifier.",
+            "title": "Version",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "description": "Brief description of the regulation's scope.",
+            "title": "Description",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+            "items": {
+              "$ref": "#/$defs/JurisdictionModel"
+            },
+            "minItems": 1,
+            "title": "Jurisdiction",
+            "type": "array"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation for this regulation reference.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "jurisdiction"
+        ],
+        "title": "RegulationModel",
+        "type": "object"
+      },
+      "RetentionPolicyModel": {
+        "description": "Metamodel class: RetentionPolicy\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "retentionId": {
+            "title": "Retentionid",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "integer"
+          },
+          "unit": {
+            "$ref": "#/$defs/RetentionUnit"
+          },
+          "trigger": {
+            "$ref": "#/$defs/RetentionTrigger"
+          },
+          "basisArticle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Basisarticle"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "duration",
+          "unit",
+          "trigger"
+        ],
+        "title": "RetentionPolicyModel",
+        "type": "object"
+      },
+      "RetentionTrigger": {
+        "enum": [
+          "_Unset",
+          "CollectionDate",
+          "ContractEnd",
+          "LastActivity",
+          "LegalObligationExpiry",
+          "ConsentWithdrawal",
+          "AccountDeletion"
+        ],
+        "title": "RetentionTrigger",
+        "type": "string"
+      },
+      "RetentionUnit": {
+        "enum": [
+          "_Unset",
+          "Days",
+          "Months",
+          "Years",
+          "Indefinite"
+        ],
+        "title": "RetentionUnit",
+        "type": "string"
+      },
+      "RightModel": {
+        "description": "Metamodel class: Right\nAuto-generated from privacy_metamodel.ecore.",
+        "properties": {
+          "rightId": {
+            "title": "Rightid",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/RightType"
+          },
+          "triggerCondition": {
+            "title": "Triggercondition",
+            "type": "string"
+          },
+          "fulfillmentProcess": {
+            "title": "Fulfillmentprocess",
+            "type": "string"
+          },
+          "source_clause": {
+            "default": "",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+            "title": "Source Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "triggerCondition",
+          "fulfillmentProcess"
+        ],
+        "title": "RightModel",
+        "type": "object"
+      },
+      "RightType": {
+        "enum": [
+          "_Unset",
+          "Access",
+          "Rectification",
+          "Erasure",
+          "Restriction",
+          "Portability",
+          "Objection",
+          "AutomatedDecisionOptOut"
+        ],
+        "title": "RightType",
+        "type": "string"
+      },
+      "SensitivityLevel": {
+        "enum": [
+          "_Unset",
+          "Low",
+          "Medium",
+          "High",
+          "SpecialCategory"
+        ],
+        "title": "SensitivityLevel",
+        "type": "string"
+      },
+      "TransferMechanism": {
+        "enum": [
+          "_Unset",
+          "AdequacyDecision",
+          "StandardContractualClauses",
+          "BindingCorporateRules",
+          "Consent",
+          "ContractNecessity",
+          "LegitimateInterest",
+          "Other"
+        ],
+        "title": "TransferMechanism",
+        "type": "string"
+      },
+      "WithdrawalChannel": {
+        "enum": [
+          "_Unset",
+          "OnlineForm",
+          "Email",
+          "WrittenRequest",
+          "InAppToggle",
+          "PhoneRequest",
+          "InPerson"
+        ],
+        "title": "WithdrawalChannel",
+        "type": "string"
+      }
+    },
+    "description": "Metamodel class: PrivacyPolicy\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_01",
+    "properties": {
+      "policyId": {
+        "title": "Policyid",
+        "type": "string"
+      },
+      "version": {
+        "title": "Version",
+        "type": "string"
+      },
+      "validFrom": {
+        "title": "Validfrom",
+        "type": "integer"
+      },
+      "validTo": {
+        "title": "Validto",
+        "type": "integer"
+      },
+      "statements": {
+        "items": {
+          "$ref": "#/$defs/PolicyStatementModel"
+        },
+        "minItems": 1,
+        "title": "Statements",
+        "type": "array"
+      },
+      "source_clause": {
+        "default": "",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+        "title": "Source Clause",
+        "type": "string"
+      }
+    },
+    "required": [
+      "version",
+      "validFrom",
+      "validTo",
+      "statements"
+    ],
+    "title": "PrivacyPolicyModel",
+    "type": "object"
+  }
+}

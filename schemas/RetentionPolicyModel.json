@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "RetentionTrigger": {
+      "enum": [
+        "_Unset",
+        "CollectionDate",
+        "ContractEnd",
+        "LastActivity",
+        "LegalObligationExpiry",
+        "ConsentWithdrawal",
+        "AccountDeletion"
+      ],
+      "title": "RetentionTrigger",
+      "type": "string"
+    },
+    "RetentionUnit": {
+      "enum": [
+        "_Unset",
+        "Days",
+        "Months",
+        "Years",
+        "Indefinite"
+      ],
+      "title": "RetentionUnit",
+      "type": "string"
+    }
+  },
+  "description": "Metamodel class: RetentionPolicy\nAuto-generated from privacy_metamodel.ecore.",
+  "properties": {
+    "retentionId": {
+      "title": "Retentionid",
+      "type": "string"
+    },
+    "duration": {
+      "title": "Duration",
+      "type": "integer"
+    },
+    "unit": {
+      "$ref": "#/$defs/RetentionUnit"
+    },
+    "trigger": {
+      "$ref": "#/$defs/RetentionTrigger"
+    },
+    "basisArticle": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Basisarticle"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "duration",
+    "unit",
+    "trigger"
+  ],
+  "title": "RetentionPolicyModel",
+  "type": "object"
+}

@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "JurisdictionModel": {
+      "description": "Metamodel class: Jurisdiction\nAuto-generated from privacy_metamodel.ecore.",
+      "properties": {
+        "jurisdictionId": {
+          "title": "Jurisdictionid",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "source_clause": {
+          "default": "",
+          "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
+          "title": "Source Clause",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "JurisdictionModel",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "regulationId": {
+      "title": "Regulationid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.",
+      "title": "Name",
+      "type": "string"
+    },
+    "version": {
+      "default": "",
+      "description": "Version or amendment identifier.",
+      "title": "Version",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "description": "Brief description of the regulation's scope.",
+      "title": "Description",
+      "type": "string"
+    },
+    "jurisdiction": {
+      "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+      "items": {
+        "$ref": "#/$defs/JurisdictionModel"
+      },
+      "minItems": 1,
+      "title": "Jurisdiction",
+      "type": "array"
+    },
+    "source_clause": {
+      "default": "",
+      "description": "RAG chunk citation for this regulation reference.",
+      "title": "Source Clause",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "jurisdiction"
+  ],
+  "title": "RegulationModel",
+  "type": "object"
+}
