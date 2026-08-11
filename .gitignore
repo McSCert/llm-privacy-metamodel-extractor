@@ -41,3 +41,4 @@ gap-report-analysis-from-terminal/
 
 # Test cache
 .pytest_cache/
+older-metamodels/
