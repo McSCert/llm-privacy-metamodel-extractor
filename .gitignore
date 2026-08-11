@@ -41,4 +41,3 @@ gap-report-analysis-from-terminal/
 
 # Test cache
 .pytest_cache/
-output/xmi-local/*.*
