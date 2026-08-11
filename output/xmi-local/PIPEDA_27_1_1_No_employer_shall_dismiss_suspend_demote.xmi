@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="No employer shall dismiss, suspend, demote, or otherwise discipline an employee because the employee has refused to consent to the collection, use, or disclosure of personal information about the employee.">
+    <actor actorId="" name="" role="DataController"/>
+    <purposes purposeId="" description="To comply with the Personal Information Protection and Electronic Documents Act (PIPEDA)" category="LegalCompliance"/>
+    <processingActivity activityId="" description="Employee data processing for disciplinary actions" action="Use">
+      <dataProcessed dataId="" description="personal data of employees" source="directly from employee" category="Identifier" sensitivity="Low" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </governingRegulations>
+    <constraints constraintId="" type="PurposeLimitation" expression="Personal data must only be used for the purpose identified at time of collection." enforcementLevel="Mandatory"/>
+    <rightImpacted rightId="" type="Access" triggerCondition="Upon written request by employee" fulfillmentProcess="Organization must respond within 30 days"/>
+  </statements>
+</pp:PrivacyPolicy>
