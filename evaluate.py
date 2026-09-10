@@ -565,7 +565,7 @@ def generate_template(out_path: Path) -> None:
     print(f"  Actor_role               : DataController | DataProcessor | DataSubject | ThirdParty")
     print(f"  Purpose_category         : ServiceProvision | LegalCompliance | Marketing | Research | Security | Analytics")
     print(f"  Right_type               : Access | Rectification | Erasure | Portability | Objection | OptOut")
-    print(f"  Constraint_type          : PurposeLimitation | Storage | Security | Accuracy | Transparency")
+    print(f"  Constraint_type          : PurposeLimitation | Retention | Security | Accuracy | Transparency")
     print(f"  RetentionPolicy_present  : TRUE | FALSE | UNCERTAIN")
     print(f"  DataTransfer_present     : TRUE | FALSE | UNCERTAIN")
     print(f"  ConsentWithdrawal_present: TRUE | FALSE | UNCERTAIN")

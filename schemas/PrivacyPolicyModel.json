@@ -118,7 +118,9 @@
         "Usage",
         "Security",
         "Retention",
-        "PurposeLimitation"
+        "PurposeLimitation",
+        "Accuracy",
+        "Transparency"
       ],
       "title": "ConstraintType",
       "type": "string"

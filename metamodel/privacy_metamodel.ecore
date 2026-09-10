@@ -42,6 +42,8 @@
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Security" value="4"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Retention" value="5"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="PurposeLimitation" value="6"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Accuracy" value="7"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Transparency" value="8"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EEnum" name="RightType">
     <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>

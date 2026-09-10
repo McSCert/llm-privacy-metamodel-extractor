@@ -67,6 +67,7 @@ ConstraintType = _make_enum("ConstraintType", [
     "_Unset",
     "Temporal", "Geographic", "Usage", "Security",
     "Retention", "PurposeLimitation",
+    "Accuracy", "Transparency",
 ])
 
 RightType = _make_enum("RightType", [

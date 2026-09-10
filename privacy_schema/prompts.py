@@ -19,7 +19,7 @@ _ENUM_GRAMMARS: dict[str, list[str]] = {
     "ProcessingAction":     ["Collect","Store","Use","Share","Transfer","Delete"],
     "LegalBasisType":       ["Consent","Contract","LegalObligation","LegitimateInterest","VitalInterest","PublicTask"],
     "PurposeCategory":      ["ServiceProvision","Security","LegalCompliance","Marketing","Analytics","Research"],
-    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation"],
+    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation","Accuracy","Transparency"],
     "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut"],
     "RetentionUnit":        ["Days","Months","Years","Indefinite"],
     "RetentionTrigger":     ["CollectionDate","ContractEnd","LastActivity","LegalObligationExpiry","ConsentWithdrawal","AccountDeletion"],
@@ -300,7 +300,7 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
         "-------------------------------------------------------------------\n"
         "only for the purpose / purpose limitation /                PurposeLimitation\n"
         "  not use beyond original purpose / consent for new use\n"
-        "retain only as long / no longer than necessary /           Storage\n"
+        "retain only as long / no longer than necessary /           Retention\n"
         "  deletion / retention period / keep until\n"
         "accurate / up-to-date / complete / correct /               Accuracy\n"
         "  inaccurate / rectif\n"
@@ -572,7 +572,7 @@ def build_assembler_prompt(
         "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
 
         "ENUM ENFORCEMENT — use ONLY these exact values (case-sensitive):\n"
-        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
+        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation | Accuracy | Transparency\n"
         "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
         "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
         "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"

@@ -300,6 +300,8 @@
         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_eb3cf3838d04487a" name="Security"/>
         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_c3381cc4bd2e45d3" name="Retention"/>
         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_2a8b0dd90bea490a" name="PurposeLimitation"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_7f2f9788796241f8" name="Accuracy"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_275d40ffcdf54dc3" name="Transparency"/>
       </packagedElement>
       <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_11ca899a22654856" name="RightType">
         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_269e3de5bee549f8" name="Access"/>
