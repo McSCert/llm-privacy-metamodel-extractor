@@ -862,7 +862,7 @@ _CONSTRAINT_KEYWORD_OVERRIDE: list[tuple[list[str], str]] = [
     (["openness", "make available", "policies available", "inform", "transparent"],   "Transparency"),
     (["safeguard", "security measure", "protect against", "encryption",
       "unauthorized access", "physical security", "technical"],                       "Security"),
-    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Storage"),
+    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Retention"),
 ]
 
 def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
@@ -1209,7 +1209,7 @@ def _assemble_one_statement(
             "a Constraint ONLY if the article explicitly restricts processing "
             "(e.g. purpose limitation, security requirement, accuracy obligation, "
             "retention limit). Use the most specific type from: "
-            "PurposeLimitation | Storage | Security | Accuracy | Transparency. "
+            "PurposeLimitation | Retention | Security | Accuracy | Transparency. "
             "If truly no restriction is stated, set constraints to []."
         )
 
