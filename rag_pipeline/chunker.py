@@ -84,7 +84,11 @@ class Chunk:
         text: str,
         char_offset: int,
     ) -> "Chunk":
-        raw = f"{law}|{article_ref}|{text[:64]}"
+        # char_offset and the FULL text are part of the hash.  Hashing only
+        # text[:64] made every page-fragment that began with the same running
+        # header collide, so the ChunkStore silently discarded all but the
+        # first (INSERT OR IGNORE) — losing whole clauses.
+        raw = f"{law}|{article_ref}|{char_offset}|{text}"
         chunk_id = hashlib.sha1(raw.encode()).hexdigest()[:16]
         return cls(
             chunk_id=chunk_id,
@@ -145,9 +149,13 @@ _CCPA_PATTERNS = [
 ]
 
 _PIPEDA_PATTERNS = [
+    # Uppercase and end-of-line anchored: the schedule HEADING is "SCHEDULE 1"
+    # alone on a line, whereas body text contains line-initial cross-references
+    # such as "Schedule 1, and despite the note ...".  Matching those split
+    # Principle 4.3 across two chunks.
     ("schedule", re.compile(
-        r"^Schedule\s+\d+\b",
-        re.MULTILINE | re.IGNORECASE,
+        r"^SCHEDULE\s+\d+\b\s*$",
+        re.MULTILINE,
     )),
     # Principle level: "4.1 Principle 1 — Accountability", "4.2 Principle 2 — ..."
     # PIPEDA numbers all principles as X.Y (e.g. 4.1, 4.2 ... 4.10).
@@ -349,6 +357,80 @@ def concept_tagger(text: str) -> list[str]:
     return tags
 
 
+# ── Running header / footer removal ───────────────────────────────────────────
+
+def _normalise_line(line: str) -> str:
+    """
+    Collapse whitespace and drop a trailing page number so that
+    "Current to February 4, 2026  17" and "... 18" compare equal.
+    The page-number strip is applied only to lines of three or more words, so
+    short structural lines such as "Section 5" are not conflated with
+    "Section 9".
+    """
+    squashed = re.sub(r"\s+", " ", line.strip())
+    stripped = re.sub(r"\s*[\divxlcdm]+\s*$", "", squashed, flags=re.IGNORECASE)
+    return stripped if len(stripped.split()) >= 3 else squashed
+
+
+def strip_running_lines(
+    pages: list[str],
+    head_lines: int = 4,
+    tail_lines: int = 3,
+    min_page_fraction: float = 0.15,
+    keep_first: bool = True,
+) -> tuple[str, list[str]]:
+    """
+    Remove repeated page headers and footers from per-page text.
+
+    Consolidated statute PDFs repeat a running header on every page (for
+    PIPEDA: "SCHEDULE 1 Principles Set Out in the National Standard ...").
+    Those lines sit at the start of a line, so the structural regexes match
+    them and split the document at every page break.  Each fragment then
+    loses the text preceding its first structural match, which is how whole
+    clauses (4.5.3, 4.7.2-4.7.5, 4.8.3, 4.9.3-4.9.6) disappeared before
+    reaching the retriever.
+
+    A line is treated as running furniture when it appears within the first
+    `head_lines` or last `tail_lines` lines of at least `min_page_fraction`
+    of pages (minimum 3).  With `keep_first`, the first occurrence in the
+    document is retained, so a genuine heading that happens to share its text
+    with the running header is not lost.
+
+    Returns the cleaned document text and the list of removed line-types.
+    """
+    n_pages = len(pages)
+    if n_pages < 3:
+        return "\n\n".join(pages), []
+
+    counts: dict[str, int] = {}
+    for text in pages:
+        lines = [ln for ln in text.split("\n") if ln.strip()]
+        for ln in lines[:head_lines] + lines[-tail_lines:]:
+            key = _normalise_line(ln)
+            counts[key] = counts.get(key, 0) + 1
+
+    threshold = max(3, int(n_pages * min_page_fraction))
+    furniture = {k for k, v in counts.items() if v >= threshold and k}
+
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for text in pages:
+        lines = [ln for ln in text.split("\n") if ln.strip()]
+        kept: list[str] = []
+        for i, ln in enumerate(lines):
+            in_band = i < head_lines or i >= len(lines) - tail_lines
+            key = _normalise_line(ln)
+            if in_band and key in furniture:
+                if keep_first and key not in seen:
+                    seen.add(key)
+                    kept.append(ln)
+                continue
+            kept.append(ln)
+        cleaned.append("\n".join(kept))
+
+    return "\n\n".join(cleaned), sorted(furniture)
+
+
 # ── Text extraction from PDF ───────────────────────────────────────────────────
 
 def extract_text_from_pdf(pdf_path: Path, law) -> str:
@@ -377,7 +459,15 @@ def extract_text_from_pdf(pdf_path: Path, law) -> str:
             if text:
                 pages.append(text)
 
-    return "\n\n".join(pages)
+    document, furniture = strip_running_lines(pages)
+    if furniture:
+        log.info(
+            f"Removed {len(furniture)} running header/footer line-type(s) "
+            f"from {pdf_path.name}"
+        )
+        for line in furniture:
+            log.debug(f"  running line: {line[:70]!r}")
+    return document
 
 
 def extract_text_from_file(path: Path, law) -> str:
@@ -400,6 +490,7 @@ def _split_by_pattern(
     law: str,
     parent_ref: str,
     base_offset: int,
+    keep_preamble: bool = False,
 ) -> list[Chunk]:
     """
     Split `text` at every match of `pattern`.
@@ -412,6 +503,29 @@ def _split_by_pattern(
     if not matches:
         return chunks
 
+    # Text before the first match belongs to no match and used to be dropped
+    # silently.  Where the enclosing chunk is not itself retained
+    # (keep_preamble=True) it is emitted as its own chunk; otherwise it is
+    # already covered by the retained parent and only worth logging.
+    preamble = text[: matches[0].start()]
+    if len(preamble.strip()) >= 30:
+        if keep_preamble:
+            base = parent_ref or law
+            ref = base if base.endswith("[preamble]") else f"{base} [preamble]"
+            chunks.append(Chunk.make(
+                law=law,
+                article_ref=ref[:80],
+                parent_ref=parent_ref,
+                level=level,
+                text=preamble,
+                char_offset=base_offset,
+            ))
+        else:
+            log.debug(
+                f"{law}/{parent_ref or level}: {len(preamble.strip())} chars "
+                f"before first {level} boundary (covered by parent chunk)"
+            )
+
     for i, m in enumerate(matches):
         start = m.start()
         end   = matches[i + 1].start() if i + 1 < len(matches) else len(text)
@@ -420,9 +534,13 @@ def _split_by_pattern(
         if len(segment.strip()) < 30:   # skip near-empty segments
             continue
 
-        # Article ref = the matched header line, cleaned
-        article_ref = segment.split("\n")[0].strip()
+        # Article ref = the matched header line, cleaned.  strip() first:
+        # patterns beginning with ^\s* put the match boundary before the
+        # newline, which previously yielded an empty article_ref.
+        article_ref = segment.strip().split("\n")[0].strip()
         article_ref = re.sub(r"\s+", " ", article_ref)[:80]
+        if not article_ref:
+            article_ref = re.sub(r"\s+", " ", m.group(0).strip())[:80] or level
 
         chunks.append(Chunk.make(
             law=law,
@@ -488,6 +606,7 @@ def chunk_text(
             art_chunks = _split_by_pattern(
                 top.text, article_pattern, article_level,
                 law, parent_ref=top.article_ref, base_offset=top.char_offset,
+                keep_preamble=True,
             )
 
             if not art_chunks:

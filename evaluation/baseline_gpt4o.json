@@ -1,0 +1,176 @@
+{
+  "law": "PIPEDA",
+  "gold_path": "evaluation/pipeda_gold_standard.xlsx",
+  "repo_path": "data/model_repo.gpt4o.db",
+  "n_principles": 10,
+  "scoring": "per-label",
+  "macro_precision": 0.2875,
+  "macro_recall": 0.44107142857142856,
+  "macro_f1": 0.3481004901960784,
+  "mean_f1": 0.3226432880844646,
+  "micro_precision": 0.38333333333333336,
+  "micro_recall": 0.5227272727272727,
+  "micro_f1": 0.44230769230769235,
+  "matches": [
+    {
+      "principle": "4.1",
+      "principle_name": "Accountability",
+      "matched_article_ref": "4.1 Principle 1 \u2014 Accountability"
+    },
+    {
+      "principle": "4.2",
+      "principle_name": "Identifying Purposes",
+      "matched_article_ref": "4.2 Principle 2 \u2014 Identifying"
+    },
+    {
+      "principle": "4.3",
+      "principle_name": "Consent",
+      "matched_article_ref": "4.3 Principle 3 - Consent"
+    },
+    {
+      "principle": "4.4",
+      "principle_name": "Limiting Collection",
+      "matched_article_ref": "4.4 Principle 4 \u2014 Limiting"
+    },
+    {
+      "principle": "4.5",
+      "principle_name": "Limiting Use, Disclosure & Retention",
+      "matched_article_ref": "4.5 Principle 5 \u2014Limiting Use,"
+    },
+    {
+      "principle": "4.6",
+      "principle_name": "Accuracy",
+      "matched_article_ref": "4.6 Principle 6 \u2014 Accuracy"
+    },
+    {
+      "principle": "4.7",
+      "principle_name": "Safeguards",
+      "matched_article_ref": "4.7 Principle 7 \u2014 Safeguards"
+    },
+    {
+      "principle": "4.8",
+      "principle_name": "Openness",
+      "matched_article_ref": "4.8 Principle 8 \u2014 Openness"
+    },
+    {
+      "principle": "4.9",
+      "principle_name": "Individual Access",
+      "matched_article_ref": "4.9 Principle 9 \u2014 Individual"
+    },
+    {
+      "principle": "4.10",
+      "principle_name": "Challenging Compliance",
+      "matched_article_ref": "4.10 Principle 10 \u2014 Challenging"
+    }
+  ],
+  "concepts": [
+    {
+      "concept": "LegalBasis_type",
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1": 0.5,
+      "tp": 5,
+      "fp": 5,
+      "fn": 5,
+      "tn": 0,
+      "support": 10,
+      "skipped": 0
+    },
+    {
+      "concept": "ProcessingActivity_action",
+      "precision": 0.1,
+      "recall": 0.1,
+      "f1": 0.10000000000000002,
+      "tp": 1,
+      "fp": 9,
+      "fn": 9,
+      "tn": 0,
+      "support": 10,
+      "skipped": 0
+    },
+    {
+      "concept": "Actor_role",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 10,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "support": 10,
+      "skipped": 0
+    },
+    {
+      "concept": "Purpose_category",
+      "precision": 0.1,
+      "recall": 0.5,
+      "f1": 0.16666666666666669,
+      "tp": 1,
+      "fp": 9,
+      "fn": 1,
+      "tn": 0,
+      "support": 2,
+      "skipped": 0
+    },
+    {
+      "concept": "Right_type",
+      "precision": 0.3,
+      "recall": 1.0,
+      "f1": 0.4615384615384615,
+      "tp": 3,
+      "fp": 7,
+      "fn": 0,
+      "tn": 0,
+      "support": 3,
+      "skipped": 0
+    },
+    {
+      "concept": "Constraint_type",
+      "precision": 0.3,
+      "recall": 0.42857142857142855,
+      "f1": 0.3529411764705882,
+      "tp": 3,
+      "fp": 7,
+      "fn": 4,
+      "tn": 0,
+      "support": 7,
+      "skipped": 0
+    },
+    {
+      "concept": "RetentionPolicy_present",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 9,
+      "support": 1,
+      "skipped": 0
+    },
+    {
+      "concept": "DataTransfer_present",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 10,
+      "support": 0,
+      "skipped": 0
+    },
+    {
+      "concept": "ConsentWithdrawal_present",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 9,
+      "support": 1,
+      "skipped": 0
+    }
+  ]
+}

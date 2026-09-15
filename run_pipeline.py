@@ -1338,7 +1338,11 @@ def stage_assemble_and_store(
 
     xmi_writer: Optional[PolicyXMIWriter] = None
     if xmi_out_dir is not None:
-        ecore_path = Path(__file__).resolve().parent / "privacy_metamodel.ecore"
+        _root = Path(__file__).resolve().parent
+        ecore_path = next(
+            (p for p in (_root / "metamodel" / "privacy_metamodel.ecore",
+                         _root / "privacy_metamodel.ecore") if p.exists()),
+            _root / "metamodel" / "privacy_metamodel.ecore")
         if not ecore_path.exists():
             log.warning(
                 f"privacy_metamodel.ecore not found at {ecore_path}. "
