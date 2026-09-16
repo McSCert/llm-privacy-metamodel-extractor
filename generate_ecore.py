@@ -174,12 +174,12 @@ PolicyStatement.eStructuralFeatures.extend([
     EAttribute("description",  EString, lower=1),
     # Required contained children
     EReference("actor",              Actor,             lower=1, upper=1,  containment=True),
-    EReference("purposes",           Purpose,           lower=1, upper=-1, containment=True),
+    EReference("purposes",           Purpose,           lower=0, upper=-1, containment=True),
     EReference("processingActivity", ProcessingActivity,lower=1, upper=1,  containment=True),
     EReference("legalBasis",         LegalBasis,        lower=1, upper=1,  containment=True),
     EReference("governingRegulations", Regulation,      lower=1, upper=-1, containment=True),
-    EReference("constraints",        Constraint,        lower=1, upper=-1, containment=True),
-    EReference("rightImpacted",      Right,             lower=1, upper=-1, containment=True),
+    EReference("constraints",        Constraint,        lower=0, upper=-1, containment=True),
+    EReference("rightImpacted",      Right,             lower=0, upper=-1, containment=True),
     # Optional contained children
     EReference("retentionPolicies",  RetentionPolicy,   lower=0, upper=-1, containment=True),
     EReference("dataTransfers",      DataTransfer,      lower=0, upper=-1, containment=True),

@@ -516,7 +516,10 @@ def _split_by_pattern(
                 law=law,
                 article_ref=ref[:80],
                 parent_ref=parent_ref,
-                level=level,
+                # level "preamble", not the structural level: this text is
+                # retrievable context, but it is not an article and must not
+                # be handed to Pass 1 as one.
+                level="preamble",
                 text=preamble,
                 char_offset=base_offset,
             ))
