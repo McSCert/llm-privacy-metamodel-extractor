@@ -55,6 +55,8 @@ class ConstraintType(str, Enum):
     Security = "Security"
     Retention = "Retention"
     PurposeLimitation = "PurposeLimitation"
+    Accuracy = "Accuracy"
+    Transparency = "Transparency"
 
 class RightType(str, Enum):
     _Unset = "_Unset"

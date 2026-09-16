@@ -353,12 +353,12 @@ class PolicyStatementModel(_Base):
     statement_id: str = Field(default_factory=lambda: _new_id("stmt"), alias="statementId")
     description: str
     actor: ActorModel
-    purposes: List[PurposeModel] = Field(min_length=1)
+    purposes: List[PurposeModel] = Field(default_factory=list)
     processing_activity: ProcessingActivityModel = Field(alias="processingActivity")
     legal_basis: LegalBasisModel = Field(alias="legalBasis")
     governing_regulations: List[RegulationModel] = Field(alias="governingRegulations", min_length=1)
-    constraints: List[ConstraintModel] = Field(min_length=1)
-    right_impacted: List[RightModel] = Field(alias="rightImpacted", min_length=1)
+    constraints: List[ConstraintModel] = Field(default_factory=list)
+    right_impacted: List[RightModel] = Field(alias="rightImpacted", default_factory=list)
     retention_policies: List[RetentionPolicyModel] = Field(default=[], alias="retentionPolicies")
     data_transfers: List[DataTransferModel] = Field(default=[], alias="dataTransfers")
     consent_withdrawal: List[ConsentWithdrawalModel] = Field(default=[], alias="consentWithdrawal")
