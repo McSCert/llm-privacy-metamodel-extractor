@@ -19,7 +19,7 @@ _ENUM_GRAMMARS: dict[str, list[str]] = {
     "ProcessingAction":     ["Collect","Store","Use","Share","Transfer","Delete"],
     "LegalBasisType":       ["Consent","Contract","LegalObligation","LegitimateInterest","VitalInterest","PublicTask"],
     "PurposeCategory":      ["ServiceProvision","Security","LegalCompliance","Marketing","Analytics","Research"],
-    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation"],
+    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation","Accuracy","Transparency"],
     "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut"],
     "RetentionUnit":        ["Days","Months","Years","Indefinite"],
     "RetentionTrigger":     ["CollectionDate","ContractEnd","LastActivity","LegalObligationExpiry","ConsentWithdrawal","AccountDeletion"],
@@ -300,7 +300,7 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
         "-------------------------------------------------------------------\n"
         "only for the purpose / purpose limitation /                PurposeLimitation\n"
         "  not use beyond original purpose / consent for new use\n"
-        "retain only as long / no longer than necessary /           Storage\n"
+        "retain only as long / no longer than necessary /           Retention\n"
         "  deletion / retention period / keep until\n"
         "accurate / up-to-date / complete / correct /               Accuracy\n"
         "  inaccurate / rectif\n"
@@ -516,9 +516,6 @@ def build_assembler_prompt(
         "## Task: Assemble a PolicyStatement from Pass 1 extractions\n\n"
         "Compose the Pass 1 objects below into a single PolicyStatement JSON.\n"
         "For fields that have content: copy values exactly as given — do not paraphrase or expand.\n"
-        "EXCEPTION — required arrays that are []: you MUST synthesize at least one item "
-        "(see SYNTHESIS RULES below) rather than copying the empty array.\n\n"
-
         # ── Output schema ─────────────────────────────────────────────────────
         "## Output schema — you MUST return exactly this structure\n\n"
         "```json\n"
@@ -561,18 +558,17 @@ def build_assembler_prompt(
         # ── Field rules ───────────────────────────────────────────────────────
         "FIELD RULES:\n"
         "- \"statementId\" must always be exactly \"\" (empty string — the pipeline fills it).\n"
-        "- Required arrays (purposes, governingRegulations, constraints, rightImpacted) "
-        "must contain at least one item — never [] and NEVER OMITTED from the output.\n"
-        "- \"rightImpacted\" is ALWAYS required. Even if rights input is [], synthesize "
-        "one item using SYNTHESIS RULES. Omitting this key is a hard validation failure.\n"
-        "- Optional arrays (retentionPolicies, dataTransfers, consentWithdrawal) "
+         "- \"governingRegulations\" must contain at least one item.\n"
+        "- purposes, constraints and rightImpacted may be [] when the article does "
+        "not state one. An empty array is a valid, meaningful answer — it records "
+        "that the law is silent, and is preferred over a guess.\n"
         "may be [] if the Pass 1 input is empty.\n"
         "- processingActivity.dataProcessed must contain at least one item — never [].\n"
         "- Use camelCase field names EXACTLY as shown. "
         "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
 
         "ENUM ENFORCEMENT — use ONLY these exact values (case-sensitive):\n"
-        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
+        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation | Accuracy | Transparency\n"
         "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
         "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
         "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"
@@ -581,36 +577,7 @@ def build_assembler_prompt(
         "If unsure, pick the closest match — never invent a new value.\n\n"
 
         # ── Synthesis rules ───────────────────────────────────────────────────
-        "SYNTHESIS RULES — apply when a required array is [] in the Pass 1 input:\n"
-
-        "  rightImpacted []:  synthesize 1 item — ALL fields required:\n"
-        "    { \"rightId\": \"\", "
-        "\"type\": \"<RightType — infer: accountability/request-handling→Access, "
-        "limitation/opt-out→Restriction, correction→Rectification>\", "
-        "\"triggerCondition\": \"<REQUIRED non-empty — e.g. 'Upon written request by data subject'>\", "
-        "\"fulfillmentProcess\": \"<REQUIRED non-empty — e.g. 'Organization must respond within 30 days'>\", "
-        "\"source_clause\": \"\" }\n"
-        "    triggerCondition and fulfillmentProcess are REQUIRED — "
-        "never empty string, never omitted.\n\n"
-
-        "  purposes []:       synthesize 1 item — infer category from legalBasis.type and article subject:\n"
-        "                     LegalObligation/compliance article → LegalCompliance\n"
-        "                     service/product delivery → ServiceProvision\n"
-        "                     fraud/data protection → Security\n"
-        "                     description must paraphrase what the article governs.\n\n"
-
-        "  constraints []:    synthesize 1 item — infer type from the dominant obligation:\n"
-        "                     compliance/purpose-scoping → PurposeLimitation\n"
-        "                     security/protection requirement → Security\n"
-        "                     time-based rule → Temporal\n"
-        "                     expression MUST be a non-empty natural-language rule\n"
-        "                     derived from the article — e.g.:\n"
-        "                     PurposeLimitation → 'Personal data must only be used\n"
-        "                       for the purpose identified at time of collection.'\n"
-        "                     Security → 'Organization must protect personal data\n"
-        "                       against loss, theft, and unauthorized access.'\n"
-        "                     enforcementLevel MUST be 'Mandatory' unless article\n"
-        "                     uses 'should' or 'may' — never empty string.\n\n"
+        "SYNTHESIS RULES — apply only to dataProcessed:\n"
 
         "  dataProcessed []:  synthesize 1 item — ALL fields required:\n"
         "    { \"dataId\": \"\", "

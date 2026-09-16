@@ -1,0 +1,214 @@
+diff --git a/evaluate.py b/evaluate.py
+index d1db595..19d698b 100644
+--- a/evaluate.py
++++ b/evaluate.py
+@@ -565,7 +565,7 @@ def generate_template(out_path: Path) -> None:
+     print(f"  Actor_role               : DataController | DataProcessor | DataSubject | ThirdParty")
+     print(f"  Purpose_category         : ServiceProvision | LegalCompliance | Marketing | Research | Security | Analytics")
+     print(f"  Right_type               : Access | Rectification | Erasure | Portability | Objection | OptOut")
+-    print(f"  Constraint_type          : PurposeLimitation | Storage | Security | Accuracy | Transparency")
++    print(f"  Constraint_type          : PurposeLimitation | Retention | Security | Accuracy | Transparency")
+     print(f"  RetentionPolicy_present  : TRUE | FALSE | UNCERTAIN")
+     print(f"  DataTransfer_present     : TRUE | FALSE | UNCERTAIN")
+     print(f"  ConsentWithdrawal_present: TRUE | FALSE | UNCERTAIN")
+diff --git a/generate_ecore.py b/generate_ecore.py
+index 575bb0e..63bc8c3 100644
+--- a/generate_ecore.py
++++ b/generate_ecore.py
+@@ -67,6 +67,7 @@ ConstraintType = _make_enum("ConstraintType", [
+     "_Unset",
+     "Temporal", "Geographic", "Usage", "Security",
+     "Retention", "PurposeLimitation",
++    "Accuracy", "Transparency",
+ ])
+ 
+ RightType = _make_enum("RightType", [
+diff --git a/metamodel/privacy_metamodel.ecore b/metamodel/privacy_metamodel.ecore
+index 2c673bd..8b25143 100644
+--- a/metamodel/privacy_metamodel.ecore
++++ b/metamodel/privacy_metamodel.ecore
+@@ -42,6 +42,8 @@
+     <eLiterals xsi:type="ecore:EEnumLiteral" name="Security" value="4"/>
+     <eLiterals xsi:type="ecore:EEnumLiteral" name="Retention" value="5"/>
+     <eLiterals xsi:type="ecore:EEnumLiteral" name="PurposeLimitation" value="6"/>
++    <eLiterals xsi:type="ecore:EEnumLiteral" name="Accuracy" value="7"/>
++    <eLiterals xsi:type="ecore:EEnumLiteral" name="Transparency" value="8"/>
+   </eClassifiers>
+   <eClassifiers xsi:type="ecore:EEnum" name="RightType">
+     <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+diff --git a/metamodel/privacy_metamodel.json b/metamodel/privacy_metamodel.json
+index 3170861..9cc386f 100644
+--- a/metamodel/privacy_metamodel.json
++++ b/metamodel/privacy_metamodel.json
+@@ -551,7 +551,9 @@
+           "Usage",
+           "Security",
+           "Retention",
+-          "PurposeLimitation"
++          "PurposeLimitation",
++          "Accuracy",
++          "Transparency"
+         ],
+         "RightType": [
+           "Access",
+diff --git a/metamodel/privacy_metamodel.xmi b/metamodel/privacy_metamodel.xmi
+index 9f3610f..f0f3a63 100644
+--- a/metamodel/privacy_metamodel.xmi
++++ b/metamodel/privacy_metamodel.xmi
+@@ -300,6 +300,8 @@
+         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_eb3cf3838d04487a" name="Security"/>
+         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_c3381cc4bd2e45d3" name="Retention"/>
+         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_2a8b0dd90bea490a" name="PurposeLimitation"/>
++        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_7f2f9788796241f8" name="Accuracy"/>
++        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_275d40ffcdf54dc3" name="Transparency"/>
+       </packagedElement>
+       <packagedElement xmi:type="uml:Enumeration" xmi:id="_enum_11ca899a22654856" name="RightType">
+         <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_lit_269e3de5bee549f8" name="Access"/>
+diff --git a/privacy_schema/enums.py b/privacy_schema/enums.py
+index 0ebae12..befa85b 100644
+--- a/privacy_schema/enums.py
++++ b/privacy_schema/enums.py
+@@ -55,6 +55,8 @@ class ConstraintType(str, Enum):
+     Security = "Security"
+     Retention = "Retention"
+     PurposeLimitation = "PurposeLimitation"
++    Accuracy = "Accuracy"
++    Transparency = "Transparency"
+ 
+ class RightType(str, Enum):
+     _Unset = "_Unset"
+diff --git a/privacy_schema/prompts.py b/privacy_schema/prompts.py
+index 8dad5e3..5928665 100644
+--- a/privacy_schema/prompts.py
++++ b/privacy_schema/prompts.py
+@@ -19,7 +19,7 @@ _ENUM_GRAMMARS: dict[str, list[str]] = {
+     "ProcessingAction":     ["Collect","Store","Use","Share","Transfer","Delete"],
+     "LegalBasisType":       ["Consent","Contract","LegalObligation","LegitimateInterest","VitalInterest","PublicTask"],
+     "PurposeCategory":      ["ServiceProvision","Security","LegalCompliance","Marketing","Analytics","Research"],
+-    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation"],
++    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation","Accuracy","Transparency"],
+     "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut"],
+     "RetentionUnit":        ["Days","Months","Years","Indefinite"],
+     "RetentionTrigger":     ["CollectionDate","ContractEnd","LastActivity","LegalObligationExpiry","ConsentWithdrawal","AccountDeletion"],
+@@ -300,7 +300,7 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
+         "-------------------------------------------------------------------\n"
+         "only for the purpose / purpose limitation /                PurposeLimitation\n"
+         "  not use beyond original purpose / consent for new use\n"
+-        "retain only as long / no longer than necessary /           Storage\n"
++        "retain only as long / no longer than necessary /           Retention\n"
+         "  deletion / retention period / keep until\n"
+         "accurate / up-to-date / complete / correct /               Accuracy\n"
+         "  inaccurate / rectif\n"
+@@ -572,7 +572,7 @@ def build_assembler_prompt(
+         "Do NOT use snake_case (e.g. 'legal_basis' is WRONG, 'legalBasis' is correct).\n\n"
+ 
+         "ENUM ENFORCEMENT — use ONLY these exact values (case-sensitive):\n"
+-        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation\n"
++        "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation | Accuracy | Transparency\n"
+         "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
+         "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
+         "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"
+diff --git a/run_pipeline.py b/run_pipeline.py
+index 31bb603..d8995a6 100644
+--- a/run_pipeline.py
++++ b/run_pipeline.py
+@@ -862,7 +862,7 @@ _CONSTRAINT_KEYWORD_OVERRIDE: list[tuple[list[str], str]] = [
+     (["openness", "make available", "policies available", "inform", "transparent"],   "Transparency"),
+     (["safeguard", "security measure", "protect against", "encryption",
+       "unauthorized access", "physical security", "technical"],                       "Security"),
+-    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Storage"),
++    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Retention"),
+ ]
+ 
+ def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
+@@ -1209,7 +1209,7 @@ def _assemble_one_statement(
+             "a Constraint ONLY if the article explicitly restricts processing "
+             "(e.g. purpose limitation, security requirement, accuracy obligation, "
+             "retention limit). Use the most specific type from: "
+-            "PurposeLimitation | Storage | Security | Accuracy | Transparency. "
++            "PurposeLimitation | Retention | Security | Accuracy | Transparency. "
+             "If truly no restriction is stated, set constraints to []."
+         )
+ 
+diff --git a/schemas/ConstraintModel.json b/schemas/ConstraintModel.json
+index 3ef46bf..d59fa63 100644
+--- a/schemas/ConstraintModel.json
++++ b/schemas/ConstraintModel.json
+@@ -8,7 +8,9 @@
+         "Usage",
+         "Security",
+         "Retention",
+-        "PurposeLimitation"
++        "PurposeLimitation",
++        "Accuracy",
++        "Transparency"
+       ],
+       "title": "ConstraintType",
+       "type": "string"
+diff --git a/schemas/PolicyStatementModel.json b/schemas/PolicyStatementModel.json
+index ebfd45e..463c29a 100644
+--- a/schemas/PolicyStatementModel.json
++++ b/schemas/PolicyStatementModel.json
+@@ -118,7 +118,9 @@
+         "Usage",
+         "Security",
+         "Retention",
+-        "PurposeLimitation"
++        "PurposeLimitation",
++        "Accuracy",
++        "Transparency"
+       ],
+       "title": "ConstraintType",
+       "type": "string"
+diff --git a/schemas/PrivacyPolicyModel.json b/schemas/PrivacyPolicyModel.json
+index 5644e4c..fe46cf5 100644
+--- a/schemas/PrivacyPolicyModel.json
++++ b/schemas/PrivacyPolicyModel.json
+@@ -118,7 +118,9 @@
+         "Usage",
+         "Security",
+         "Retention",
+-        "PurposeLimitation"
++        "PurposeLimitation",
++        "Accuracy",
++        "Transparency"
+       ],
+       "title": "ConstraintType",
+       "type": "string"
+diff --git a/schemas/all_schemas.json b/schemas/all_schemas.json
+index b3f4128..bf4a81d 100644
+--- a/schemas/all_schemas.json
++++ b/schemas/all_schemas.json
+@@ -710,7 +710,9 @@
+           "Usage",
+           "Security",
+           "Retention",
+-          "PurposeLimitation"
++          "PurposeLimitation",
++          "Accuracy",
++          "Transparency"
+         ],
+         "title": "ConstraintType",
+         "type": "string"
+@@ -1040,7 +1042,9 @@
+           "Usage",
+           "Security",
+           "Retention",
+-          "PurposeLimitation"
++          "PurposeLimitation",
++          "Accuracy",
++          "Transparency"
+         ],
+         "title": "ConstraintType",
+         "type": "string"
+@@ -1773,7 +1777,9 @@
+           "Usage",
+           "Security",
+           "Retention",
+-          "PurposeLimitation"
++          "PurposeLimitation",
++          "Accuracy",
++          "Transparency"
+         ],
+         "title": "ConstraintType",
+         "type": "string"

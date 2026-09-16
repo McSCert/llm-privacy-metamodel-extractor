@@ -538,6 +538,8 @@ class OpenAIBackend(LLMBackend):
                 resp = self._client.chat.completions.create(
                     model      = self.model,
                     max_tokens = max_tokens,
+                    temperature = 0.0,
+                    seed       = 12345,
                     messages   = [
                         {"role": "system", "content": system},
                         {"role": "user",   "content": user},
@@ -665,6 +667,7 @@ class LocalBackend(LLMBackend):
                 with urllib.request.urlopen(req, timeout=300) as resp:
                     data = json.loads(resp.read())
 
+                log.debug(f"system_fingerprint={getattr(resp, 'system_fingerprint', None)}")
                 stats.api_calls  += 1
                 usage             = data.get("usage", {})
                 stats.tokens_in  += usage.get("prompt_tokens",    0)
@@ -862,7 +865,7 @@ _CONSTRAINT_KEYWORD_OVERRIDE: list[tuple[list[str], str]] = [
     (["openness", "make available", "policies available", "inform", "transparent"],   "Transparency"),
     (["safeguard", "security measure", "protect against", "encryption",
       "unauthorized access", "physical security", "technical"],                       "Security"),
-    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Storage"),
+    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Retention"),
 ]
 
 def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
@@ -1209,7 +1212,7 @@ def _assemble_one_statement(
             "a Constraint ONLY if the article explicitly restricts processing "
             "(e.g. purpose limitation, security requirement, accuracy obligation, "
             "retention limit). Use the most specific type from: "
-            "PurposeLimitation | Storage | Security | Accuracy | Transparency. "
+            "PurposeLimitation | Retention | Security | Accuracy | Transparency. "
             "If truly no restriction is stated, set constraints to []."
         )
 
@@ -1231,7 +1234,8 @@ def _assemble_one_statement(
         synthesis_block = (
             "## SYNTHESIS REQUIRED FOR THESE FIELDS\n"
             + "\n".join(synthesis_items)
-            + "\n\nApply the SYNTHESIS RULES.\n\n"
+            + "\n\nAn empty array is the correct answer when the article does "
+              "not state one. Do not invent a value to fill it.\n\n"
         )
         user = synthesis_block + user
 
@@ -1338,7 +1342,11 @@ def stage_assemble_and_store(
 
     xmi_writer: Optional[PolicyXMIWriter] = None
     if xmi_out_dir is not None:
-        ecore_path = Path(__file__).resolve().parent / "privacy_metamodel.ecore"
+        _root = Path(__file__).resolve().parent
+        ecore_path = next(
+            (p for p in (_root / "metamodel" / "privacy_metamodel.ecore",
+                         _root / "privacy_metamodel.ecore") if p.exists()),
+            _root / "metamodel" / "privacy_metamodel.ecore")
         if not ecore_path.exists():
             log.warning(
                 f"privacy_metamodel.ecore not found at {ecore_path}. "
