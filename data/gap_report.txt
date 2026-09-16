@@ -12,9 +12,9 @@ Coverage Matrix — PrivacyPolicyMetamodel
 Dimension                   PIPEDA
 ──────────────────────────────────
 Legal basis types                2
-Rights granted                   3
+Rights granted                   2
 Constraint types                 3
-Purpose categories               2
+Purpose categories               —
 Transfer mechanisms              —
 Retention rules                  —
 DPIA/risk assessment             —
@@ -37,10 +37,10 @@ Universe (all values seen across all laws):
 RightType coverage
 ────────────────────────────────────────────────────────────
 Universe (all values seen across all laws):
-  Access, Rectification, Restriction
+  Access, Rectification
 
   PIPEDA
-    present : Access, Rectification, Restriction
+    present : Access, Rectification
 
 
 ────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ Universe (all values seen across all laws):
 PurposeCategory coverage
 ────────────────────────────────────────────────────────────
 Universe (all values seen across all laws):
-  LegalCompliance, ServiceProvision
+  (none)
 
   PIPEDA
-    present : LegalCompliance, ServiceProvision
+    present : (none)

@@ -538,6 +538,8 @@ class OpenAIBackend(LLMBackend):
                 resp = self._client.chat.completions.create(
                     model      = self.model,
                     max_tokens = max_tokens,
+                    temperature = 0.0,
+                    seed       = 12345,
                     messages   = [
                         {"role": "system", "content": system},
                         {"role": "user",   "content": user},
@@ -665,6 +667,7 @@ class LocalBackend(LLMBackend):
                 with urllib.request.urlopen(req, timeout=300) as resp:
                     data = json.loads(resp.read())
 
+                log.debug(f"system_fingerprint={getattr(resp, 'system_fingerprint', None)}")
                 stats.api_calls  += 1
                 usage             = data.get("usage", {})
                 stats.tokens_in  += usage.get("prompt_tokens",    0)
@@ -1231,7 +1234,8 @@ def _assemble_one_statement(
         synthesis_block = (
             "## SYNTHESIS REQUIRED FOR THESE FIELDS\n"
             + "\n".join(synthesis_items)
-            + "\n\nApply the SYNTHESIS RULES.\n\n"
+            + "\n\nAn empty array is the correct answer when the article does "
+              "not state one. Do not invent a value to fill it.\n\n"
         )
         user = synthesis_block + user
 

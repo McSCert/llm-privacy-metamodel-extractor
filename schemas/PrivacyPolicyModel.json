@@ -353,7 +353,6 @@
           "items": {
             "$ref": "#/$defs/PurposeModel"
           },
-          "minItems": 1,
           "title": "Purposes",
           "type": "array"
         },
@@ -375,7 +374,6 @@
           "items": {
             "$ref": "#/$defs/ConstraintModel"
           },
-          "minItems": 1,
           "title": "Constraints",
           "type": "array"
         },
@@ -383,7 +381,6 @@
           "items": {
             "$ref": "#/$defs/RightModel"
           },
-          "minItems": 1,
           "title": "Rightimpacted",
           "type": "array"
         },
@@ -421,12 +418,9 @@
       "required": [
         "description",
         "actor",
-        "purposes",
         "processingActivity",
         "legalBasis",
-        "governingRegulations",
-        "constraints",
-        "rightImpacted"
+        "governingRegulations"
       ],
       "title": "PolicyStatementModel",
       "type": "object"
