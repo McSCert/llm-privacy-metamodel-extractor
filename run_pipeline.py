@@ -531,8 +531,28 @@ class OpenAIBackend(LLMBackend):
         user:       str,
         stats:      PipelineStats,
         max_tokens: int = 2048,
+        schema:     Optional[type] = None,
         **kwargs,
     ) -> str:
+        # ── Inject JSON Schema into decoding constraints ───────────────────────
+        # Previously `schema` fell into **kwargs and was discarded, so the
+        # OpenAI arm ran unconstrained while the local arm did not.
+        # strict=False: OpenAI strict mode also demands additionalProperties
+        # =false and every property required, which these models do not meet.
+        extra: dict = {}
+        if schema is not None:
+            json_schema = schema.model_json_schema()
+            json_schema.pop("title", None)
+            json_schema = _inline_refs(json_schema)   # flatten $defs
+            extra["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name":   schema.__name__,
+                    "strict": False,
+                    "schema": json_schema,
+                },
+            }
+
         for attempt in range(4):
             try:
                 resp = self._client.chat.completions.create(
@@ -544,12 +564,18 @@ class OpenAIBackend(LLMBackend):
                         {"role": "system", "content": system},
                         {"role": "user",   "content": user},
                     ],
+                    **extra,
                 )
                 stats.api_calls  += 1
                 stats.tokens_in  += resp.usage.prompt_tokens
                 stats.tokens_out += resp.usage.completion_tokens
+                log.debug(
+                    f"system_fingerprint="
+                    f"{getattr(resp, 'system_fingerprint', None)}"
+                )
                 raw = resp.choices[0].message.content or ""
-                return self._strip_fences(raw)
+                # _strip_fences only needed in text-mode (schema=None)
+                return raw if schema is not None else self._strip_fences(raw)
 
             except self._openai.RateLimitError:
                 wait = 2 ** attempt
