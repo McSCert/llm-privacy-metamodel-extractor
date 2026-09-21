@@ -13,12 +13,12 @@ Dimension                   PIPEDA
 ──────────────────────────────────
 Legal basis types                2
 Rights granted                   2
-Constraint types                 3
-Purpose categories               —
-Transfer mechanisms              —
+Constraint types                 4
+Purpose categories               1
+Transfer mechanisms              1
 Retention rules                  —
 DPIA/risk assessment             —
-Consent withdrawal             ·7%
+Consent withdrawal            ·15%
 ──────────────────────────────────
 Values: integers = distinct enum values found; ✓ = mandated (≥30% of stmts); · = occasional; — = absent
 
@@ -59,27 +59,27 @@ DPIA / risk assessment mandate (has_dpia)
 TransferMechanism coverage
 ────────────────────────────────────────────────────────────
 Universe (all values seen across all laws):
-  (none)
+  Consent
 
   PIPEDA
-    present : (none)
+    present : Consent
 
 
 ────────────────────────────────────────────────────────────
 ConstraintType coverage
 ────────────────────────────────────────────────────────────
 Universe (all values seen across all laws):
-  PurposeLimitation, Transparency, Usage
+  PurposeLimitation, Retention, Transparency, Usage
 
   PIPEDA
-    present : PurposeLimitation, Transparency, Usage
+    present : PurposeLimitation, Retention, Transparency, Usage
 
 
 ────────────────────────────────────────────────────────────
 PurposeCategory coverage
 ────────────────────────────────────────────────────────────
 Universe (all values seen across all laws):
-  (none)
+  _Unset
 
   PIPEDA
-    present : (none)
+    present : _Unset
