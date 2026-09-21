@@ -45,6 +45,13 @@
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Accuracy" value="7"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Transparency" value="8"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="EnforcementLevel">
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Mandatory" value="1"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Conditional" value="2"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Recommended" value="3"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Prohibited" value="4"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EEnum" name="RightType">
     <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Access" value="1"/>
@@ -116,98 +123,102 @@
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Anonymous" value="3"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="PrivacyPolicy">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validFrom" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validTo" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validFrom" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validTo" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="statements" eType="#//PolicyStatement" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actorCatalogue" eType="#//Actor" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataCatalogue" eType="#//PersonalData" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="regulationCatalogue" eType="#//Regulation" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdictionCatalogue" eType="#//Jurisdiction" upperBound="-1" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="PolicyStatement">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="statementId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="statementId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="actor" eType="#//Actor" lowerBound="1" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="purposes" eType="#//Purpose" upperBound="-1" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="processingActivity" eType="#//ProcessingActivity" lowerBound="1" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="legalBasis" eType="#//LegalBasis" lowerBound="1" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="governingRegulations" eType="#//Regulation" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processingActivity" eType="#//ProcessingActivity" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="legalBasis" eType="#//LegalBasis" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="constraints" eType="#//Constraint" upperBound="-1" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="rightImpacted" eType="#//Right" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actor" eType="#//Actor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="governingRegulations" eType="#//Regulation" lowerBound="1" upperBound="-1"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="retentionPolicies" eType="#//RetentionPolicy" upperBound="-1" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="dataTransfers" eType="#//DataTransfer" upperBound="-1" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="consentWithdrawal" eType="#//ConsentWithdrawal" upperBound="-1" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Actor">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="actorId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="actorId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="role" eType="#//ActorRole" lowerBound="1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="LegalBasis">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="basisId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="basisId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//LegalBasisType" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="evidence" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="evidence" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" upperBound="-1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ProcessingActivity">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="activityId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="activityId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="action" eType="#//ProcessingAction" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="riskAssessmentReference" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="dataProcessed" eType="#//PersonalData" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataProcessed" eType="#//PersonalData" upperBound="-1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="DataTransfer">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transferId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transferId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="mechanism" eType="#//TransferMechanism" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="adequacyDecisionRef" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="destinationJurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="dataTransferred" eType="#//PersonalData" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="destinationJurisdiction" eType="#//Jurisdiction" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataTransferred" eType="#//PersonalData" upperBound="-1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Purpose">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="purposeId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="purposeId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="category" eType="#//PurposeCategory" lowerBound="1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="PersonalData">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dataId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dataId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="category" eType="#//PersonalDataCategory" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="sensitivity" eType="#//SensitivityLevel" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="identifiability" eType="#//Identifiability" lowerBound="1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Constraint">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="constraintId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="constraintId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//ConstraintType" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="expression" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="enforcementLevel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="enforcementLevel" eType="#//EnforcementLevel" lowerBound="1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Right">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="rightId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="rightId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="#//RightType" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="triggerCondition" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fulfillmentProcess" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="triggerCondition" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fulfillmentProcess" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="RetentionPolicy">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="retentionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="duration" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="retentionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="duration" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="unit" eType="#//RetentionUnit" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="trigger" eType="#//RetentionTrigger" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="basisArticle" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ConsentWithdrawal">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="withdrawalId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="channel" eType="#//WithdrawalChannel" lowerBound="1" upperBound="-1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="deadline" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="effectOnPriorProcessing" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="withdrawalId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="channel" eType="#//WithdrawalChannel" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="deadline" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="effectOnPriorProcessing" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Regulation">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="regulationId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="regulationId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" lowerBound="1" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="jurisdiction" eType="#//Jurisdiction" upperBound="-1"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Jurisdiction">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="jurisdictionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="jurisdictionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1" iD="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" lowerBound="1"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>

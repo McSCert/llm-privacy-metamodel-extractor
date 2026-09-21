@@ -4,7 +4,12 @@ generate_ecore.py — Generates privacy_metamodel.ecore from the JSON metamodel
 
 Design decisions (per researcher's choices):
   - Single flat EPackage (no sub-packages) for clean Eclipse EMF loading
-  - ALL associations → containment=True (inline serialization per policy)
+  - Shared entities (Actor, PersonalData, Regulation, Jurisdiction) are owned
+    ONCE by PrivacyPolicy in catalogues; statements reference them
+    non-containment so one instance can be shared and matched by identity
+  - Other associations remain containment=True (inline per statement)
+  - Absence convention: empty collection / unset = concept ABSENT from the
+    source text; enum literal _Unset = present but value undetermined
   - Back-references (owner ← owned) are DROPPED (derivable from containment tree)
   - source_clause is DROPPED (pipeline-only, not part of the model)
   - channel on ConsentWithdrawal is multi-valued EAttribute (upper=-1)
@@ -70,10 +75,16 @@ ConstraintType = _make_enum("ConstraintType", [
     "Accuracy", "Transparency",
 ])
 
+EnforcementLevel = _make_enum("EnforcementLevel", [
+    "_Unset",
+    "Mandatory", "Conditional", "Recommended", "Prohibited",
+])
+
 RightType = _make_enum("RightType", [
     "_Unset",
     "Access", "Rectification", "Erasure", "Restriction",
     "Portability", "Objection", "AutomatedDecisionOptOut",
+    "Complaint",
 ])
 
 RetentionUnit = _make_enum("RetentionUnit", [
@@ -159,27 +170,35 @@ for c in _all_classes:
 
 # ── PrivacyPolicy ─────────────────────────────────────────────────────────────
 PrivacyPolicy.eStructuralFeatures.extend([
-    EAttribute("policyId",   EString, lower=1),
+    EAttribute("policyId",   EString, lower=1, iD=True),
     EAttribute("version",    EString, lower=1),
-    EAttribute("validFrom",  ELong,   lower=1),
-    EAttribute("validTo",    ELong,   lower=1),
+    EAttribute("validFrom",  ELong,   lower=0, upper=1),
+    EAttribute("validTo",    ELong,   lower=0, upper=1),
     # Containment: one policy owns all its statements
     EReference("statements", PolicyStatement,
                lower=1, upper=-1, containment=True),
+    # Catalogues: the policy owns ONE instance of each shared entity.
+    # Statements point at these non-containment, so "Canada" or "PIPEDA"
+    # exists once per policy instead of being duplicated per statement.
+    EReference("actorCatalogue",        Actor,        lower=0, upper=-1, containment=True),
+    EReference("dataCatalogue",         PersonalData, lower=0, upper=-1, containment=True),
+    EReference("regulationCatalogue",   Regulation,   lower=0, upper=-1, containment=True),
+    EReference("jurisdictionCatalogue", Jurisdiction, lower=0, upper=-1, containment=True),
 ])
 
 # ── PolicyStatement ───────────────────────────────────────────────────────────
 PolicyStatement.eStructuralFeatures.extend([
-    EAttribute("statementId",  EString, lower=1),
+    EAttribute("statementId",  EString, lower=1, iD=True),
     EAttribute("description",  EString, lower=1),
-    # Required contained children
-    EReference("actor",              Actor,             lower=1, upper=1,  containment=True),
+    # Contained children — owned by this statement, absent when not stated
     EReference("purposes",           Purpose,           lower=0, upper=-1, containment=True),
-    EReference("processingActivity", ProcessingActivity,lower=1, upper=1,  containment=True),
-    EReference("legalBasis",         LegalBasis,        lower=1, upper=1,  containment=True),
-    EReference("governingRegulations", Regulation,      lower=1, upper=-1, containment=True),
+    EReference("processingActivity", ProcessingActivity,lower=0, upper=1,  containment=True),
+    EReference("legalBasis",         LegalBasis,        lower=0, upper=1,  containment=True),
     EReference("constraints",        Constraint,        lower=0, upper=-1, containment=True),
     EReference("rightImpacted",      Right,             lower=0, upper=-1, containment=True),
+    # References into the policy catalogues (non-containment)
+    EReference("actor",                Actor,      lower=0, upper=1,  containment=False),
+    EReference("governingRegulations", Regulation, lower=1, upper=-1, containment=False),
     # Optional contained children
     EReference("retentionPolicies",  RetentionPolicy,   lower=0, upper=-1, containment=True),
     EReference("dataTransfers",      DataTransfer,      lower=0, upper=-1, containment=True),
@@ -188,51 +207,51 @@ PolicyStatement.eStructuralFeatures.extend([
 
 # ── Actor ─────────────────────────────────────────────────────────────────────
 Actor.eStructuralFeatures.extend([
-    EAttribute("actorId", EString,    lower=1),
+    EAttribute("actorId", EString,    lower=1, iD=True),
     EAttribute("name",    EString,    lower=1),
     EAttribute("role",    ActorRole,  lower=1),
 ])
 
 # ── LegalBasis ────────────────────────────────────────────────────────────────
 LegalBasis.eStructuralFeatures.extend([
-    EAttribute("basisId",  EString,       lower=1),
+    EAttribute("basisId",  EString,       lower=1, iD=True),
     EAttribute("type",     LegalBasisType,lower=1),
-    EAttribute("evidence", EString,       lower=1),
-    EReference("jurisdiction", Jurisdiction, lower=1, upper=-1, containment=True),
+    EAttribute("evidence", EString,       lower=0, upper=1),
+    EReference("jurisdiction", Jurisdiction, lower=0, upper=-1, containment=False),
 ])
 
 # ── ProcessingActivity ────────────────────────────────────────────────────────
 ProcessingActivity.eStructuralFeatures.extend([
-    EAttribute("activityId",            EString,         lower=1),
+    EAttribute("activityId",            EString,         lower=1, iD=True),
     EAttribute("description",           EString,         lower=1),
     EAttribute("action",                ProcessingAction,lower=1),
     EAttribute("riskAssessmentReference", EString,       lower=0, upper=1),
-    EReference("dataProcessed", PersonalData, lower=1, upper=-1, containment=True),
+    EReference("dataProcessed", PersonalData, lower=0, upper=-1, containment=False),
 ])
 
 # ── DataTransfer ──────────────────────────────────────────────────────────────
 DataTransfer.eStructuralFeatures.extend([
-    EAttribute("transferId",          EString,          lower=1),
+    EAttribute("transferId",          EString,          lower=1, iD=True),
     EAttribute("mechanism",           TransferMechanism,lower=1),
     EAttribute("adequacyDecisionRef", EString,          lower=0, upper=1),
     EReference("destinationJurisdiction", Jurisdiction,
-               lower=1, upper=-1, containment=True),
+               lower=0, upper=-1, containment=False),
     EReference("dataTransferred", PersonalData,
-               lower=1, upper=-1, containment=True),
+               lower=0, upper=-1, containment=False),
 ])
 
 # ── Purpose ───────────────────────────────────────────────────────────────────
 Purpose.eStructuralFeatures.extend([
-    EAttribute("purposeId",   EString,         lower=1),
+    EAttribute("purposeId",   EString,         lower=1, iD=True),
     EAttribute("description", EString,         lower=1),
     EAttribute("category",    PurposeCategory, lower=1),
 ])
 
 # ── PersonalData ──────────────────────────────────────────────────────────────
 PersonalData.eStructuralFeatures.extend([
-    EAttribute("dataId",          EString,             lower=1),
+    EAttribute("dataId",          EString,             lower=1, iD=True),
     EAttribute("description",     EString,             lower=1),
-    EAttribute("source",          EString,             lower=1),
+    EAttribute("source",          EString,             lower=0, upper=1),
     EAttribute("category",        PersonalDataCategory,lower=1),
     EAttribute("sensitivity",     SensitivityLevel,    lower=1),
     EAttribute("identifiability", Identifiability,     lower=1),
@@ -240,51 +259,51 @@ PersonalData.eStructuralFeatures.extend([
 
 # ── Constraint ────────────────────────────────────────────────────────────────
 Constraint.eStructuralFeatures.extend([
-    EAttribute("constraintId",    EString,       lower=1),
-    EAttribute("type",            ConstraintType,lower=1),
-    EAttribute("expression",      EString,       lower=1),
-    EAttribute("enforcementLevel",EString,       lower=1),
+    EAttribute("constraintId",    EString,         lower=1, iD=True),
+    EAttribute("type",            ConstraintType,  lower=1),
+    EAttribute("expression",      EString,         lower=1),
+    EAttribute("enforcementLevel",EnforcementLevel,lower=1),
 ])
 
 # ── Right ─────────────────────────────────────────────────────────────────────
 Right.eStructuralFeatures.extend([
-    EAttribute("rightId",           EString,   lower=1),
+    EAttribute("rightId",           EString,   lower=1, iD=True),
     EAttribute("type",              RightType, lower=1),
-    EAttribute("triggerCondition",  EString,   lower=1),
-    EAttribute("fulfillmentProcess",EString,   lower=1),
+    EAttribute("triggerCondition",  EString,   lower=0, upper=1),
+    EAttribute("fulfillmentProcess",EString,   lower=0, upper=1),
 ])
 
 # ── RetentionPolicy ───────────────────────────────────────────────────────────
 RetentionPolicy.eStructuralFeatures.extend([
-    EAttribute("retentionId",   EString,         lower=1),
-    EAttribute("duration",      EInt,            lower=1),
+    EAttribute("retentionId",   EString,         lower=1, iD=True),
+    EAttribute("duration",      EInt,            lower=0, upper=1),
     EAttribute("unit",          RetentionUnit,   lower=1),
     EAttribute("trigger",       RetentionTrigger,lower=1),
     EAttribute("basisArticle",  EString,         lower=0, upper=1),
 ])
 
 # ── ConsentWithdrawal ─────────────────────────────────────────────────────────
-# channel is 1..* (multi-valued EAttribute of EEnum type)
+# channel is 0..* (multi-valued EAttribute of EEnum type)
 ConsentWithdrawal.eStructuralFeatures.extend([
-    EAttribute("withdrawalId",          EString,          lower=1),
-    EAttribute("channel",               WithdrawalChannel,lower=1, upper=-1),
-    EAttribute("deadline",              EString,          lower=1),
-    EAttribute("effectOnPriorProcessing", EString,        lower=1),
+    EAttribute("withdrawalId",          EString,          lower=1, iD=True),
+    EAttribute("channel",               WithdrawalChannel,lower=0, upper=-1),
+    EAttribute("deadline",              EString,          lower=0, upper=1),
+    EAttribute("effectOnPriorProcessing", EString,        lower=0, upper=1),
 ])
 
 # ── Regulation ────────────────────────────────────────────────────────────────
 Regulation.eStructuralFeatures.extend([
-    EAttribute("regulationId", EString, lower=1),
+    EAttribute("regulationId", EString, lower=1, iD=True),
     EAttribute("name",         EString, lower=1),
-    EAttribute("version",      EString, lower=1),
-    EAttribute("description",  EString, lower=1),
+    EAttribute("version",      EString, lower=0, upper=1),
+    EAttribute("description",  EString, lower=0, upper=1),
     EReference("jurisdiction", Jurisdiction,
-               lower=1, upper=-1, containment=True),
+               lower=0, upper=-1, containment=False),
 ])
 
 # ── Jurisdiction ──────────────────────────────────────────────────────────────
 Jurisdiction.eStructuralFeatures.extend([
-    EAttribute("jurisdictionId", EString, lower=1),
+    EAttribute("jurisdictionId", EString, lower=1, iD=True),
     EAttribute("name",           EString, lower=1),
     EAttribute("description",    EString, lower=0, upper=1),
 ])

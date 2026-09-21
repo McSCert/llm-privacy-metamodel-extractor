@@ -14,6 +14,17 @@
       ],
       "title": "ConstraintType",
       "type": "string"
+    },
+    "EnforcementLevel": {
+      "enum": [
+        "_Unset",
+        "Mandatory",
+        "Conditional",
+        "Recommended",
+        "Prohibited"
+      ],
+      "title": "EnforcementLevel",
+      "type": "string"
     }
   },
   "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
@@ -30,8 +41,7 @@
       "type": "string"
     },
     "enforcementLevel": {
-      "title": "Enforcementlevel",
-      "type": "string"
+      "$ref": "#/$defs/EnforcementLevel"
     },
     "source_clause": {
       "default": "",

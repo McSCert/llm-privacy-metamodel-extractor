@@ -199,18 +199,24 @@ def _actor_prompt(law: str, ref: str, text: str) -> str:
 def _purpose_prompt(law: str, ref: str, text: str) -> str:
     eg = _enum_block(["PurposeCategory"])
     return (
-        "## Task: Extract a Purpose instance\n\n"
+        "## Task: Extract ALL Purpose instances\n\n"
         "### What you are extracting\n"
-        "If NO purpose is described, return exactly:\n"
-        "{\"_no_purpose_stated\": true}\n\n"
-        "The reason or objective for which personal data is processed.\n"
+        "Every distinct reason or objective for which personal data is "
+        "processed, as stated in this article.\n"
         "Maps to: GDPR Art.5(1)(b) | LGPD Art.6 | CCPA business-purpose | PIPEDA Principle 2\n\n"
+        "If NO purpose is described, return exactly: {\"purposes\": []}\n"
+        "An empty array is a valid, meaningful answer — it records that the "
+        "article states no purpose. Do not invent one.\n\n"
         "### Output schema\n"
         "{\n"
-        '  "purposeId": "",\n'
-        '  "description": "<specific purpose as stated in the legal text>",\n'
-        '  "category": "<PurposeCategory>",\n'
-        '  "source_clause": "<article reference>"\n'
+        '  "purposes": [\n'
+        "    {\n"
+        '      "purposeId": "",\n'
+        '      "description": "<specific purpose as stated in the legal text>",\n'
+        '      "category": "<PurposeCategory>",\n'
+        '      "source_clause": "<article or clause reference>"\n'
+        "    }\n"
+        "  ]\n"
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
         "### Decision guide for `category`\n"
@@ -222,6 +228,13 @@ def _purpose_prompt(law: str, ref: str, text: str) -> str:
         "marketing / advertising / promotion         Marketing\n"
         "analytics / statistics / research           Analytics\n"
         "research / scientific / academic            Research\n\n"
+        "### Key rules\n"
+        "- Return one array entry per DISTINCT purpose. An article that names\n"
+        "  three purposes yields three entries, not one merged entry.\n"
+        "- Sub-clauses count: a purpose stated in 4.3.5 is a separate entry\n"
+        "  from one stated in the principle heading.\n"
+        "- Two entries that differ only in wording are ONE purpose — merge them.\n"
+        "- Cite the most specific clause you can in source_clause.\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -234,19 +247,24 @@ def _purpose_prompt(law: str, ref: str, text: str) -> str:
 def _right_prompt(law: str, ref: str, text: str) -> str:
     eg = _enum_block(["RightType"])
     return (
-        "## Task: Extract a Right instance\n\n"
+        "## Task: Extract ALL Right instances\n\n"
         "### What you are extracting\n"
-        "A data-subject right affected by this processing statement.\n"
+        "Every data-subject right affected by this processing statement.\n"
         "Maps to: GDPR Art.15-22 | LGPD Art.17-22 | CCPA §1798.100-145 | PIPEDA Principle 9\n\n"
-        "If NO right is described, return exactly:\n"
-        '{"_no_right_stated": true}\n\n'
+        "If NO right is described, return exactly: {\"rights\": []}\n"
+        "An empty array is a valid, meaningful answer — it records that the "
+        "article grants no right. Do not invent one.\n\n"
         "### Output schema\n"
         "{\n"
-        '  "rightId": "",\n'
-        '  "type": "<RightType>",\n'
-        '  "triggerCondition": "<condition under which the right may be exercised>",\n'
-        '  "fulfillmentProcess": "<how the controller must respond>",\n'
-        '  "source_clause": "<article reference>"\n'
+        '  "rights": [\n'
+        "    {\n"
+        '      "rightId": "",\n'
+        '      "type": "<RightType>",\n'
+        '      "triggerCondition": "<condition under which the right may be exercised>",\n'
+        '      "fulfillmentProcess": "<how the controller must respond>",\n'
+        '      "source_clause": "<article or clause reference>"\n'
+        "    }\n"
+        "  ]\n"
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
         "### Decision guide for `type`\n"
@@ -260,7 +278,13 @@ def _right_prompt(law: str, ref: str, text: str) -> str:
         "object to processing / opt out of processing       Objection\n"
         "automated decision / profiling opt-out             AutomatedDecisionOptOut\n\n"
         "### Key rules\n"
-        "- Extract ONE Right per call — the primary right described in this article.\n"
+        "- Return one array entry per DISTINCT right. An article that grants\n"
+        "  both access and correction yields TWO entries, not one.\n"
+        "  (PIPEDA Principle 9 is exactly this case: 4.9 grants access and\n"
+        "  4.9.5 grants correction — both belong in the array.)\n"
+        "- Sub-clauses count: a right stated in a numbered sub-clause is a\n"
+        "  separate entry from one stated in the principle heading.\n"
+        "- Two entries with the same `type` are ONE right — merge them.\n"
         "- triggerCondition: the circumstance that activates the right\n"
         "  (e.g. 'data subject makes a written request', 'processing is based on consent').\n"
         "- fulfillmentProcess: what the controller must do and within what timeframe\n"
@@ -278,21 +302,27 @@ def _right_prompt(law: str, ref: str, text: str) -> str:
 def _constraint_prompt(law: str, ref: str, text: str) -> str:
     eg = _enum_block(["ConstraintType"])
     return (
-        "## Task: Extract a Constraint instance\n\n"
+        "## Task: Extract ALL Constraint instances\n\n"
         "### What you are extracting\n"
-        "If NO explicit constraint or restriction is stated in this article, "
-        "return exactly: {\"_no_constraint_stated\": true}\n\n"
-        "Not the legal basis (why), not the purpose (what for),\n"
-        "but a specific operational rule that limits or shapes processing.\n"
+        "Every specific operational rule that limits or shapes processing.\n"
+        "Not the legal basis (why), not the purpose (what for).\n"
         "Examples: retention limits, geographic restrictions, encryption requirements,\n"
         "purpose-limitation rules, usage restrictions.\n\n"
+        "If NO explicit constraint is stated, return exactly: "
+        "{\"constraints\": []}\n"
+        "An empty array is a valid, meaningful answer — it records that the "
+        "article states no constraint. Do not invent one.\n\n"
         "### Output schema\n"
         "{\n"
-        '  "constraintId": "",\n'
-        '  "type": "<ConstraintType>",\n'
-        '  "expression": "<natural-language statement of the constraint>",\n'
-        '  "enforcementLevel": "<Mandatory | Recommended | BestEffort>",\n'
-        '  "source_clause": "<article reference>"\n'
+        '  "constraints": [\n'
+        "    {\n"
+        '      "constraintId": "",\n'
+        '      "type": "<ConstraintType>",\n'
+        '      "expression": "<natural-language statement of the constraint>",\n'
+        '      "enforcementLevel": "<Mandatory | Recommended | BestEffort>",\n'
+        '      "source_clause": "<article or clause reference>"\n'
+        "    }\n"
+        "  ]\n"
         "}\n\n"
         "### Enum grammar\n" + eg + "\n\n"
         "### Decision guide for `type`\n"
@@ -316,7 +346,11 @@ def _constraint_prompt(law: str, ref: str, text: str) -> str:
         "  compliance engineer could evaluate — not just a paraphrase of the heading.\n"
         "- enforcementLevel: 'Mandatory' for SHALL/MUST, 'Recommended' for SHOULD,\n"
         "  'BestEffort' for MAY/CAN.\n"
-        "- Extract the PRIMARY constraint for this call.\n\n"
+        "- Return one array entry per DISTINCT constraint. An article that\n"
+        "  both limits retention AND requires accuracy yields TWO entries.\n"
+        "- Sub-clauses count: a constraint stated in a numbered sub-clause is\n"
+        "  a separate entry from one stated in the principle heading.\n"
+        "- Two entries with the same `type` are ONE constraint — merge them.\n\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -548,7 +582,7 @@ def build_assembler_prompt(
         '    }\n'
         '  ],\n\n'
         '  "constraints": [ <copy CONSTRAINTS array exactly> ],\n\n'
-        '  "rightImpacted": [ <copy RIGHTS IMPACTED array exactly — REQUIRED, never omit> ],\n\n'
+        '  "rightImpacted": [ <copy RIGHTS IMPACTED array exactly — [] if the article names no right> ],\n\n'
         '  "retentionPolicies": [ <copy RETENTION POLICIES array, or [] if empty> ],\n\n'
         '  "dataTransfers": [ <copy DATA TRANSFERS array, or [] if empty> ],\n\n'
         '  "consentWithdrawal": [ <copy CONSENT WITHDRAWAL array — see schema below> ]\n'
@@ -632,7 +666,7 @@ def build_assembler_prompt(
         f"LEGAL BASIS:\n{legal_basis_json}\n\n"
         f"GOVERNING REGULATIONS:\n{regulations_json}\n\n"
         f"CONSTRAINTS:\n{constraints_json}\n\n"
-        f"RIGHTS IMPACTED:  ⚠ rightImpacted is a REQUIRED top-level key in your output\n"
+        f"RIGHTS IMPACTED:  key must be present; use [] if the article grants no right\n"
         f"{rights_json}\n\n"
         f"RETENTION POLICIES:\n{retention_json}\n\n"
         f"DATA TRANSFERS:\n{transfers_json}\n\n"

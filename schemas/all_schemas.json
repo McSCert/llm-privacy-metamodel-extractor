@@ -74,6 +74,7 @@
         "type": "object"
       }
     },
+    "description": "Metamodel class: Regulation\nAuto-generated from privacy_metamodel.ecore.",
     "properties": {
       "regulationId": {
         "title": "Regulationid",
@@ -85,36 +86,48 @@
         "type": "string"
       },
       "version": {
-        "default": "",
-        "description": "Version or amendment identifier.",
-        "title": "Version",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Version or amendment identifier. Omit if the text does not state one.",
+        "title": "Version"
       },
       "description": {
-        "default": "",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
         "description": "Brief description of the regulation's scope.",
-        "title": "Description",
-        "type": "string"
+        "title": "Description"
       },
       "jurisdiction": {
-        "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+        "default": [],
         "items": {
           "$ref": "#/$defs/JurisdictionModel"
         },
-        "minItems": 1,
         "title": "Jurisdiction",
         "type": "array"
       },
       "source_clause": {
         "default": "",
-        "description": "RAG chunk citation for this regulation reference.",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
         "title": "Source Clause",
         "type": "string"
       }
     },
     "required": [
-      "name",
-      "jurisdiction"
+      "name"
     ],
     "title": "RegulationModel",
     "type": "object"
@@ -211,8 +224,16 @@
         "type": "string"
       },
       "source": {
-        "title": "Source",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source"
       },
       "category": {
         "$ref": "#/$defs/PersonalDataCategory"
@@ -232,7 +253,6 @@
     },
     "required": [
       "description",
-      "source",
       "category",
       "sensitivity",
       "identifiability"
@@ -280,8 +300,16 @@
             "type": "string"
           },
           "source": {
-            "title": "Source",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
           },
           "category": {
             "$ref": "#/$defs/PersonalDataCategory"
@@ -301,7 +329,6 @@
         },
         "required": [
           "description",
-          "source",
           "category",
           "sensitivity",
           "identifiability"
@@ -334,7 +361,7 @@
         "type": "string"
       }
     },
-    "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+    "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_3_warning",
     "properties": {
       "activityId": {
         "title": "Activityid",
@@ -360,10 +387,11 @@
         "title": "Riskassessmentreference"
       },
       "dataProcessed": {
+        "default": [],
+        "description": "Personal data the activity operates on. Empty list if the clause names no data category.",
         "items": {
           "$ref": "#/$defs/PersonalDataModel"
         },
-        "minItems": 1,
         "title": "Dataprocessed",
         "type": "array"
       },
@@ -376,8 +404,7 @@
     },
     "required": [
       "description",
-      "action",
-      "dataProcessed"
+      "action"
     ],
     "title": "ProcessingActivityModel",
     "type": "object"
@@ -458,8 +485,16 @@
             "type": "string"
           },
           "source": {
-            "title": "Source",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
           },
           "category": {
             "$ref": "#/$defs/PersonalDataCategory"
@@ -479,7 +514,6 @@
         },
         "required": [
           "description",
-          "source",
           "category",
           "sensitivity",
           "identifiability"
@@ -513,7 +547,7 @@
         "type": "string"
       }
     },
-    "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+    "description": "Metamodel class: DataTransfer\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_dt1",
     "properties": {
       "transferId": {
         "title": "Transferid",
@@ -537,34 +571,32 @@
         "title": "Adequacydecisionref"
       },
       "destinationJurisdiction": {
-        "description": "Destination jurisdiction(s) for the transfer.",
+        "default": [],
+        "description": "Destination jurisdiction(s). Empty list if the text names none.",
         "items": {
           "$ref": "#/$defs/JurisdictionModel"
         },
-        "minItems": 1,
         "title": "Destinationjurisdiction",
         "type": "array"
       },
       "dataTransferred": {
-        "description": "Personal data categories being transferred.",
+        "default": [],
+        "description": "Personal data categories being transferred. Empty list if the text names none.",
         "items": {
           "$ref": "#/$defs/PersonalDataModel"
         },
-        "minItems": 1,
         "title": "Datatransferred",
         "type": "array"
       },
       "source_clause": {
         "default": "",
-        "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+        "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
         "title": "Source Clause",
         "type": "string"
       }
     },
     "required": [
-      "mechanism",
-      "destinationJurisdiction",
-      "dataTransferred"
+      "mechanism"
     ],
     "title": "DataTransferModel",
     "type": "object"
@@ -674,14 +706,23 @@
         "$ref": "#/$defs/LegalBasisType"
       },
       "evidence": {
-        "title": "Evidence",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Verbatim phrase supporting this legal basis. Omit if none is stated.",
+        "title": "Evidence"
       },
       "jurisdiction": {
+        "default": [],
         "items": {
           "$ref": "#/$defs/JurisdictionModel"
         },
-        "minItems": 1,
         "title": "Jurisdiction",
         "type": "array"
       },
@@ -693,9 +734,7 @@
       }
     },
     "required": [
-      "type",
-      "evidence",
-      "jurisdiction"
+      "type"
     ],
     "title": "LegalBasisModel",
     "type": "object"
@@ -716,6 +755,17 @@
         ],
         "title": "ConstraintType",
         "type": "string"
+      },
+      "EnforcementLevel": {
+        "enum": [
+          "_Unset",
+          "Mandatory",
+          "Conditional",
+          "Recommended",
+          "Prohibited"
+        ],
+        "title": "EnforcementLevel",
+        "type": "string"
       }
     },
     "description": "Metamodel class: Constraint\nAuto-generated from privacy_metamodel.ecore.",
@@ -732,8 +782,7 @@
         "type": "string"
       },
       "enforcementLevel": {
-        "title": "Enforcementlevel",
-        "type": "string"
+        "$ref": "#/$defs/EnforcementLevel"
       },
       "source_clause": {
         "default": "",
@@ -777,12 +826,28 @@
         "$ref": "#/$defs/RightType"
       },
       "triggerCondition": {
-        "title": "Triggercondition",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Triggercondition"
       },
       "fulfillmentProcess": {
-        "title": "Fulfillmentprocess",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Fulfillmentprocess"
       },
       "source_clause": {
         "default": "",
@@ -792,9 +857,7 @@
       }
     },
     "required": [
-      "type",
-      "triggerCondition",
-      "fulfillmentProcess"
+      "type"
     ],
     "title": "RightModel",
     "type": "object"
@@ -833,8 +896,16 @@
         "type": "string"
       },
       "duration": {
-        "title": "Duration",
-        "type": "integer"
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Duration"
       },
       "unit": {
         "$ref": "#/$defs/RetentionUnit"
@@ -862,7 +933,6 @@
       }
     },
     "required": [
-      "duration",
       "unit",
       "trigger"
     ],
@@ -892,20 +962,36 @@
         "type": "string"
       },
       "channel": {
+        "default": [],
         "items": {
           "$ref": "#/$defs/WithdrawalChannel"
         },
-        "minItems": 1,
         "title": "Channel",
         "type": "array"
       },
       "deadline": {
-        "title": "Deadline",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Deadline"
       },
       "effectOnPriorProcessing": {
-        "title": "Effectonpriorprocessing",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Effectonpriorprocessing"
       },
       "source_clause": {
         "default": "",
@@ -914,11 +1000,6 @@
         "type": "string"
       }
     },
-    "required": [
-      "channel",
-      "deadline",
-      "effectOnPriorProcessing"
-    ],
     "title": "ConsentWithdrawalModel",
     "type": "object"
   },
@@ -971,20 +1052,36 @@
             "type": "string"
           },
           "channel": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/WithdrawalChannel"
             },
-            "minItems": 1,
             "title": "Channel",
             "type": "array"
           },
           "deadline": {
-            "title": "Deadline",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Deadline"
           },
           "effectOnPriorProcessing": {
-            "title": "Effectonpriorprocessing",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effectonpriorprocessing"
           },
           "source_clause": {
             "default": "",
@@ -993,11 +1090,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "channel",
-          "deadline",
-          "effectOnPriorProcessing"
-        ],
         "title": "ConsentWithdrawalModel",
         "type": "object"
       },
@@ -1016,8 +1108,7 @@
             "type": "string"
           },
           "enforcementLevel": {
-            "title": "Enforcementlevel",
-            "type": "string"
+            "$ref": "#/$defs/EnforcementLevel"
           },
           "source_clause": {
             "default": "",
@@ -1050,7 +1141,7 @@
         "type": "string"
       },
       "DataTransferModel": {
-        "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+        "description": "Metamodel class: DataTransfer\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_dt1",
         "properties": {
           "transferId": {
             "title": "Transferid",
@@ -1074,37 +1165,46 @@
             "title": "Adequacydecisionref"
           },
           "destinationJurisdiction": {
-            "description": "Destination jurisdiction(s) for the transfer.",
+            "default": [],
+            "description": "Destination jurisdiction(s). Empty list if the text names none.",
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Destinationjurisdiction",
             "type": "array"
           },
           "dataTransferred": {
-            "description": "Personal data categories being transferred.",
+            "default": [],
+            "description": "Personal data categories being transferred. Empty list if the text names none.",
             "items": {
               "$ref": "#/$defs/PersonalDataModel"
             },
-            "minItems": 1,
             "title": "Datatransferred",
             "type": "array"
           },
           "source_clause": {
             "default": "",
-            "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
             "title": "Source Clause",
             "type": "string"
           }
         },
         "required": [
-          "mechanism",
-          "destinationJurisdiction",
-          "dataTransferred"
+          "mechanism"
         ],
         "title": "DataTransferModel",
         "type": "object"
+      },
+      "EnforcementLevel": {
+        "enum": [
+          "_Unset",
+          "Mandatory",
+          "Conditional",
+          "Recommended",
+          "Prohibited"
+        ],
+        "title": "EnforcementLevel",
+        "type": "string"
       },
       "Identifiability": {
         "enum": [
@@ -1163,14 +1263,23 @@
             "$ref": "#/$defs/LegalBasisType"
           },
           "evidence": {
-            "title": "Evidence",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Verbatim phrase supporting this legal basis. Omit if none is stated.",
+            "title": "Evidence"
           },
           "jurisdiction": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Jurisdiction",
             "type": "array"
           },
@@ -1182,9 +1291,7 @@
           }
         },
         "required": [
-          "type",
-          "evidence",
-          "jurisdiction"
+          "type"
         ],
         "title": "LegalBasisModel",
         "type": "object"
@@ -1230,8 +1337,16 @@
             "type": "string"
           },
           "source": {
-            "title": "Source",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
           },
           "category": {
             "$ref": "#/$defs/PersonalDataCategory"
@@ -1251,7 +1366,6 @@
         },
         "required": [
           "description",
-          "source",
           "category",
           "sensitivity",
           "identifiability"
@@ -1273,7 +1387,7 @@
         "type": "string"
       },
       "ProcessingActivityModel": {
-        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_3_warning",
         "properties": {
           "activityId": {
             "title": "Activityid",
@@ -1299,10 +1413,11 @@
             "title": "Riskassessmentreference"
           },
           "dataProcessed": {
+            "default": [],
+            "description": "Personal data the activity operates on. Empty list if the clause names no data category.",
             "items": {
               "$ref": "#/$defs/PersonalDataModel"
             },
-            "minItems": 1,
             "title": "Dataprocessed",
             "type": "array"
           },
@@ -1315,8 +1430,7 @@
         },
         "required": [
           "description",
-          "action",
-          "dataProcessed"
+          "action"
         ],
         "title": "ProcessingActivityModel",
         "type": "object"
@@ -1363,6 +1477,7 @@
         "type": "object"
       },
       "RegulationModel": {
+        "description": "Metamodel class: Regulation\nAuto-generated from privacy_metamodel.ecore.",
         "properties": {
           "regulationId": {
             "title": "Regulationid",
@@ -1374,36 +1489,48 @@
             "type": "string"
           },
           "version": {
-            "default": "",
-            "description": "Version or amendment identifier.",
-            "title": "Version",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Version or amendment identifier. Omit if the text does not state one.",
+            "title": "Version"
           },
           "description": {
-            "default": "",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
             "description": "Brief description of the regulation's scope.",
-            "title": "Description",
-            "type": "string"
+            "title": "Description"
           },
           "jurisdiction": {
-            "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+            "default": [],
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Jurisdiction",
             "type": "array"
           },
           "source_clause": {
             "default": "",
-            "description": "RAG chunk citation for this regulation reference.",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
             "title": "Source Clause",
             "type": "string"
           }
         },
         "required": [
-          "name",
-          "jurisdiction"
+          "name"
         ],
         "title": "RegulationModel",
         "type": "object"
@@ -1416,8 +1543,16 @@
             "type": "string"
           },
           "duration": {
-            "title": "Duration",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration"
           },
           "unit": {
             "$ref": "#/$defs/RetentionUnit"
@@ -1445,7 +1580,6 @@
           }
         },
         "required": [
-          "duration",
           "unit",
           "trigger"
         ],
@@ -1487,12 +1621,28 @@
             "$ref": "#/$defs/RightType"
           },
           "triggerCondition": {
-            "title": "Triggercondition",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Triggercondition"
           },
           "fulfillmentProcess": {
-            "title": "Fulfillmentprocess",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fulfillmentprocess"
           },
           "source_clause": {
             "default": "",
@@ -1502,9 +1652,7 @@
           }
         },
         "required": [
-          "type",
-          "triggerCondition",
-          "fulfillmentProcess"
+          "type"
         ],
         "title": "RightModel",
         "type": "object"
@@ -1562,7 +1710,7 @@
         "type": "string"
       }
     },
-    "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_2\nocl_constraint_4_warning",
+    "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_2\n  ocl_constraint_4_warning",
     "properties": {
       "statementId": {
         "title": "Statementid",
@@ -1572,10 +1720,8 @@
         "title": "Description",
         "type": "string"
       },
-      "actor": {
-        "$ref": "#/$defs/ActorModel"
-      },
       "purposes": {
+        "default": [],
         "items": {
           "$ref": "#/$defs/PurposeModel"
         },
@@ -1583,20 +1729,31 @@
         "type": "array"
       },
       "processingActivity": {
-        "$ref": "#/$defs/ProcessingActivityModel"
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ProcessingActivityModel"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Omit entirely when the clause describes no processing."
       },
       "legalBasis": {
-        "$ref": "#/$defs/LegalBasisModel"
-      },
-      "governingRegulations": {
-        "items": {
-          "$ref": "#/$defs/RegulationModel"
-        },
-        "minItems": 1,
-        "title": "Governingregulations",
-        "type": "array"
+        "anyOf": [
+          {
+            "$ref": "#/$defs/LegalBasisModel"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Omit entirely when the clause states no legal basis."
       },
       "constraints": {
+        "default": [],
         "items": {
           "$ref": "#/$defs/ConstraintModel"
         },
@@ -1604,10 +1761,30 @@
         "type": "array"
       },
       "rightImpacted": {
+        "default": [],
         "items": {
           "$ref": "#/$defs/RightModel"
         },
         "title": "Rightimpacted",
+        "type": "array"
+      },
+      "actor": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ActorModel"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "governingRegulations": {
+        "items": {
+          "$ref": "#/$defs/RegulationModel"
+        },
+        "minItems": 1,
+        "title": "Governingregulations",
         "type": "array"
       },
       "retentionPolicies": {
@@ -1643,9 +1820,6 @@
     },
     "required": [
       "description",
-      "actor",
-      "processingActivity",
-      "legalBasis",
       "governingRegulations"
     ],
     "title": "PolicyStatementModel",
@@ -1700,20 +1874,36 @@
             "type": "string"
           },
           "channel": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/WithdrawalChannel"
             },
-            "minItems": 1,
             "title": "Channel",
             "type": "array"
           },
           "deadline": {
-            "title": "Deadline",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Deadline"
           },
           "effectOnPriorProcessing": {
-            "title": "Effectonpriorprocessing",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effectonpriorprocessing"
           },
           "source_clause": {
             "default": "",
@@ -1722,11 +1912,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "channel",
-          "deadline",
-          "effectOnPriorProcessing"
-        ],
         "title": "ConsentWithdrawalModel",
         "type": "object"
       },
@@ -1745,8 +1930,7 @@
             "type": "string"
           },
           "enforcementLevel": {
-            "title": "Enforcementlevel",
-            "type": "string"
+            "$ref": "#/$defs/EnforcementLevel"
           },
           "source_clause": {
             "default": "",
@@ -1779,7 +1963,7 @@
         "type": "string"
       },
       "DataTransferModel": {
-        "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+        "description": "Metamodel class: DataTransfer\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_dt1",
         "properties": {
           "transferId": {
             "title": "Transferid",
@@ -1803,37 +1987,46 @@
             "title": "Adequacydecisionref"
           },
           "destinationJurisdiction": {
-            "description": "Destination jurisdiction(s) for the transfer.",
+            "default": [],
+            "description": "Destination jurisdiction(s). Empty list if the text names none.",
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Destinationjurisdiction",
             "type": "array"
           },
           "dataTransferred": {
-            "description": "Personal data categories being transferred.",
+            "default": [],
+            "description": "Personal data categories being transferred. Empty list if the text names none.",
             "items": {
               "$ref": "#/$defs/PersonalDataModel"
             },
-            "minItems": 1,
             "title": "Datatransferred",
             "type": "array"
           },
           "source_clause": {
             "default": "",
-            "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
             "title": "Source Clause",
             "type": "string"
           }
         },
         "required": [
-          "mechanism",
-          "destinationJurisdiction",
-          "dataTransferred"
+          "mechanism"
         ],
         "title": "DataTransferModel",
         "type": "object"
+      },
+      "EnforcementLevel": {
+        "enum": [
+          "_Unset",
+          "Mandatory",
+          "Conditional",
+          "Recommended",
+          "Prohibited"
+        ],
+        "title": "EnforcementLevel",
+        "type": "string"
       },
       "Identifiability": {
         "enum": [
@@ -1892,14 +2085,23 @@
             "$ref": "#/$defs/LegalBasisType"
           },
           "evidence": {
-            "title": "Evidence",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Verbatim phrase supporting this legal basis. Omit if none is stated.",
+            "title": "Evidence"
           },
           "jurisdiction": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Jurisdiction",
             "type": "array"
           },
@@ -1911,9 +2113,7 @@
           }
         },
         "required": [
-          "type",
-          "evidence",
-          "jurisdiction"
+          "type"
         ],
         "title": "LegalBasisModel",
         "type": "object"
@@ -1959,8 +2159,16 @@
             "type": "string"
           },
           "source": {
-            "title": "Source",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
           },
           "category": {
             "$ref": "#/$defs/PersonalDataCategory"
@@ -1980,7 +2188,6 @@
         },
         "required": [
           "description",
-          "source",
           "category",
           "sensitivity",
           "identifiability"
@@ -1989,7 +2196,7 @@
         "type": "object"
       },
       "PolicyStatementModel": {
-        "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_2\nocl_constraint_4_warning",
+        "description": "Metamodel class: PolicyStatement\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_2\n  ocl_constraint_4_warning",
         "properties": {
           "statementId": {
             "title": "Statementid",
@@ -1999,10 +2206,8 @@
             "title": "Description",
             "type": "string"
           },
-          "actor": {
-            "$ref": "#/$defs/ActorModel"
-          },
           "purposes": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/PurposeModel"
             },
@@ -2010,20 +2215,31 @@
             "type": "array"
           },
           "processingActivity": {
-            "$ref": "#/$defs/ProcessingActivityModel"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ProcessingActivityModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Omit entirely when the clause describes no processing."
           },
           "legalBasis": {
-            "$ref": "#/$defs/LegalBasisModel"
-          },
-          "governingRegulations": {
-            "items": {
-              "$ref": "#/$defs/RegulationModel"
-            },
-            "minItems": 1,
-            "title": "Governingregulations",
-            "type": "array"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/LegalBasisModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Omit entirely when the clause states no legal basis."
           },
           "constraints": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/ConstraintModel"
             },
@@ -2031,10 +2247,30 @@
             "type": "array"
           },
           "rightImpacted": {
+            "default": [],
             "items": {
               "$ref": "#/$defs/RightModel"
             },
             "title": "Rightimpacted",
+            "type": "array"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ActorModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "governingRegulations": {
+            "items": {
+              "$ref": "#/$defs/RegulationModel"
+            },
+            "minItems": 1,
+            "title": "Governingregulations",
             "type": "array"
           },
           "retentionPolicies": {
@@ -2070,9 +2306,6 @@
         },
         "required": [
           "description",
-          "actor",
-          "processingActivity",
-          "legalBasis",
           "governingRegulations"
         ],
         "title": "PolicyStatementModel",
@@ -2092,7 +2325,7 @@
         "type": "string"
       },
       "ProcessingActivityModel": {
-        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+        "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_3_warning",
         "properties": {
           "activityId": {
             "title": "Activityid",
@@ -2118,10 +2351,11 @@
             "title": "Riskassessmentreference"
           },
           "dataProcessed": {
+            "default": [],
+            "description": "Personal data the activity operates on. Empty list if the clause names no data category.",
             "items": {
               "$ref": "#/$defs/PersonalDataModel"
             },
-            "minItems": 1,
             "title": "Dataprocessed",
             "type": "array"
           },
@@ -2134,8 +2368,7 @@
         },
         "required": [
           "description",
-          "action",
-          "dataProcessed"
+          "action"
         ],
         "title": "ProcessingActivityModel",
         "type": "object"
@@ -2182,6 +2415,7 @@
         "type": "object"
       },
       "RegulationModel": {
+        "description": "Metamodel class: Regulation\nAuto-generated from privacy_metamodel.ecore.",
         "properties": {
           "regulationId": {
             "title": "Regulationid",
@@ -2193,36 +2427,48 @@
             "type": "string"
           },
           "version": {
-            "default": "",
-            "description": "Version or amendment identifier.",
-            "title": "Version",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Version or amendment identifier. Omit if the text does not state one.",
+            "title": "Version"
           },
           "description": {
-            "default": "",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
             "description": "Brief description of the regulation's scope.",
-            "title": "Description",
-            "type": "string"
+            "title": "Description"
           },
           "jurisdiction": {
-            "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+            "default": [],
             "items": {
               "$ref": "#/$defs/JurisdictionModel"
             },
-            "minItems": 1,
             "title": "Jurisdiction",
             "type": "array"
           },
           "source_clause": {
             "default": "",
-            "description": "RAG chunk citation for this regulation reference.",
+            "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
             "title": "Source Clause",
             "type": "string"
           }
         },
         "required": [
-          "name",
-          "jurisdiction"
+          "name"
         ],
         "title": "RegulationModel",
         "type": "object"
@@ -2235,8 +2481,16 @@
             "type": "string"
           },
           "duration": {
-            "title": "Duration",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration"
           },
           "unit": {
             "$ref": "#/$defs/RetentionUnit"
@@ -2264,7 +2518,6 @@
           }
         },
         "required": [
-          "duration",
           "unit",
           "trigger"
         ],
@@ -2306,12 +2559,28 @@
             "$ref": "#/$defs/RightType"
           },
           "triggerCondition": {
-            "title": "Triggercondition",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Triggercondition"
           },
           "fulfillmentProcess": {
-            "title": "Fulfillmentprocess",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fulfillmentprocess"
           },
           "source_clause": {
             "default": "",
@@ -2321,9 +2590,7 @@
           }
         },
         "required": [
-          "type",
-          "triggerCondition",
-          "fulfillmentProcess"
+          "type"
         ],
         "title": "RightModel",
         "type": "object"
@@ -2381,7 +2648,7 @@
         "type": "string"
       }
     },
-    "description": "Metamodel class: PrivacyPolicy\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_01",
+    "description": "Metamodel class: PrivacyPolicy\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_01",
     "properties": {
       "policyId": {
         "title": "Policyid",
@@ -2392,12 +2659,28 @@
         "type": "string"
       },
       "validFrom": {
-        "title": "Validfrom",
-        "type": "integer"
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Validfrom"
       },
       "validTo": {
-        "title": "Validto",
-        "type": "integer"
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Validto"
       },
       "statements": {
         "items": {
@@ -2405,6 +2688,38 @@
         },
         "minItems": 1,
         "title": "Statements",
+        "type": "array"
+      },
+      "actorCatalogue": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/ActorModel"
+        },
+        "title": "Actorcatalogue",
+        "type": "array"
+      },
+      "dataCatalogue": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/PersonalDataModel"
+        },
+        "title": "Datacatalogue",
+        "type": "array"
+      },
+      "regulationCatalogue": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/RegulationModel"
+        },
+        "title": "Regulationcatalogue",
+        "type": "array"
+      },
+      "jurisdictionCatalogue": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/JurisdictionModel"
+        },
+        "title": "Jurisdictioncatalogue",
         "type": "array"
       },
       "source_clause": {
@@ -2416,8 +2731,6 @@
     },
     "required": [
       "version",
-      "validFrom",
-      "validTo",
       "statements"
     ],
     "title": "PrivacyPolicyModel",
