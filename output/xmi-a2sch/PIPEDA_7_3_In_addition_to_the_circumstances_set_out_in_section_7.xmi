@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="Processing personal information for business purposes under PIPEDA with consent withdrawal provisions.">
+    <actor actorId="" name="Organization" role="DataController"/>
+    <processingActivity activityId="" description="Processing personal information for business or activity purposes within a province with substantially similar legislation." action="Use">
+      <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="Consent" evidence="An individual may withdraw consent at any time, subject to legal or contractual restrictions and reasonable notice.">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="PIPEDA jurisdiction"/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="Personal Information Protection and Electronic Documents Act">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </governingRegulations>
+  </statements>
+</pp:PrivacyPolicy>

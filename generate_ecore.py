@@ -84,7 +84,6 @@ RightType = _make_enum("RightType", [
     "_Unset",
     "Access", "Rectification", "Erasure", "Restriction",
     "Portability", "Objection", "AutomatedDecisionOptOut",
-    "Complaint",
 ])
 
 RetentionUnit = _make_enum("RetentionUnit", [

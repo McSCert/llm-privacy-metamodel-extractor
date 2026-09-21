@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="This statement outlines the purpose limitation and consent withdrawal mechanisms under PIPEDA.">
+    <actor actorId="" name="Organization" role="DataController"/>
+    <processingActivity activityId="" description="" action="Use">
+      <dataProcessed dataId="" description="personal data of data subjects" source="directly from data subject" category="Identifier" sensitivity="Low" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="EU" name="European Union" description=""/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="Personal Information Protection and Electronic Documents Act">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </governingRegulations>
+    <constraints constraintId="" type="PurposeLimitation" expression="The Commissioner and every person acting on behalf or under the direction of the Commissioner shall not disclose information subject to a certificate issued under section 38.13 or 38.41 of the Canada Evidence Act, and shall take every reasonable precaution to avoid the disclosure of that information." enforcementLevel="Mandatory"/>
+    <consentWithdrawal withdrawalId="" channel="WrittenRequest" deadline="subject to legal or contractual restrictions and reasonable notice" effectOnPriorProcessing="The organization shall inform the individual of the implications of such withdrawal"/>
+  </statements>
+</pp:PrivacyPolicy>
