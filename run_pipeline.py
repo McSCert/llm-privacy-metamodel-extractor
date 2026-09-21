@@ -151,6 +151,9 @@ from privacy_schema.models import (
     ConstraintModel,
     ActorModel,
     PolicyStatementModel,
+    PurposeListModel,
+    RightListModel,
+    ConstraintListModel,
 )
 
 from gap_analyses.repository   import ModelRepository
@@ -850,6 +853,37 @@ _ABSENCE_SIGNAL_FIELDS: dict[str, list[str]] = {
 }
 
 
+# A1: Pass-1 returns {"<key>": [ ... ]} for these concepts. The wrapper exists
+# only because the json_schema response format needs an object at top level.
+_LIST_WRAPPER_KEY: dict[str, str] = {
+    "Purpose":    "purposes",
+    "Right":      "rights",
+    "Constraint": "constraints",
+}
+
+
+def _unwrap_list_concept(concept: str, json_str: str) -> str:
+    """
+    Turn {"purposes": [...]} into a bare JSON array.
+
+    Everything downstream (_wrap_for_assembler, the assembler prompt, the
+    repository) already expects an array for these concepts, so the wrapper
+    is stripped as soon as validation has passed.
+    """
+    key = _LIST_WRAPPER_KEY.get(concept)
+    if key is None:
+        return json_str
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError:
+        return json_str
+    if isinstance(parsed, dict) and key in parsed:
+        return json.dumps(parsed[key])
+    if isinstance(parsed, dict):
+        return json.dumps([parsed])     # tolerate a bare object
+    return json_str
+
+
 def _is_concept_absent(concept: str, parsed: dict) -> bool:
     """
     Return True when the LLM response indicates the concept is genuinely
@@ -859,6 +893,13 @@ def _is_concept_absent(concept: str, parsed: dict) -> bool:
     1. Explicit sentinel — model returned {"_no_X_stated": true}
     2. Empty signal fields — all key fields are empty/null
     """
+    # ── Path 0: empty list from a multi-instance concept (A1) ─────────────────
+    # Purpose/Right/Constraint return {"purposes": []} etc. An empty array is
+    # the model reporting absence, not a failure.
+    wrapper_key = _LIST_WRAPPER_KEY.get(concept)
+    if wrapper_key is not None and wrapper_key in parsed:
+        return not parsed[wrapper_key]
+
     # ── Path 1: explicit absent sentinel ──────────────────────────────────────
     sentinel_keys = [
         "_no_constraint_stated",
@@ -903,6 +944,19 @@ def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
         parsed = json.loads(extracted_json)
     except json.JSONDecodeError:
         return extracted_json
+
+    # A1: Constraint extraction is now a list; correct each entry in turn.
+    if isinstance(parsed, dict) and "constraints" in parsed:
+        items = parsed["constraints"]
+        changed = False
+        for item in items:
+            fixed = json.loads(_override_constraint_type(json.dumps(item),
+                                                         rag_text))
+            if fixed != item:
+                item.clear()
+                item.update(fixed)
+                changed = True
+        return json.dumps(parsed) if changed else extracted_json
 
     if parsed.get("type") != "Security":
         return extracted_json  # model picked something else — trust it
@@ -996,6 +1050,12 @@ def _extract_one_concept(
         if concept == "Constraint":
             raw = _override_constraint_type(raw, rag_text)
 
+        # ── A1: strip the list wrapper before anything downstream sees it ──
+        raw = _unwrap_list_concept(concept, raw)
+        n_items = len(json.loads(raw)) if concept in _LIST_WRAPPER_KEY else 1
+        if n_items > 1:
+            log.debug(f"    {concept}@{article_ref}: {n_items} instances")
+
         return ExtractionResult(
             law=law, article=article_ref, concept=concept,
             success=True, json_str=raw, attempts=1,
@@ -1053,9 +1113,9 @@ def stage_extract(
         "LegalBasis":         LegalBasisModel,
         "ProcessingActivity": ProcessingActivityModel,
         "Actor":              ActorModel,
-        "Purpose":            PurposeModel,
-        "Right":              RightModel,
-        "Constraint":         ConstraintModel,
+        "Purpose":            PurposeListModel,
+        "Right":              RightListModel,
+        "Constraint":         ConstraintListModel,
         "RetentionPolicy":    RetentionPolicyModel,
         "DataTransfer":       DataTransferModel,
         "ConsentWithdrawal":  ConsentWithdrawalModel,
@@ -1114,7 +1174,8 @@ def stage_extract(
 
                     # ── RAG retrieval ─────────────────────────────────────────
                     rag_text = retriever.retrieve_for_prompt(
-                        concept=concept, law=law, top_k=top_k,
+                        concept=concept, law=law, article_ref=article_ref,
+                        top_k=top_k,
                     )
                     if rag_text.startswith("[No relevant"):
                         log.debug(
