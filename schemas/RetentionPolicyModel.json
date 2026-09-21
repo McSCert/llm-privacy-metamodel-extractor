@@ -32,8 +32,16 @@
       "type": "string"
     },
     "duration": {
-      "title": "Duration",
-      "type": "integer"
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duration"
     },
     "unit": {
       "$ref": "#/$defs/RetentionUnit"
@@ -61,7 +69,6 @@
     }
   },
   "required": [
-    "duration",
     "unit",
     "trigger"
   ],

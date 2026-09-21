@@ -38,8 +38,16 @@
           "type": "string"
         },
         "source": {
-          "title": "Source",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
         },
         "category": {
           "$ref": "#/$defs/PersonalDataCategory"
@@ -59,7 +67,6 @@
       },
       "required": [
         "description",
-        "source",
         "category",
         "sensitivity",
         "identifiability"
@@ -92,7 +99,7 @@
       "type": "string"
     }
   },
-  "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\nocl_constraint_3_warning",
+  "description": "Metamodel class: ProcessingActivity\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_3_warning",
   "properties": {
     "activityId": {
       "title": "Activityid",
@@ -118,10 +125,11 @@
       "title": "Riskassessmentreference"
     },
     "dataProcessed": {
+      "default": [],
+      "description": "Personal data the activity operates on. Empty list if the clause names no data category.",
       "items": {
         "$ref": "#/$defs/PersonalDataModel"
       },
-      "minItems": 1,
       "title": "Dataprocessed",
       "type": "array"
     },
@@ -134,8 +142,7 @@
   },
   "required": [
     "description",
-    "action",
-    "dataProcessed"
+    "action"
   ],
   "title": "ProcessingActivityModel",
   "type": "object"

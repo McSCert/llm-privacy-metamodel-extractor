@@ -60,14 +60,23 @@
       "$ref": "#/$defs/LegalBasisType"
     },
     "evidence": {
-      "title": "Evidence",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Verbatim phrase supporting this legal basis. Omit if none is stated.",
+      "title": "Evidence"
     },
     "jurisdiction": {
+      "default": [],
       "items": {
         "$ref": "#/$defs/JurisdictionModel"
       },
-      "minItems": 1,
       "title": "Jurisdiction",
       "type": "array"
     },
@@ -79,9 +88,7 @@
     }
   },
   "required": [
-    "type",
-    "evidence",
-    "jurisdiction"
+    "type"
   ],
   "title": "LegalBasisModel",
   "type": "object"

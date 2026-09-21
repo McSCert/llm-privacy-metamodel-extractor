@@ -37,6 +37,7 @@
       "type": "object"
     }
   },
+  "description": "Metamodel class: Regulation\nAuto-generated from privacy_metamodel.ecore.",
   "properties": {
     "regulationId": {
       "title": "Regulationid",
@@ -48,36 +49,48 @@
       "type": "string"
     },
     "version": {
-      "default": "",
-      "description": "Version or amendment identifier.",
-      "title": "Version",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Version or amendment identifier. Omit if the text does not state one.",
+      "title": "Version"
     },
     "description": {
-      "default": "",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
       "description": "Brief description of the regulation's scope.",
-      "title": "Description",
-      "type": "string"
+      "title": "Description"
     },
     "jurisdiction": {
-      "description": "[OCL constraint_2] Every regulation must have at least one jurisdiction.",
+      "default": [],
       "items": {
         "$ref": "#/$defs/JurisdictionModel"
       },
-      "minItems": 1,
       "title": "Jurisdiction",
       "type": "array"
     },
     "source_clause": {
       "default": "",
-      "description": "RAG chunk citation for this regulation reference.",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
       "title": "Source Clause",
       "type": "string"
     }
   },
   "required": [
-    "name",
-    "jurisdiction"
+    "name"
   ],
   "title": "RegulationModel",
   "type": "object"

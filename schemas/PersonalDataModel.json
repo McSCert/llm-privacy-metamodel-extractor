@@ -49,8 +49,16 @@
       "type": "string"
     },
     "source": {
-      "title": "Source",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
     },
     "category": {
       "$ref": "#/$defs/PersonalDataCategory"
@@ -70,7 +78,6 @@
   },
   "required": [
     "description",
-    "source",
     "category",
     "sensitivity",
     "identifiability"

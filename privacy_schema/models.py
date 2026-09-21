@@ -7,13 +7,18 @@ To change a field: edit generate_ecore.py → run generate_ecore.py
 → run generate_pydantic.py.
 
 Design rules (Ecore multiplicity → Python):
-lower=1, upper=1   → required field, no default
-lower=0, upper=1   → Optional[T] = None
-lower=1, upper=-1  → List[T], min_length=1
-lower=0, upper=-1  → List[T] = []
-EString/ELong      → str / int
-EEnum              → enum class from enums.py
-EReference         → nested model class (containment)
+  lower=1, upper=1   → required field, no default
+  lower=0, upper=1   → Optional[T] = None
+  lower=1, upper=-1  → List[T], min_length=1
+  lower=0, upper=-1  → List[T] = []
+  EString/ELong      → str / int
+  EEnum              → enum class from enums.py
+  EReference         → nested model class
+                       (non-containment refs are still nested here:
+                        this is the EXTRACTION schema, not the storage
+                        schema — the assembler de-duplicates them into
+                        the PrivacyPolicy catalogues when writing XMI.
+                        See _NON_CONTAINMENT_REFS below.)
 
 ID fields (ending in 'Id') get a _new_id() default_factory so the
 LLM can omit them safely.
@@ -31,30 +36,31 @@ import uuid
 import warnings
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from .enums import (
-ActorRole,
-ConstraintType,
-Identifiability,
-LegalBasisType,
-PersonalDataCategory,
-ProcessingAction,
-PurposeCategory,
-RetentionTrigger,
-RetentionUnit,
-RightType,
-SensitivityLevel,
-TransferMechanism,
-WithdrawalChannel,
+    ActorRole,
+    ConstraintType,
+    EnforcementLevel,
+    Identifiability,
+    LegalBasisType,
+    PersonalDataCategory,
+    ProcessingAction,
+    PurposeCategory,
+    RetentionTrigger,
+    RetentionUnit,
+    RightType,
+    SensitivityLevel,
+    TransferMechanism,
+    WithdrawalChannel,
 )
 
 from ._ocl_validators import (
-ocl_constraint_3_warning,
-ocl_constraint_dt1,
-ocl_constraint_2,
-ocl_constraint_4_warning,
-ocl_constraint_01,
+    ocl_constraint_3_warning,
+    ocl_constraint_dt1,
+    ocl_constraint_2,
+    ocl_constraint_4_warning,
+    ocl_constraint_01,
 )
 
 
@@ -69,6 +75,14 @@ class _Base(BaseModel):
     """Common config for all schema models."""
     model_config = {"populate_by_name": True, "str_strip_whitespace": True}
 
+
+# ── Non-containment references ────────────────────────────────────────────────
+# {(ClassName, field_name): target EClass}. These are nested objects here for
+# extraction, but in the Ecore they point into the PrivacyPolicy catalogues.
+# The XMI assembler must de-duplicate them into actorCatalogue / dataCatalogue /
+# regulationCatalogue / jurisdictionCatalogue and emit references, not copies.
+_NON_CONTAINMENT_REFS = {('PolicyStatement', 'actor'): 'Actor', ('PolicyStatement', 'governing_regulations'): 'Regulation', ('LegalBasis', 'jurisdiction'): 'Jurisdiction', ('ProcessingActivity', 'data_processed'): 'PersonalData', ('DataTransfer', 'destination_jurisdiction'): 'Jurisdiction', ('DataTransfer', 'data_transferred'): 'PersonalData', ('Regulation', 'jurisdiction'): 'Jurisdiction'}
+
 class JurisdictionModel(_Base):
     """
     Metamodel class: Jurisdiction
@@ -81,35 +95,16 @@ class JurisdictionModel(_Base):
 
 
 class RegulationModel(_Base):
-    regulation_id: str = Field(
-        default_factory=lambda: _new_id("reg"),
-        alias="regulationId",
-    )
-    name: str = Field(
-        description="Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'."
-    )
-    version: str = Field(
-        default="",
-        description="Version or amendment identifier."
-    )
-    description: str = Field(
-        default="",
-        description="Brief description of the regulation's scope."
-    )
-    jurisdiction: List[JurisdictionModel] = Field(
-        min_length=1,
-        description="[OCL constraint_2] Every regulation must have at least one jurisdiction."
-    )
-    source_clause: str = Field(
-        default="",
-        description="RAG chunk citation for this regulation reference."
-    )
-
-    @field_validator("version", "description", "source_clause", mode="before")
-    @classmethod
-    def _coerce_none_to_empty(cls, v):
-        """LLMs sometimes emit null for optional string fields. Coerce to ''."""
-        return v if v is not None else ""
+    """
+    Metamodel class: Regulation
+    Auto-generated from privacy_metamodel.ecore.
+    """
+    regulation_id: str = Field(default_factory=lambda: _new_id("reg"), alias="regulationId")
+    name: str = Field(description="Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.")
+    version: Optional[str] = Field(default=None, description="Version or amendment identifier. Omit if the text does not state one.")
+    description: Optional[str] = Field(default=None, description="Brief description of the regulation's scope.")
+    jurisdiction: List[JurisdictionModel] = Field(default=[])
+    source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
 
 class ActorModel(_Base):
@@ -130,23 +125,11 @@ class PersonalDataModel(_Base):
     """
     data_id: str = Field(default_factory=lambda: _new_id("dat"), alias="dataId")
     description: str
-    source: str
+    source: Optional[str] = Field(default=None)
     category: PersonalDataCategory
     sensitivity: SensitivityLevel
     identifiability: Identifiability
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
-    
-    
-    @field_validator("category", mode="before")
-    @classmethod
-    def _coerce_category(cls, v):
-        """Coerce unknown category values to General/Identifier default."""
-        valid = {
-            "Identifier", "ContactInformation", "LocationData",
-            "FinancialData", "HealthData", "BiometricData",
-            "BehavioralData", "TechnicalData", "ContentData"
-        }
-        return v if v in valid else "Identifier"
 
 
 class ProcessingActivityModel(_Base):
@@ -155,102 +138,39 @@ class ProcessingActivityModel(_Base):
     Auto-generated from privacy_metamodel.ecore.
 
     OCL validators attached from _ocl_validators.py:
-    ocl_constraint_3_warning
+      ocl_constraint_3_warning
     """
     activity_id: str = Field(default_factory=lambda: _new_id("prc"), alias="activityId")
     description: str
     action: ProcessingAction
     risk_assessment_reference: Optional[str] = Field(default=None, alias="riskAssessmentReference")
-    data_processed: List[PersonalDataModel] = Field(alias="dataProcessed", min_length=1)
+    data_processed: List[PersonalDataModel] = Field(default=[], alias="dataProcessed", description="Personal data the activity operates on. Empty list if the clause names no data category.")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
-@model_validator(mode='after')
-def _ocl_constraint_3_warning(self):
-    return ocl_constraint_3_warning(self)
+    @model_validator(mode='after')
+    def _ocl_constraint_3_warning(self):
+        return ocl_constraint_3_warning(self)
 
 
 
 class DataTransferModel(_Base):
     """
-    Metamodel: Processing.DataTransfer
-    A cross-border data transfer — structurally distinct from ProcessingActivity
-    so GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their
-    own typed extraction target.
+    Metamodel class: DataTransfer
+    Auto-generated from privacy_metamodel.ecore.
 
-    OCL constraint_dt1 (error):
-        mechanism = AdequacyDecision implies adequacyDecisionRef must be set.
+    OCL validators attached from _ocl_validators.py:
+      ocl_constraint_dt1
     """
-    transfer_id: str = Field(
-        default_factory=lambda: _new_id("xfr"),
-        alias="transferId",
-    )
-    mechanism: TransferMechanism = Field(
-        description="Legal instrument authorising the cross-border transfer."
-    )
-    adequacy_decision_ref: Optional[str] = Field(
-        default=None,
-        alias="adequacyDecisionRef",
-        description=(
-            "Reference to the adequacy decision document. "
-            "Required when mechanism=AdequacyDecision."
-        ),
-    )
-    destination_jurisdiction: List[JurisdictionModel] = Field(
-        min_length=1,
-        alias="destinationJurisdiction",
-        description="Destination jurisdiction(s) for the transfer."
-    )
-    data_transferred: List[PersonalDataModel] = Field(
-        min_length=1,
-        alias="dataTransferred",
-        description="Personal data categories being transferred."
-    )
-    source_clause: str = Field(
-        default="",
-        description="RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'."
-    )
+    transfer_id: str = Field(default_factory=lambda: _new_id("xfr"), alias="transferId")
+    mechanism: TransferMechanism = Field(description="Legal instrument authorising the cross-border transfer.")
+    adequacy_decision_ref: Optional[str] = Field(default=None, alias="adequacyDecisionRef", description="Reference to the adequacy decision document. Required when mechanism=AdequacyDecision.")
+    destination_jurisdiction: List[JurisdictionModel] = Field(default=[], alias="destinationJurisdiction", description="Destination jurisdiction(s). Empty list if the text names none.")
+    data_transferred: List[PersonalDataModel] = Field(default=[], alias="dataTransferred", description="Personal data categories being transferred. Empty list if the text names none.")
+    source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
-    @field_validator("destination_jurisdiction", mode="before")
-    @classmethod
-    def _ensure_destination_jurisdiction(cls, v):
-        """LLMs sometimes emit destinationJurisdiction: [] — inject unknown placeholder."""
-        if not v:
-            return [{"jurisdictionId": "UNKNOWN", "name": "Unknown", "source_clause": ""}]
-        return v
-
-    @field_validator("data_transferred", mode="before")
-    @classmethod
-    def _ensure_data_transferred(cls, v):
-        """LLMs sometimes emit dataTransferred: [] — inject generic personal data placeholder."""
-        if not v:
-            return [{
-                "dataId":          "",
-                "description":     "personal data",
-                "source":          "stated",
-                "category":        "General",
-                "sensitivity":     "Low",
-                "identifiability": "Identified",
-                "source_clause":   ""
-            }]
-        return v
-
-    @model_validator(mode="after")
-    def ocl_constraint_dt1(self) -> "DataTransferModel":
-        """
-        OCL constraint_dt1 (error):
-        AdequacyDecision mechanism requires adequacyDecisionRef.
-        """
-        if (
-            self.mechanism == TransferMechanism.AdequacyDecision
-            and not self.adequacy_decision_ref
-        ):
-            raise ValueError(
-                f"[constraint_dt1 / error] DataTransfer '{self.transfer_id}': "
-                f"mechanism=AdequacyDecision but adequacyDecisionRef is empty. "
-                f"Cite the EC adequacy decision document "
-                f"(e.g. 'EC Decision 2019/419 for Japan')."
-            )
-        return self
+    @model_validator(mode='after')
+    def _ocl_constraint_dt1(self):
+        return ocl_constraint_dt1(self)
 
 
 
@@ -272,25 +192,10 @@ class LegalBasisModel(_Base):
     """
     basis_id: str = Field(default_factory=lambda: _new_id("lb"), alias="basisId")
     type: LegalBasisType
-    evidence: str
-    jurisdiction: List[JurisdictionModel] = Field(min_length=1)
+    evidence: Optional[str] = Field(default=None, description="Verbatim phrase supporting this legal basis. Omit if none is stated.")
+    jurisdiction: List[JurisdictionModel] = Field(default=[])
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
-
-    @field_validator("jurisdiction", mode="before")
-    @classmethod
-    def _ensure_jurisdiction(cls, v):
-        """Coerce empty jurisdiction list to a generic unknown placeholder.
-        The assembler prompt provides law-specific jurisdiction via
-        _synthesise_regulation_json — this is only a structural safety net.
-        """
-        if not v:
-            return [{
-                "jurisdictionId": "UNKNOWN",
-                "name":           "Unknown",
-                "source_clause":  ""
-            }]
-        return v
 
 class ConstraintModel(_Base):
     """
@@ -300,7 +205,7 @@ class ConstraintModel(_Base):
     constraint_id: str = Field(default_factory=lambda: _new_id("con"), alias="constraintId")
     type: ConstraintType
     expression: str
-    enforcement_level: str = Field(alias="enforcementLevel")
+    enforcement_level: EnforcementLevel = Field(alias="enforcementLevel")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
 
@@ -311,8 +216,8 @@ class RightModel(_Base):
     """
     right_id: str = Field(default_factory=lambda: _new_id("rig"), alias="rightId")
     type: RightType
-    trigger_condition: str = Field(alias="triggerCondition")
-    fulfillment_process: str = Field(alias="fulfillmentProcess")
+    trigger_condition: Optional[str] = Field(default=None, alias="triggerCondition")
+    fulfillment_process: Optional[str] = Field(default=None, alias="fulfillmentProcess")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
 
@@ -322,7 +227,7 @@ class RetentionPolicyModel(_Base):
     Auto-generated from privacy_metamodel.ecore.
     """
     retention_id: str = Field(default_factory=lambda: _new_id("ret"), alias="retentionId")
-    duration: int
+    duration: Optional[int] = Field(default=None)
     unit: RetentionUnit
     trigger: RetentionTrigger
     basis_article: Optional[str] = Field(default=None, alias="basisArticle")
@@ -335,9 +240,9 @@ class ConsentWithdrawalModel(_Base):
     Auto-generated from privacy_metamodel.ecore.
     """
     withdrawal_id: str = Field(default_factory=lambda: _new_id("cwd"), alias="withdrawalId")
-    channel: List[WithdrawalChannel] = Field(min_length=1)
-    deadline: str
-    effect_on_prior_processing: str = Field(alias="effectOnPriorProcessing")
+    channel: List[WithdrawalChannel] = Field(default=[])
+    deadline: Optional[str] = Field(default=None)
+    effect_on_prior_processing: Optional[str] = Field(default=None, alias="effectOnPriorProcessing")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
 
@@ -347,30 +252,30 @@ class PolicyStatementModel(_Base):
     Auto-generated from privacy_metamodel.ecore.
 
     OCL validators attached from _ocl_validators.py:
-    ocl_constraint_2
-    ocl_constraint_4_warning
+      ocl_constraint_2
+      ocl_constraint_4_warning
     """
     statement_id: str = Field(default_factory=lambda: _new_id("stmt"), alias="statementId")
     description: str
-    actor: ActorModel
-    purposes: List[PurposeModel] = Field(default_factory=list)
-    processing_activity: ProcessingActivityModel = Field(alias="processingActivity")
-    legal_basis: LegalBasisModel = Field(alias="legalBasis")
+    purposes: List[PurposeModel] = Field(default=[])
+    processing_activity: Optional[ProcessingActivityModel] = Field(default=None, alias="processingActivity", description="Omit entirely when the clause describes no processing.")
+    legal_basis: Optional[LegalBasisModel] = Field(default=None, alias="legalBasis", description="Omit entirely when the clause states no legal basis.")
+    constraints: List[ConstraintModel] = Field(default=[])
+    right_impacted: List[RightModel] = Field(default=[], alias="rightImpacted")
+    actor: Optional[ActorModel] = Field(default=None)
     governing_regulations: List[RegulationModel] = Field(alias="governingRegulations", min_length=1)
-    constraints: List[ConstraintModel] = Field(default_factory=list)
-    right_impacted: List[RightModel] = Field(alias="rightImpacted", default_factory=list)
     retention_policies: List[RetentionPolicyModel] = Field(default=[], alias="retentionPolicies")
     data_transfers: List[DataTransferModel] = Field(default=[], alias="dataTransfers")
     consent_withdrawal: List[ConsentWithdrawalModel] = Field(default=[], alias="consentWithdrawal")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
-@model_validator(mode='after')
-def _ocl_constraint_2(self):
-    return ocl_constraint_2(self)
+    @model_validator(mode='after')
+    def _ocl_constraint_2(self):
+        return ocl_constraint_2(self)
 
-@model_validator(mode='after')
-def _ocl_constraint_4_warning(self):
-    return ocl_constraint_4_warning(self)
+    @model_validator(mode='after')
+    def _ocl_constraint_4_warning(self):
+        return ocl_constraint_4_warning(self)
 
 
 
@@ -380,16 +285,42 @@ class PrivacyPolicyModel(_Base):
     Auto-generated from privacy_metamodel.ecore.
 
     OCL validators attached from _ocl_validators.py:
-    ocl_constraint_01
+      ocl_constraint_01
     """
     policy_id: str = Field(default_factory=lambda: _new_id("pol"), alias="policyId")
     version: str
-    valid_from: int = Field(alias="validFrom")
-    valid_to: int = Field(alias="validTo")
+    valid_from: Optional[int] = Field(default=None, alias="validFrom")
+    valid_to: Optional[int] = Field(default=None, alias="validTo")
     statements: List[PolicyStatementModel] = Field(min_length=1)
+    actor_catalogue: List[ActorModel] = Field(default=[], alias="actorCatalogue")
+    data_catalogue: List[PersonalDataModel] = Field(default=[], alias="dataCatalogue")
+    regulation_catalogue: List[RegulationModel] = Field(default=[], alias="regulationCatalogue")
+    jurisdiction_catalogue: List[JurisdictionModel] = Field(default=[], alias="jurisdictionCatalogue")
     source_clause: str = Field(default="", description="RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.")
 
-@model_validator(mode='after')
-def _ocl_constraint_01(self):
-    return ocl_constraint_01(self)
+    @model_validator(mode='after')
+    def _ocl_constraint_01(self):
+        return ocl_constraint_01(self)
 
+
+
+# ---------------------------------------------------------------------------
+# Pass-1 list wrappers (A1: multi-instance extraction)
+# ---------------------------------------------------------------------------
+# The json_schema response format requires an OBJECT at the top level, so a
+# bare List[...] cannot be the decoding schema. run_pipeline unwraps these
+# immediately after validation; nothing downstream sees the wrapper.
+
+class PurposeListModel(_Base):
+    """All Purpose instances stated in one article. Empty list = none stated."""
+    purposes: List[PurposeModel] = Field(default_factory=list)
+
+
+class RightListModel(_Base):
+    """All Right instances stated in one article. Empty list = none stated."""
+    rights: List[RightModel] = Field(default_factory=list)
+
+
+class ConstraintListModel(_Base):
+    """All Constraint instances stated in one article. Empty list = none stated."""
+    constraints: List[ConstraintModel] = Field(default_factory=list)

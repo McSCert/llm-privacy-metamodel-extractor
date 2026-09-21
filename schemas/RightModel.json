@@ -25,12 +25,28 @@
       "$ref": "#/$defs/RightType"
     },
     "triggerCondition": {
-      "title": "Triggercondition",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Triggercondition"
     },
     "fulfillmentProcess": {
-      "title": "Fulfillmentprocess",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fulfillmentprocess"
     },
     "source_clause": {
       "default": "",
@@ -40,9 +56,7 @@
     }
   },
   "required": [
-    "type",
-    "triggerCondition",
-    "fulfillmentProcess"
+    "type"
   ],
   "title": "RightModel",
   "type": "object"

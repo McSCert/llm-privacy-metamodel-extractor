@@ -42,4 +42,5 @@ gap-report-analysis-from-terminal/
 # Test cache
 .pytest_cache/
 older-metamodels/
-evaluation/variance_*.json
+evaluation/variance_*.jsonmodel_repo.a1_run*.db
+evaluation/run*_results.json

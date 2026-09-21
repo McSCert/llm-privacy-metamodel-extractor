@@ -103,6 +103,48 @@ _OCL_REGISTRY: dict[str, list[tuple[str, str]]] = {
     ],
 }
 
+# Per-field descriptions injected into Field(description=...).
+# These reach the LLM through the JSON schema, so they are prompt text:
+# keep them short, imperative, and specific. Key = (EClass, featureName).
+_FIELD_DESCRIPTIONS: dict[tuple[str, str], str] = {
+    ("Regulation", "name"):
+        "Short name of the regulation, e.g. 'GDPR', 'CCPA', 'LGPD'.",
+    ("Regulation", "version"):
+        "Version or amendment identifier. Omit if the text does not state one.",
+    ("Regulation", "description"):
+        "Brief description of the regulation's scope.",
+    ("DataTransfer", "mechanism"):
+        "Legal instrument authorising the cross-border transfer.",
+    ("DataTransfer", "adequacyDecisionRef"):
+        "Reference to the adequacy decision document. "
+        "Required when mechanism=AdequacyDecision.",
+    ("DataTransfer", "destinationJurisdiction"):
+        "Destination jurisdiction(s). Empty list if the text names none.",
+    ("DataTransfer", "dataTransferred"):
+        "Personal data categories being transferred. "
+        "Empty list if the text names none.",
+    ("ProcessingActivity", "dataProcessed"):
+        "Personal data the activity operates on. "
+        "Empty list if the clause names no data category.",
+    ("LegalBasis", "evidence"):
+        "Verbatim phrase supporting this legal basis. Omit if none is stated.",
+    ("PolicyStatement", "legalBasis"):
+        "Omit entirely when the clause states no legal basis.",
+    ("PolicyStatement", "processingActivity"):
+        "Omit entirely when the clause describes no processing.",
+}
+
+# Pass-1 list wrappers for multi-instance extraction (A1 / ISSUE-5).
+# The OpenAI / Ollama json_schema response format requires an OBJECT at the
+# top level, so a bare List[...] cannot be used as the decoding schema.
+# run_pipeline unwraps these immediately after validation.
+# Format: wrapper_class_name -> (field_name, element EClass name)
+_LIST_WRAPPERS: dict[str, tuple[str, str]] = {
+    "PurposeListModel":    ("purposes",    "Purpose"),
+    "RightListModel":      ("rights",      "Right"),
+    "ConstraintListModel": ("constraints", "Constraint"),
+}
+
 # EClass names to EXCLUDE from model generation.
 # These are metamodel implementation details with no Pydantic counterpart.
 _EXCLUDED_CLASSES: frozenset[str] = frozenset()
@@ -206,6 +248,7 @@ def _field_declaration(
         basis_id: str = Field(default_factory=lambda: _new_id("lb"), alias="basisId")
     """
     fname       = feature.name                 # camelCase from Ecore
+    description = _FIELD_DESCRIPTIONS.get((class_name, fname))
     snake       = _camel_to_snake(fname)       # snake_case for Python field name
     lower       = feature.lowerBound           # 0 or 1
     upper       = feature.upperBound           # 1 or -1 (many)
@@ -248,6 +291,11 @@ def _field_declaration(
             # Required (1)
             annotation = py_type
             field_args = alias_arg.rstrip(", ") if alias_arg else ""
+
+    # Description (prompt text for the constrained decoder)
+    if description:
+        esc = description.replace('"', '\\"')
+        field_args = f'{field_args}, description="{esc}"' if field_args else f'description="{esc}"'
 
     # Remove trailing comma/space from field_args
     field_args = field_args.strip().rstrip(",").strip()
@@ -422,8 +470,18 @@ def generate_models(pkg, enum_names: list[str], out_path: Path) -> None:
     else:
         ocl_import = "# No OCL validators registered."
 
+    # ── Non-containment reference map (for the XMI assembler) ─────────────────
+    non_containment: dict[tuple[str, str], str] = {}
+    for cls_name, eclass in all_classes.items():
+        for feat in eclass.eStructuralFeatures:
+            if isinstance(feat, EReference) and not feat.containment:
+                non_containment[(cls_name, _camel_to_snake(feat.name))] = feat.eType.name
+
     # ── Header ────────────────────────────────────────────────────────────────
-    header = textwrap.dedent(f"""\
+    # NOTE: dedent FIRST, then .format(). Interpolating multi-line blocks into
+    # an f-string before dedent() destroys the common indent prefix and emits a
+    # module indented by 8 spaces, which is an IndentationError on import.
+    header = textwrap.dedent("""\
         \"\"\"
         models.py — Pydantic extraction schema.
 
@@ -439,7 +497,12 @@ def generate_models(pkg, enum_names: list[str], out_path: Path) -> None:
           lower=0, upper=-1  → List[T] = []
           EString/ELong      → str / int
           EEnum              → enum class from enums.py
-          EReference         → nested model class (containment)
+          EReference         → nested model class
+                               (non-containment refs are still nested here:
+                                this is the EXTRACTION schema, not the storage
+                                schema — the assembler de-duplicates them into
+                                the PrivacyPolicy catalogues when writing XMI.
+                                See _NON_CONTAINMENT_REFS below.)
 
         ID fields (ending in 'Id') get a _new_id() default_factory so the
         LLM can omit them safely.
@@ -475,7 +538,16 @@ def generate_models(pkg, enum_names: list[str], out_path: Path) -> None:
             \"\"\"Common config for all schema models.\"\"\"
             model_config = {{"populate_by_name": True, "str_strip_whitespace": True}}
 
-    """)
+
+        # ── Non-containment references ────────────────────────────────────────────────
+        # {{(ClassName, field_name): target EClass}}. These are nested objects here for
+        # extraction, but in the Ecore they point into the PrivacyPolicy catalogues.
+        # The XMI assembler must de-duplicate them into actorCatalogue / dataCatalogue /
+        # regulationCatalogue / jurisdictionCatalogue and emit references, not copies.
+        _NON_CONTAINMENT_REFS = {non_containment!r}
+
+    """).format(enum_import=enum_import, ocl_import=ocl_import,
+                non_containment=non_containment)
 
     # ── Class blocks ──────────────────────────────────────────────────────────
     class_blocks: list[str] = []
@@ -501,9 +573,35 @@ def generate_models(pkg, enum_names: list[str], out_path: Path) -> None:
             f"     Add them to _CLASS_ORDER in generate_pydantic.py."
         )
 
+    # ── Pass-1 list wrappers ──────────────────────────────────────────────────
+    if _LIST_WRAPPERS:
+        wrapper_lines = [
+            "# ---------------------------------------------------------------------------",
+            "# Pass-1 list wrappers (A1: multi-instance extraction)",
+            "# ---------------------------------------------------------------------------",
+            "# The json_schema response format requires an OBJECT at the top level, so a",
+            "# bare List[...] cannot be the decoding schema. run_pipeline unwraps these",
+            "# immediately after validation; nothing downstream sees the wrapper.",
+            "",
+        ]
+        for wrapper, (field, element) in _LIST_WRAPPERS.items():
+            if element not in all_classes:
+                print(f"  ⚠  WARNING: {element} in _LIST_WRAPPERS not in .ecore — skipping {wrapper}")
+                continue
+            wrapper_lines += [
+                f"class {wrapper}(_Base):",
+                f'    """All {element} instances stated in one article. '
+                f'Empty list = none stated."""',
+                f"    {field}: List[{_model_name(element)}] = Field(default_factory=list)",
+                "",
+                "",
+            ]
+        class_blocks.append("\n".join(wrapper_lines).rstrip())
+
     content = header + "\n\n\n".join(class_blocks) + "\n"
     out_path.write_text(content, encoding="utf-8")
-    print(f"  ✓  models.py     ({len(generated)} models)")
+    print(f"  ✓  models.py     ({len(generated)} models, "
+          f"{len(_LIST_WRAPPERS)} list wrappers)")
 
 
 # =============================================================================

@@ -74,8 +74,16 @@
           "type": "string"
         },
         "source": {
-          "title": "Source",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
         },
         "category": {
           "$ref": "#/$defs/PersonalDataCategory"
@@ -95,7 +103,6 @@
       },
       "required": [
         "description",
-        "source",
         "category",
         "sensitivity",
         "identifiability"
@@ -129,7 +136,7 @@
       "type": "string"
     }
   },
-  "description": "Metamodel: Processing.DataTransfer\nA cross-border data transfer \u2014 structurally distinct from ProcessingActivity\nso GDPR Ch.V, LGPD Art.33, and CCPA data-sale provisions each get their\nown typed extraction target.\n\nOCL constraint_dt1 (error):\n    mechanism = AdequacyDecision implies adequacyDecisionRef must be set.",
+  "description": "Metamodel class: DataTransfer\nAuto-generated from privacy_metamodel.ecore.\n\nOCL validators attached from _ocl_validators.py:\n  ocl_constraint_dt1",
   "properties": {
     "transferId": {
       "title": "Transferid",
@@ -153,34 +160,32 @@
       "title": "Adequacydecisionref"
     },
     "destinationJurisdiction": {
-      "description": "Destination jurisdiction(s) for the transfer.",
+      "default": [],
+      "description": "Destination jurisdiction(s). Empty list if the text names none.",
       "items": {
         "$ref": "#/$defs/JurisdictionModel"
       },
-      "minItems": 1,
       "title": "Destinationjurisdiction",
       "type": "array"
     },
     "dataTransferred": {
-      "description": "Personal data categories being transferred.",
+      "default": [],
+      "description": "Personal data categories being transferred. Empty list if the text names none.",
       "items": {
         "$ref": "#/$defs/PersonalDataModel"
       },
-      "minItems": 1,
       "title": "Datatransferred",
       "type": "array"
     },
     "source_clause": {
       "default": "",
-      "description": "RAG chunk citation, e.g. 'GDPR Art.46(2)(c)'.",
+      "description": "RAG chunk citation that justified this extraction, e.g. 'GDPR Art.6(1)(a)'.",
       "title": "Source Clause",
       "type": "string"
     }
   },
   "required": [
-    "mechanism",
-    "destinationJurisdiction",
-    "dataTransferred"
+    "mechanism"
   ],
   "title": "DataTransferModel",
   "type": "object"

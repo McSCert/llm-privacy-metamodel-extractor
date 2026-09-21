@@ -58,6 +58,13 @@ class ConstraintType(str, Enum):
     Accuracy = "Accuracy"
     Transparency = "Transparency"
 
+class EnforcementLevel(str, Enum):
+    _Unset = "_Unset"
+    Mandatory = "Mandatory"
+    Conditional = "Conditional"
+    Recommended = "Recommended"
+    Prohibited = "Prohibited"
+
 class RightType(str, Enum):
     _Unset = "_Unset"
     Access = "Access"

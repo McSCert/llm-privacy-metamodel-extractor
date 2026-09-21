@@ -21,20 +21,36 @@
       "type": "string"
     },
     "channel": {
+      "default": [],
       "items": {
         "$ref": "#/$defs/WithdrawalChannel"
       },
-      "minItems": 1,
       "title": "Channel",
       "type": "array"
     },
     "deadline": {
-      "title": "Deadline",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
     },
     "effectOnPriorProcessing": {
-      "title": "Effectonpriorprocessing",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effectonpriorprocessing"
     },
     "source_clause": {
       "default": "",
@@ -43,11 +59,6 @@
       "type": "string"
     }
   },
-  "required": [
-    "channel",
-    "deadline",
-    "effectOnPriorProcessing"
-  ],
   "title": "ConsentWithdrawalModel",
   "type": "object"
 }
