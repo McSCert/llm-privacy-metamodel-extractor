@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pp:PrivacyPolicy xmlns:xmi="http://www.omg.org/XMI" xmlns:pp="http://www.example.org/privacypolicy" policyId="" version="1.0" validTo="9999999999" xmi:version="2.0">
+  <statements statementId="" description="Processing personal information for business or activity purposes under PIPEDA.">
+    <actor actorId="" name="Organization" role="DataController"/>
+    <processingActivity activityId="" description="Processing personal information for business or activity purposes." action="Use">
+      <dataProcessed dataId="" description="personal data of data subjects" source="DataSubject" category="Identifier" sensitivity="Medium" identifiability="Identified"/>
+    </processingActivity>
+    <legalBasis basisId="" type="LegalObligation" evidence="">
+      <jurisdiction jurisdictionId="EU" name="European Union" description=""/>
+    </legalBasis>
+    <governingRegulations regulationId="" name="PIPEDA" version="" description="Personal Information Protection and Electronic Documents Act">
+      <jurisdiction jurisdictionId="CA" name="Canada" description="Personal Information Protection and Electronic Documents Act"/>
+    </governingRegulations>
+    <rightImpacted rightId="" type="Access" triggerCondition="Upon request, an individual shall be informed of the existence, use, and disclosure of their personal information." fulfillmentProcess="The organization shall respond within a reasonable time and at minimal or no cost to the individual."/>
+  </statements>
+</pp:PrivacyPolicy>

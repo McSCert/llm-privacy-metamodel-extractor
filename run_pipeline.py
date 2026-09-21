@@ -662,6 +662,7 @@ class LocalBackend(LLMBackend):
             "model":       self.model,
             "max_tokens":  max_tokens,
             "temperature": 0.0,        # deterministic output — critical for JSON
+            "seed": 12345,             # match OpenAI backend — reproducible runs
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user",   "content": user},
