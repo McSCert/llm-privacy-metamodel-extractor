@@ -927,55 +927,6 @@ def _is_concept_absent(concept: str, parsed: dict) -> bool:
     return True
 
 
-_CONSTRAINT_KEYWORD_OVERRIDE: list[tuple[list[str], str]] = [
-    (["purpose", "not use", "only for", "identified purpose", "limiting collection"], "PurposeLimitation"),
-    (["accurate", "accuracy", "up-to-date", "complete", "correct", "inaccurate"],    "Accuracy"),
-    (["openness", "make available", "policies available", "inform", "transparent"],   "Transparency"),
-    (["safeguard", "security measure", "protect against", "encryption",
-      "unauthorized access", "physical security", "technical"],                       "Security"),
-    (["retain", "retention", "no longer than", "storage limit", "delete after"],      "Retention"),
-]
-
-def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
-    """
-    Post-process Constraint extraction to correct systematic Security defaults.
-    Only fires when the model extracted Security but the text signals otherwise.
-    """
-    return extracted_json   # EXPERIMENT 2026-09-29: disabled, see 4.7 Safeguards
-
-    try:
-        parsed = json.loads(extracted_json)
-    except json.JSONDecodeError:
-        return extracted_json
-
-    # A1: Constraint extraction is now a list; correct each entry in turn.
-    if isinstance(parsed, dict) and "constraints" in parsed:
-        items = parsed["constraints"]
-        changed = False
-        for item in items:
-            fixed = json.loads(_override_constraint_type(json.dumps(item),
-                                                         rag_text))
-            if fixed != item:
-                item.clear()
-                item.update(fixed)
-                changed = True
-        return json.dumps(parsed) if changed else extracted_json
-
-    if parsed.get("type") != "Security":
-        return extracted_json  # model picked something else — trust it
-
-    rag_lower = rag_text.lower()
-
-    for keywords, constraint_type in _CONSTRAINT_KEYWORD_OVERRIDE:
-        if constraint_type == "Security":
-            continue
-        if any(kw in rag_lower for kw in keywords):
-            parsed["type"] = constraint_type
-            return json.dumps(parsed)
-
-    return extracted_json  # no override signal found — Security was correct
-
-
 def _extract_one_concept(
     concept:     str,
     law:         str,
@@ -1048,10 +999,6 @@ def _extract_one_concept(
         for w in caught:
             log.warning(f"  OCL warning {concept}@{article_ref}: {w.message}")
         stats.pass1_success += 1
-
-        # ── Post-process constraint type override ──────────────────────────
-        if concept == "Constraint":
-            raw = _override_constraint_type(raw, rag_text)
 
         # ── A1: strip the list wrapper before anything downstream sees it ──
         raw = _unwrap_list_concept(concept, raw)
