@@ -14,24 +14,21 @@ Usage:
 from __future__ import annotations
 import textwrap
 
-_ENUM_GRAMMARS: dict[str, list[str]] = {
-    "ActorRole":            ["DataSubject","DataController","DataProcessor","ThirdParty"],
-    "ProcessingAction":     ["Collect","Store","Use","Share","Transfer","Delete"],
-    "LegalBasisType":       ["Consent","Contract","LegalObligation","LegitimateInterest","VitalInterest","PublicTask"],
-    "PurposeCategory":      ["ServiceProvision","Security","LegalCompliance","Marketing","Analytics","Research"],
-    "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation","Accuracy","Transparency"],
-    "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut","Complaint"],
-    "RetentionUnit":        ["Days","Months","Years","Indefinite"],
-    "RetentionTrigger":     ["CollectionDate","ContractEnd","LastActivity","LegalObligationExpiry","ConsentWithdrawal","AccountDeletion"],
-    "TransferMechanism":    ["AdequacyDecision","StandardContractualClauses","BindingCorporateRules","Consent","ContractNecessity","LegitimateInterest","Other"],
-    "WithdrawalChannel":    ["OnlineForm","Email","WrittenRequest","InAppToggle","PhoneRequest","InPerson"],
-    "PersonalDataCategory": ["Identifier","ContactInformation","LocationData","FinancialData","HealthData","BiometricData","BehavioralData","TechnicalData","ContentData"],
-    "SensitivityLevel":     ["Low","Medium","High","SpecialCategory"],
-    "Identifiability":      ["Identified","Pseudonymous","Anonymous"],
-}
+from . import enums as _enums
+
+
+def _enum_literals(name: str) -> list[str]:
+    """Literals for one EEnum, from the generated enums.py.
+
+    _Unset is the metamodel's absence sentinel, not a value the extractor
+    may choose, so it never appears in a prompt grammar.
+    """
+    return [m.value for m in getattr(_enums, name) if m.value != "_Unset"]
+
 
 def _enum_block(names: list[str]) -> str:
-    return "\n".join(f"  {n}: {' | '.join(_ENUM_GRAMMARS.get(n,[]))}" for n in names)
+    return "\n".join(f"  {n}: {' | '.join(_enum_literals(n))}" for n in names)
+
 
 SYSTEM_PROMPT = (
     "You are a legal-text information-extraction engine for an MBSE privacy-compliance pipeline.\n\n"
@@ -609,7 +606,7 @@ def build_assembler_prompt(
         "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation | Accuracy | Transparency\n"
         "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
         "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
-        "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut | Complaint\n"
+        f"  rightImpacted[].type      : {' | '.join(_enum_literals('RightType'))}\n"
         "  processingActivity.action : Collect | Store | Use | Share | Transfer | Delete\n"
         "Any value not in the list above is INVALID and will cause a hard failure. "
         "If unsure, pick the closest match — never invent a new value.\n\n"
