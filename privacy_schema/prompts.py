@@ -20,7 +20,7 @@ _ENUM_GRAMMARS: dict[str, list[str]] = {
     "LegalBasisType":       ["Consent","Contract","LegalObligation","LegitimateInterest","VitalInterest","PublicTask"],
     "PurposeCategory":      ["ServiceProvision","Security","LegalCompliance","Marketing","Analytics","Research"],
     "ConstraintType":       ["Temporal","Geographic","Usage","Security","Retention","PurposeLimitation","Accuracy","Transparency"],
-    "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut"],
+    "RightType":            ["Access","Rectification","Erasure","Restriction","Portability","Objection","AutomatedDecisionOptOut","Complaint"],
     "RetentionUnit":        ["Days","Months","Years","Indefinite"],
     "RetentionTrigger":     ["CollectionDate","ContractEnd","LastActivity","LegalObligationExpiry","ConsentWithdrawal","AccountDeletion"],
     "TransferMechanism":    ["AdequacyDecision","StandardContractualClauses","BindingCorporateRules","Consent","ContractNecessity","LegitimateInterest","Other"],
@@ -270,6 +270,7 @@ def _right_prompt(law: str, ref: str, text: str) -> str:
         "### Decision guide for `type`\n"
         "Text contains...                                    type\n"
         "------------------------------------------------------------\n"
+        "challenge compliance / complain / seek redress     Complaint\n"
         "right of access / right to obtain copy             Access\n"
         "rectification / correct inaccurate data            Rectification\n"
         "erasure / right to be forgotten / deletion         Erasure\n"
@@ -290,6 +291,9 @@ def _right_prompt(law: str, ref: str, text: str) -> str:
         "- fulfillmentProcess: what the controller must do and within what timeframe\n"
         "  (e.g. 'controller must respond within 30 days', 'delete data without undue delay').\n"
         "- Both triggerCondition and fulfillmentProcess are REQUIRED non-empty strings.\n\n"
+        "- Complaint is the right to challenge an organization's compliance or seek\n"
+        "  redress. Objection is the right to object to the processing itself. PIPEDA\n"
+        "  4.10 and GDPR Art.77 are Complaint, not Objection.\n"
         f"### Now extract from the following text:\n"
         f"LAW: {law}\n"
         f"ARTICLE/SECTION: {ref}\n"
@@ -605,7 +609,7 @@ def build_assembler_prompt(
         "  constraints[].type        : Temporal | Geographic | Usage | Security | Retention | PurposeLimitation | Accuracy | Transparency\n"
         "  purposes[].category       : ServiceProvision | Security | LegalCompliance | Marketing | Analytics | Research\n"
         "  legalBasis.type           : Consent | Contract | LegalObligation | LegitimateInterest | VitalInterest | PublicTask\n"
-        "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut\n"
+        "  rightImpacted[].type      : Access | Rectification | Erasure | Restriction | Portability | Objection | AutomatedDecisionOptOut | Complaint\n"
         "  processingActivity.action : Collect | Store | Use | Share | Transfer | Delete\n"
         "Any value not in the list above is INVALID and will cause a hard failure. "
         "If unsure, pick the closest match — never invent a new value.\n\n"

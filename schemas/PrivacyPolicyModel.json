@@ -777,7 +777,8 @@
         "Restriction",
         "Portability",
         "Objection",
-        "AutomatedDecisionOptOut"
+        "AutomatedDecisionOptOut",
+        "Complaint"
       ],
       "title": "RightType",
       "type": "string"

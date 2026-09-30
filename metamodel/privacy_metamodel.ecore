@@ -61,6 +61,7 @@
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Portability" value="5"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="Objection" value="6"/>
     <eLiterals xsi:type="ecore:EEnumLiteral" name="AutomatedDecisionOptOut" value="7"/>
+    <eLiterals xsi:type="ecore:EEnumLiteral" name="Complaint" value="8"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EEnum" name="RetentionUnit">
     <eLiterals xsi:type="ecore:EEnumLiteral" name="_Unset"/>
