@@ -166,7 +166,7 @@ _ALLOWED: dict[str, set[str]] = {
         "Analytics", "Research"},
     "Right_type": {
         "Access", "Rectification", "Erasure", "Restriction", "Portability",
-        "Objection", "AutomatedDecisionOptOut"},
+        "Objection", "AutomatedDecisionOptOut", "Complaint"},
     "Constraint_type": {
         "Temporal", "Geographic", "Usage", "Security", "Retention",
         "PurposeLimitation", "Accuracy", "Transparency"},

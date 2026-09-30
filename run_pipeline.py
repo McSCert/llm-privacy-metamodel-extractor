@@ -941,6 +941,8 @@ def _override_constraint_type(extracted_json: str, rag_text: str) -> str:
     Post-process Constraint extraction to correct systematic Security defaults.
     Only fires when the model extracted Security but the text signals otherwise.
     """
+    return extracted_json   # EXPERIMENT 2026-09-29: disabled, see 4.7 Safeguards
+
     try:
         parsed = json.loads(extracted_json)
     except json.JSONDecodeError:
