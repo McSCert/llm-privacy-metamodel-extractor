@@ -135,6 +135,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from rag_pipeline.store     import ChunkStore, ingest_file
 from rag_pipeline.retriever import Retriever
 
+from citations import known_clauses, normalise_statement, PROBLEM_FLAGS
 from privacy_schema.prompts import (
     build_concept_prompt,
     build_assembler_prompt,
@@ -342,6 +343,8 @@ class PipelineStats:
     api_calls:                   int = 0
     tokens_in:                   int = 0
     tokens_out:                  int = 0
+    citation_flags:              dict = field(default_factory=dict)
+    citation_problems:           list = field(default_factory=list)
 
     def log_summary(self) -> None:
         b = "=" * 60
@@ -380,6 +383,26 @@ class PipelineStats:
         log.info(f"  Total LLM calls      : {self.api_calls}")
         if self.tokens_in or self.tokens_out:
             log.info(f"  Tokens  in / out     : {self.tokens_in} / {self.tokens_out}")
+
+        if self.citation_flags:
+            total = sum(self.citation_flags.values())
+            bad   = sum(
+                n for f, n in self.citation_flags.items() if f in PROBLEM_FLAGS
+            )
+            log.info(
+                f"  Citations normalised : {total}  "
+                f"(valid={total - bad}  problems={bad}  "
+                f"{100 * (total - bad) / total:.1f}% clean)"
+            )
+            for flag, n in sorted(self.citation_flags.items()):
+                marker = "  <-- " if flag in PROBLEM_FLAGS else "      "
+                log.info(f"      {flag:<16}{n:>4}{marker}")
+            for p in self.citation_problems[:20]:
+                log.warning(f"  CITATION  {p}")
+            if len(self.citation_problems) > 20:
+                log.warning(
+                    f"  CITATION  ... and {len(self.citation_problems) - 20} more"
+                )
         log.info(b)
 
 
@@ -610,10 +633,15 @@ class LocalBackend(LLMBackend):
       vLLM        http://localhost:8000/v1     (python -m vllm.entrypoints.openai.api_server)
     """
 
-    def __init__(self, base_url: str, model: str):
+    def __init__(self, base_url: str, model: str, timeout: int = 900):
         self.model       = model
         self._endpoint   = base_url.rstrip("/") + "/chat/completions"
         self._models_url = base_url.rstrip("/") + "/models"
+        # Pass-2 concatenates every Pass-1 concept into a single prompt, so the
+        # richest statement is the slowest call in the run. A uniform timeout
+        # sized for Pass-1 will reliably fail on exactly the statements that
+        # matter most. 300s killed PIPEDA 4.3 (eight concepts).
+        self._timeout    = timeout
         self._check_connection()
         log.info(f"Backend: Local LLM  (endpoint={self._endpoint}  model={model})")
         log.warning(
@@ -694,7 +722,7 @@ class LocalBackend(LLMBackend):
 
         for attempt in range(4):
             try:
-                with urllib.request.urlopen(req, timeout=300) as resp:
+                with urllib.request.urlopen(req, timeout=self._timeout) as resp:
                     data = json.loads(resp.read())
 
                 log.debug(f"system_fingerprint={getattr(resp, 'system_fingerprint', None)}")
@@ -755,6 +783,38 @@ class DryRunBackend(LLMBackend):
 # =============================================================================
 # ARTICLE FILTER
 # =============================================================================
+
+# Canonical clause paths that actually exist in the corpus, per law. Populated
+# from chunks.db at the start of stage_extract and read during assembly to
+# validate citations. Empty when assembly runs without a preceding extract, in
+# which case validation degrades to format-only (law mismatches still caught).
+_KNOWN_REFS: dict[str, frozenset[str]] = {}
+
+
+def _load_known_refs(db_path: Path) -> None:
+    """Index DISTINCT article_ref per law so citations can be validated."""
+    import sqlite3
+    try:
+        con = sqlite3.connect(str(db_path))
+        rows = con.execute(
+            "SELECT law, article_ref FROM chunks"
+        ).fetchall()
+        con.close()
+    except Exception as exc:
+        log.warning(f"  Could not index article_refs for citation checks: {exc}")
+        return
+
+    per_law: dict[str, list[str]] = {}
+    for law, ref in rows:
+        per_law.setdefault(law, []).append(ref)
+
+    for law, refs in per_law.items():
+        _KNOWN_REFS[law] = known_clauses(refs, law)
+        log.info(
+            f"  Citation index       : {law} -> "
+            f"{len(_KNOWN_REFS[law])} valid clause paths"
+        )
+
 
 def _build_article_filter(articles_arg: Optional[str]) -> Optional[re.Pattern]:
     """
@@ -1056,6 +1116,7 @@ def stage_extract(
     log.info("STAGE 2 — EXTRACT (Pass 1)")
     log.info("=" * 60)
     log.info(f"  Concept-tag filter : {'ON' if use_concept_tags else 'OFF'}")
+    _load_known_refs(db_path)
     if article_filter:
         log.info(f"  Article filter     : {article_filter.pattern}")
 
@@ -1311,7 +1372,23 @@ def _assemble_one_statement(
 
         # Pass-2 uses text-mode (schema=None) — structured output for Pass-2
         # is a planned future improvement.
-        last_raw = backend.call(system, user, stats, schema=None, max_tokens=4096)
+        #
+        # Guarded: this call used to sit outside the try below, so a socket
+        # timeout was fatal to the whole run rather than one retryable failure
+        # for one statement. A transient network error is now treated like any
+        # other assembly error — retried, and on exhaustion this statement is
+        # skipped so the remaining articles still get assembled and stored.
+        try:
+            last_raw = backend.call(
+                system, user, stats, schema=None, max_tokens=4096
+            )
+        except Exception as call_exc:
+            last_errors = [f"backend call failed: {type(call_exc).__name__}: {call_exc}"]
+            log.warning(
+                f"  Pass-2 call failed @ {law}/{article_ref} "
+                f"(attempt {attempt}): {type(call_exc).__name__}: {call_exc}"
+            )
+            continue
 
         try:
             parsed = json.loads(last_raw)
@@ -1339,7 +1416,32 @@ def _assemble_one_statement(
                 log.warning(f"  OCL warning @ {law}/{article_ref}: {w.message}")
 
             stats.pass2_success += 1
-            return validated.model_dump(by_alias=True)
+            dumped = validated.model_dump(by_alias=True)
+
+            # ── Citation normalisation ────────────────────────────────────
+            # Runs AFTER validation, so it cannot influence extraction or
+            # assembly. Scored output must be unchanged by this block.
+            #
+            # Guarded separately: this enclosing try/except treats any
+            # exception as a validation failure and retries the assembly, so
+            # an unguarded bug here would silently turn into ASSEMBLY FAILED.
+            # Provenance polish must never be able to lose a valid statement.
+            try:
+                dumped, flags, problems = normalise_statement(
+                    dumped, law, _KNOWN_REFS.get(law),
+                )
+                for f, n in flags.items():
+                    stats.citation_flags[f] = stats.citation_flags.get(f, 0) + n
+                stats.citation_problems.extend(
+                    f"{law}/{article_ref}  {p}" for p in problems
+                )
+            except Exception as norm_exc:          # pragma: no cover
+                log.warning(
+                    f"  Citation normalisation failed @ {law}/{article_ref}: "
+                    f"{norm_exc} — storing statement un-normalised"
+                )
+
+            return dumped
 
         except Exception as exc:
             raw_errors = getattr(exc, "errors", None)
@@ -1470,6 +1572,44 @@ def stage_analyse(
 # CLI
 # =============================================================================
 
+def _pass1_cache_path(repo_path: Path) -> Path:
+    """Where Pass-1 output is cached, derived from the repo db path."""
+    return repo_path.with_suffix(repo_path.suffix + ".pass1.json")
+
+
+def _save_pass1(extraction_results: dict, repo_path: Path) -> None:
+    """
+    Persist Pass-1 so a failed Pass-2 does not discard it.
+
+    Pass-1 is the expensive half (~33 min for ten PIPEDA principles on a local
+    model) and was previously held only in memory, so any exception in Pass-2
+    threw all of it away.
+    """
+    path = _pass1_cache_path(repo_path)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(extraction_results, indent=2))
+        n = sum(len(v) for v in extraction_results.values())
+        log.info(f"  Pass-1 cached        : {path}  ({n} article(s))")
+    except Exception as exc:
+        log.warning(f"  Could not cache Pass-1 output: {exc}")
+
+
+def _load_pass1(repo_path: Path) -> dict:
+    """Read back a cached Pass-1 for --stage assemble."""
+    path = _pass1_cache_path(repo_path)
+    if not path.exists():
+        log.error(
+            f"No Pass-1 cache at {path}. "
+            f"Run --stage extract first (it writes the cache)."
+        )
+        sys.exit(1)
+    results = json.loads(path.read_text())
+    n = sum(len(v) for v in results.values())
+    log.info(f"  Pass-1 loaded        : {path}  ({n} article(s))")
+    return results
+
+
 def _parse_law_files(inputs: list[str]) -> dict[str, Path]:
     result: dict[str, Path] = {}
     for item in inputs:
@@ -1509,7 +1649,10 @@ def _make_backend(args: argparse.Namespace) -> LLMBackend:
     if args.backend == "openai":
         return OpenAIBackend(model=args.model)
     if args.backend == "local":
-        return LocalBackend(base_url=args.local_url, model=args.local_model)
+        return LocalBackend(
+            base_url=args.local_url, model=args.local_model,
+            timeout=args.llm_timeout,
+        )
     return AnthropicBackend(model=args.model)
 
 
@@ -1618,7 +1761,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     run = p.add_argument_group("Run Mode")
     run.add_argument(
-        "--stage", choices=["ingest", "extract", "analyse", "all"], default="all",
+        "--llm-timeout", type=int, default=900, metavar="SECONDS",
+        help=(
+            "Socket timeout for one LLM call (default: 900). "
+            "Pass-2 assembles every concept into one prompt, so the "
+            "largest statement is the slowest call in the run; 300 was "
+            "too low and killed PIPEDA 4.3 mid-run."
+        ),
+    )
+    p.add_argument(
+        "--stage", choices=["ingest", "extract", "assemble", "analyse", "all"],
+        default="all",
         help=(
             "Stage to run (default: all). "
             "ingest=chunk+embed only; "
@@ -1698,10 +1851,23 @@ def main() -> None:
             use_concept_tags = not args.no_concept_tags,
         )
 
+        _save_pass1(extraction_results, repo_path)
+
         stage_assemble_and_store(
             extraction_results = extraction_results,
             repo_path          = repo_path,
             backend            = backend,
+            stats              = stats,
+            max_retries        = args.max_retries,
+            xmi_out_dir        = Path(args.xmi_out) if args.xmi_out else None,
+        )
+
+    # ── Stage 3-4 only: resume assembly from a cached Pass-1 ──────────────────
+    if args.stage == "assemble":
+        stage_assemble_and_store(
+            extraction_results = _load_pass1(repo_path),
+            repo_path          = repo_path,
+            backend            = _make_backend(args),
             stats              = stats,
             max_retries        = args.max_retries,
             xmi_out_dir        = Path(args.xmi_out) if args.xmi_out else None,

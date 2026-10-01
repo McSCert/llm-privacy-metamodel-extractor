@@ -46,3 +46,6 @@ evaluation/variance_*.json
 model_repo.*.db
 evaluation/run*_results.json
 ~$*
+
+# Pass-1 extraction cache (run artifact)
+data/*.pass1.json
