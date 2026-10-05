@@ -102,6 +102,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import io
 import json
 import logging
 import re
@@ -178,7 +179,7 @@ log = logging.getLogger("pipeline")
 # CONSTANTS
 # =============================================================================
 
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5-20251001"
+DEFAULT_ANTHROPIC_MODEL = "gpt-4o"
 DEFAULT_LOCAL_URL       = "http://localhost:11434/v1"
 DEFAULT_LOCAL_MODEL     = "llama3.1:8b"
 DEFAULT_TOP_K           = 3
@@ -788,6 +789,7 @@ def stage_ingest(
     db_path:   Path,
     data_dir:  Path,
     stats:     PipelineStats,
+    embedder_name="bm25",
 ) -> dict[str, Path]:
     """
     Chunk, embed, and store each law file into the ChunkStore.
@@ -820,6 +822,7 @@ def stage_ingest(
                 law           = law,
                 db_path       = db_path,
                 embedder_path = emb_path,
+                embedder_name = embedder_name,
             )
         except Exception as exc:
             log.error(f"Ingest failed for {law}: {exc}")
@@ -1000,7 +1003,10 @@ def _extract_one_concept(
     stats.pass1_attempts += 1
 
     # ── Single call — structure guaranteed by schema-constrained decoding ──────
-    raw = backend.call(system, user, stats, schema=validator)
+    print("SYSTEM PROMPT LENGTH:", len(system))
+    print("USER PROMPT LENGTH:", len(user))
+
+    raw = backend.call(system, user, stats, schema=None)
 
     # json.loads() cannot fail when structured output is active.
     # Still wrapped for DryRunBackend (returns '{}') and edge cases.
@@ -1589,26 +1595,31 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     io = p.add_argument_group("Input / Output")
     io.add_argument(
-        "--input", nargs="+", metavar="LAW=PATH",
+        "--input",
+        nargs="+",
+        metavar="LAW=PATH",
+        default=["PIPEDA=laws/pipeda.pdf"],
         help=(
             "Legal text files as LAW=PATH pairs, e.g. "
             "GDPR=data/gdpr.pdf PIPEDA=data/pipeda.pdf"
         ),
     )
-    io.add_argument("--db",     default="data/chunks.db",     metavar="PATH",
-                    help="SQLite ChunkStore path (default: data/chunks.db)")
-    io.add_argument("--repo",   default="data/model_repo.db", metavar="PATH",
-                    help="SQLite ModelRepository path (default: data/model_repo.db)")
-    io.add_argument("--report", default="data/gap_report.txt", metavar="PATH",
-                    help="Gap analysis report output (default: data/gap_report.txt)")
+    io.add_argument("--db", default=None, metavar="PATH",
+                    help="Path to the chunks database. Defaults to data/<embedder>/chunks.db",)
+    io.add_argument("--repo", default=None, metavar="PATH",
+                    help="SQLite ModelRepository path",)
+    io.add_argument("--report", default=None, metavar="PATH",
+                    help="Gap analysis report output",)
     io.add_argument("--xmi-out", default=None, metavar="DIR",
                     help=(
                         "Directory to write one XMI file per PolicyStatement "
                         "(default: disabled). Requires privacy_metamodel.ecore "
                         "in the project root. Example: --xmi-out output/xmi"
                     ))
-    io.add_argument("--data-dir", default="data", metavar="DIR",
-                    help="Directory for TF-IDF embedder pickles (default: data/)")
+    io.add_argument("--data-dir", default=None, metavar="DIR",
+                    help="Directory for embedder artifacts",)
+    io.add_argument("--embedder", choices=["bm25", "semantic"], default="bm25", 
+                    help="Retrieval embedder to use (default: bm25)",)
 
     be = p.add_argument_group("LLM Backend")
     be.add_argument(
@@ -1621,7 +1632,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     be.add_argument(
         "--model", default=DEFAULT_ANTHROPIC_MODEL, metavar="MODEL",
-        help=f"Anthropic model string (default: {DEFAULT_ANTHROPIC_MODEL})",
+        help=f"Model string (default: {DEFAULT_ANTHROPIC_MODEL})",
     )
     be.add_argument(
         "--local-url", default=DEFAULT_LOCAL_URL, metavar="URL",
@@ -1694,10 +1705,12 @@ def main() -> None:
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    db_path     = Path(args.db)
-    repo_path   = Path(args.repo)
-    report_path = Path(args.report)
-    data_dir    = Path(args.data_dir)
+    method_dir = Path("data") / args.embedder
+    
+    db_path = Path(args.db) if args.db else method_dir / "chunks.db"
+    data_dir = Path(args.data_dir) if args.data_dir else method_dir
+    repo_path = Path(args.repo) if args.repo else method_dir / "model_repo.db"
+    report_path = Path(args.report) if args.report else method_dir / "gap_report.txt"
     law_files   = _parse_law_files(args.input or [])
     stats       = PipelineStats()
 
@@ -1723,7 +1736,7 @@ def main() -> None:
         if not law_files:
             log.error("--input is required for --stage ingest or all.")
             sys.exit(1)
-        embedder_paths = stage_ingest(law_files, db_path, data_dir, stats)
+        embedder_paths = stage_ingest(law_files, db_path, data_dir, stats, embedder_name=args.embedder,)
 
     # ── Stages 2-4: Extract → Assemble → Store ────────────────────────────────
     if args.stage in ("extract", "all"):

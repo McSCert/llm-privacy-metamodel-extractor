@@ -335,6 +335,11 @@ class SentenceTransformerEmbedder:
             raise RuntimeError("Call fit() before doc_vectors()")
         return self._doc_matrix
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["_model"] = None
+        return state
+
 
 # ── Similarity utilities ──────────────────────────────────────────────────────
 
@@ -382,3 +387,16 @@ def rank_by_similarity(
 #         score_rrf(d) = Σ_i  1 / (k + rank_i(d))    k=60 is a common default
 #    b) Weighted sum:
 #         score(d) = 0.3 * bm25_score(d) + 0.7 * dense_score(d)
+
+# ── Embedder Selection ─────────────────────────────────────
+def get_embedder_class(name: str):
+    """Return the embedder class associated with a CLI name."""
+    name = name.lower().strip()
+
+    if name not in EMBEDDER_REGISTRY:
+        valid = ", ".join(sorted(EMBEDDER_REGISTRY))
+        raise ValueError(
+            f"Unknown embedder '{name}'. Expected one of: {valid}"
+        )
+
+    return EMBEDDER_REGISTRY[name]
