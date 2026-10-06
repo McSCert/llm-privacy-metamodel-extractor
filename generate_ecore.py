@@ -315,7 +315,7 @@ Jurisdiction.eStructuralFeatures.extend([
 
 if __name__ == "__main__":
     import sys
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "privacy_metamodel.ecore"
+    out_path = sys.argv[1] if len(sys.argv) > 1 else "metamodel/privacy_metamodel.ecore"
 
     rset = ResourceSet()
     resource = rset.create_resource(URI(out_path))

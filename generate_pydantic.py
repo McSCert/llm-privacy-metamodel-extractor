@@ -619,7 +619,7 @@ def main() -> None:
     parser.add_argument(
         "ecore",
         nargs="?",
-        default="privacy_metamodel.ecore",
+        default="metamodel/privacy_metamodel.ecore",
         metavar="PATH_TO_ECORE",
         help="Path to the .ecore file (default: privacy_metamodel.ecore)",
     )

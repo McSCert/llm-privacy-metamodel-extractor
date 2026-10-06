@@ -344,6 +344,9 @@ class PipelineStats:
     tokens_in:                   int = 0
     tokens_out:                  int = 0
     citation_flags:              dict = field(default_factory=dict)
+    max_prompt_tokens:           int = 0
+    prompt_token_samples:        list = field(default_factory=list)
+    suspected_truncations:       list = field(default_factory=list)
     citation_problems:           list = field(default_factory=list)
 
     def log_summary(self) -> None:
@@ -384,6 +387,30 @@ class PipelineStats:
         if self.tokens_in or self.tokens_out:
             log.info(f"  Tokens  in / out     : {self.tokens_in} / {self.tokens_out}")
 
+        if self.max_prompt_tokens:
+            per_pass: dict = {}
+            for label, n in self.prompt_token_samples:
+                per_pass[label] = max(per_pass.get(label, 0), n)
+            detail = "  ".join(
+                f"{label}={n}" for label, n in sorted(per_pass.items())
+            )
+            log.info(
+                f"  Largest prompt       : {self.max_prompt_tokens} tokens  "
+                f"({detail})"
+            )
+            if self.suspected_truncations:
+                log.warning(
+                    f"  TRUNCATION SUSPECTED : "
+                    f"{len(self.suspected_truncations)} call(s) hit a context "
+                    f"boundary exactly — output may be based on a clipped "
+                    f"prompt. See the PROMPT warnings above."
+                )
+            else:
+                log.info(
+                    "  Truncation check     : no call landed on a context "
+                    "boundary"
+                )
+
         if self.citation_flags:
             total = sum(self.citation_flags.values())
             bad   = sum(
@@ -409,6 +436,36 @@ class PipelineStats:
 # =============================================================================
 # LLM BACKENDS
 # =============================================================================
+
+# Context windows a runner is likely to be using. A truncated prompt is exactly
+# as long as the window, so a prompt_tokens count landing precisely on one of
+# these is the signature of clipping rather than a coincidence.
+_CONTEXT_BOUNDARIES = (2048, 4096, 8192, 16384, 32768, 65536, 131072)
+
+
+def _record_prompt_tokens(stats, n: int, label: str) -> None:
+    """
+    Track prompt size so silent truncation stops being silent.
+
+    Ollama reports prompt_tokens as the number of tokens it actually processed.
+    If it clipped the prompt to fit the context window, that count equals the
+    window exactly — which is the only signal available, since neither the
+    response nor the logs mention truncation.
+    """
+    if n <= 0:
+        return
+    stats.prompt_token_samples.append((label, n))
+    if n > stats.max_prompt_tokens:
+        stats.max_prompt_tokens = n
+    if n in _CONTEXT_BOUNDARIES:
+        stats.suspected_truncations.append((label, n))
+        log.warning(
+            f"  PROMPT {label}: prompt_tokens == {n}, exactly a common context "
+            f"window. The prompt was probably TRUNCATED and the answer is "
+            f"based on incomplete input. Raise the window via "
+            f"OLLAMA_CONTEXT_LENGTH or a Modelfile and re-measure."
+        )
+
 
 class LLMBackend(ABC):
     """
@@ -730,6 +787,15 @@ class LocalBackend(LLMBackend):
                 usage             = data.get("usage", {})
                 stats.tokens_in  += usage.get("prompt_tokens",    0)
                 stats.tokens_out += usage.get("completion_tokens", 0)
+
+                # Pass-2 runs schema=None; Pass-1 always passes a schema. That
+                # is enough to tell the two apart without threading a label
+                # through every call site.
+                _record_prompt_tokens(
+                    stats,
+                    usage.get("prompt_tokens", 0),
+                    "pass-1" if schema is not None else "pass-2",
+                )
 
                 raw = data["choices"][0]["message"]["content"]
                 # _strip_fences only needed in text-mode (schema=None)
