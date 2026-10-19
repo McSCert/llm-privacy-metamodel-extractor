@@ -41,6 +41,7 @@ from pyecore.resources.xmi import XMIResource
 # Fields that exist in Pydantic/pipeline but have NO counterpart in the Ecore
 _PIPELINE_FIELDS = frozenset({
     "source_clause",
+    "_cited_clauses",
     "_extraction_confidence",
     "_warnings",
     # Pydantic generates these for internal use

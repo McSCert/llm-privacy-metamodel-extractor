@@ -158,7 +158,47 @@ _ALLOWED: dict[str, set[str]] = {
         "Consent", "Contract", "LegalObligation", "LegitimateInterest",
         "VitalInterest", "PublicTask"},
     "ProcessingActivity_action": {
-        "Collect", "Store", "Use", "Share", "Transfer", "D--e
+        "Collect", "Store", "Use", "Share", "Transfer", "Delete"},
+    "Actor_role": {
+        "DataSubject", "DataController", "DataProcessor", "ThirdParty"},
+    "Purpose_category": {
+        "ServiceProvision", "Security", "LegalCompliance", "Marketing",
+        "Analytics", "Research"},
+    "Right_type": {
+        "Access", "Rectification", "Erasure", "Restriction", "Portability",
+        "Objection", "AutomatedDecisionOptOut", "Complaint"},
+    "Constraint_type": {
+        "Temporal", "Geographic", "Usage", "Security", "Retention",
+        "PurposeLimitation", "Accuracy", "Transparency"},
+}
+
+
+# =============================================================================
+# DATA CLASSES
+# =============================================================================
+
+@dataclass
+class ConceptResult:
+    concept:   str
+    tp:        int = 0
+    fp:        int = 0
+    fn:        int = 0
+    tn:        int = 0   # rows where gold and prediction are both empty
+    skipped:   int = 0   # UNCERTAIN rows excluded
+
+    @property
+    def precision(self) -> float:
+        return self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
+
+    @property
+    def recall(self) -> float:
+        return self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
+
+    @property
+    def f1(self) -> float:
+        p, r = self.precision, self.recall
+        return 2 * p * r / (p + r) if (p + r) > 0 else 0.0
+
     @property
     def support(self) -> int:
         """Number of gold-standard positive labels (TP + FN)."""

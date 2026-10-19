@@ -274,6 +274,52 @@ def check_vocabulary(gold: Path, sheet: str | None) -> None:
 # 3. Absence representation  (A2)
 # =============================================================================
 
+def check_citations() -> None:
+    section("Citation normalisation")
+
+    try:
+        import citations
+        import run_pipeline
+    except Exception as exc:
+        record(FAIL, "citations module imports", str(exc)[:200])
+        return
+
+    # 3a. KNOWN_LAWS must not drift from JURISDICTION_MAP (second copy of a
+    #     vocabulary — the failure mode that bit prompts.py and evaluate.py).
+    declared = set(citations.KNOWN_LAWS)
+    actual   = set(run_pipeline.JURISDICTION_MAP)
+    record(
+        FAIL if declared != actual else PASS,
+        "citations.KNOWN_LAWS == JURISDICTION_MAP",
+        f"citations={sorted(declared)} pipeline={sorted(actual)}"
+        if declared != actual else "",
+    )
+
+    # 3b. Normalisation must be idempotent — it runs on stored statements and
+    #     a re-run must not keep rewriting them.
+    known = citations.known_clauses(
+        ["4.3 Principle 3 — Consent", "4.3.1", "4.3.8"], "PIPEDA"
+    )
+    once, _, _  = citations.normalise_citation("PIPEDA Art.4.3", "PIPEDA", known)
+    twice, _, _ = citations.normalise_citation(once, "PIPEDA", known)
+    record(FAIL if once != twice else PASS, "citation normalisation idempotent",
+           f"{once!r} -> {twice!r}" if once != twice else "")
+
+    # 3c. The hallucinated-law detector must fire.
+    _, _, flag = citations.normalise_citation(
+        "PIPADE Art.4.3", "PIPEDA", known
+    )
+    record(FAIL if flag != citations.LAW_MISMATCH else PASS,
+           "hallucinated law name detected",
+           f"got {flag!r}, expected law_mismatch" if flag != citations.LAW_MISMATCH else "")
+
+    # 3d. The index must hold identifiers, not ancestor-derived bare digits.
+    #     Bare top-level digits make almost any citation validate.
+    bare = {c for c in known if c.isdigit() and len(c) <= 2}
+    record(WARN if bare else PASS, "citation index free of bare digits",
+           f"bare paths in index: {sorted(bare)}" if bare else "")
+
+
 def check_absence() -> None:
     section("Absence representation (A2)")
 
@@ -541,6 +587,7 @@ def main() -> int:
 
     check_generation_chain()
     check_vocabulary(Path(args.gold), args.sheet)
+    check_citations()
     check_absence()
     check_backends()
     if args.quick:

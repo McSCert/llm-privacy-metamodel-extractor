@@ -810,7 +810,8 @@
           "Restriction",
           "Portability",
           "Objection",
-          "AutomatedDecisionOptOut"
+          "AutomatedDecisionOptOut",
+          "Complaint"
         ],
         "title": "RightType",
         "type": "string"
@@ -1666,7 +1667,8 @@
           "Restriction",
           "Portability",
           "Objection",
-          "AutomatedDecisionOptOut"
+          "AutomatedDecisionOptOut",
+          "Complaint"
         ],
         "title": "RightType",
         "type": "string"
@@ -2604,7 +2606,8 @@
           "Restriction",
           "Portability",
           "Objection",
-          "AutomatedDecisionOptOut"
+          "AutomatedDecisionOptOut",
+          "Complaint"
         ],
         "title": "RightType",
         "type": "string"

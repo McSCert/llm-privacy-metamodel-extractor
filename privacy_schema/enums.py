@@ -74,6 +74,7 @@ class RightType(str, Enum):
     Portability = "Portability"
     Objection = "Objection"
     AutomatedDecisionOptOut = "AutomatedDecisionOptOut"
+    Complaint = "Complaint"
 
 class RetentionUnit(str, Enum):
     _Unset = "_Unset"
