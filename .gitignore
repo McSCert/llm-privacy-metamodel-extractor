@@ -20,9 +20,10 @@ env/
 
 # Data files (large, not needed for reproducibility)
 data/chunks*.db
-data/model_repo*.db
-data/*.pkl
+data/**/model_repo*.db
+data/**/*.pkl
 data/TFIDF-data/
+data/**/chunks_PIPEDA_embedder.pkl
 
 # Older metamodel versions
 older-metamodels/
