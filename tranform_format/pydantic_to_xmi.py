@@ -65,7 +65,7 @@ class PolicyXMIWriter:
     for all subsequent write calls.
     """
 
-    def __init__(self, ecore_path: str | Path = "privacy_metamodel.ecore"):
+    def __init__(self, ecore_path: str | Path = "metamodel/privacy_metamodel.ecore"):
         ecore_path = Path(ecore_path).resolve()
         if not ecore_path.exists():
             raise FileNotFoundError(
