@@ -480,6 +480,26 @@ def check_chunker(law: str, pdf: Path) -> None:
                f"unreachable: {missing}" if missing else
                f"all {len(probes)} probe clauses reachable")
 
+        # every numbered clause in a principle has a chunk of its own
+        principles = [c for c in chunks
+                      if c.level == "principle"
+                      and re.match(r"^4\.\d+ Principle", c.article_ref)]
+        in_text = {m.group(1) for p in principles
+                   for m in re.finditer(r"^\s*(4\.\d+\.\d+)\s", p.text, re.M)}
+        own = {c.article_ref for c in chunks}
+        no_chunk = sorted(in_text - own)
+        record(FAIL if no_chunk else PASS,
+               "every Schedule 1 clause has its own chunk",
+               f"no chunk: {no_chunk}" if no_chunk else
+               f"{len(in_text)} clauses")
+
+        # list items carry their parent's number, never their first text line
+        text_refs = [c.article_ref for c in chunks
+                     if c.article_ref.startswith("(")]
+        record(FAIL if text_refs else PASS,
+               "no article_ref is a list item's text",
+               f"{len(text_refs)}, e.g. {text_refs[0]!r}" if text_refs else "")
+
 
 # =============================================================================
 # 6. Evaluation harness

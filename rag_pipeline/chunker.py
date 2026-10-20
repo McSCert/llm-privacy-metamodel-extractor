@@ -167,14 +167,29 @@ _PIPEDA_PATTERNS = [
         r"^\d+\.\d+\s+",
         re.MULTILINE,
     )),
-    # Clause level: sub-clauses within a principle
-    #   "4.3.1 An organization shall..."  — numbered sub-clause
-    #   "(a) implementing procedures..."  — lettered sub-clause (common in PIPEDA)
+    # Clause level: numbered sub-clauses within a principle, "4.3.1 ...".
+    # Lettered items are NOT split here.  They used to share this pattern, so
+    # a clause that introduces a list ("4.8.2 The information made available
+    # shall include") was cut off before its own items, fell under
+    # min_chunk_chars and was dropped, and each item became a sibling chunk
+    # whose article_ref was its first text line.
     ("clause", re.compile(
-        r"^\s*\d+\.\d+\.\d+\s+|^\s*\([a-z]\)\s+",
+        r"^\s*\d+\.\d+\.\d+\s+",
+        re.MULTILINE,
+    )),
+    # Item level: lettered items "(a) ...", split inside each clause (or
+    # inside the principle when it has no numbered clauses).  article_ref is
+    # "<parent number>(<letter>)", e.g. "4.8.2(a)".
+    ("item", re.compile(
+        r"^\s*\([a-z]\)\s+",
         re.MULTILINE,
     )),
 ]
+
+# Leading structural number of a ref: "4.8.2" from "4.8.2", "27.1" from
+# "27.1 (1) No employer shall ...", "4.8" from "4.8 Principle 8 — Openness".
+_LEADING_NUMBER = re.compile(r"^\d+(?:\.\d+)*")
+_ITEM_LETTER    = re.compile(r"^\s*\(([a-z])\)")
 
 _GENERIC_PATTERNS = [
     ("chapter", re.compile(
@@ -621,6 +636,10 @@ def chunk_text(
             if len(patterns) >= 3:
                 clause_pattern = patterns[2][1]
                 clause_level   = patterns[2][0]
+                # Optional Level 3 (PIPEDA): lettered items inside a clause.
+                item_level, item_pattern = (
+                    patterns[3] if len(patterns) >= 4 else (None, None)
+                )
 
                 for art in art_chunks:
                     clause_chunks = _split_by_pattern(
@@ -632,9 +651,25 @@ def chunk_text(
                     # Always keep the article itself (gives full-article context)
                     all_chunks.append(art)
 
-                    for cl in clause_chunks:
-                        if len(cl.text) >= min_chunk_chars:
-                            all_chunks.append(cl)
+                    if item_pattern is None:
+                        for cl in clause_chunks:
+                            if len(cl.text) >= min_chunk_chars:
+                                all_chunks.append(cl)
+                        continue
+
+                    # Numbered clauses are structural units: keep every one,
+                    # however short (4.10.1 is a one-line cross-reference).
+                    # Each keeps its own lettered items in its text.
+                    all_chunks.extend(clause_chunks)
+
+                    # Items are split inside each clause; when the article has
+                    # no numbered clauses, inside the article itself.
+                    for parent in clause_chunks or [art]:
+                        for it in _split_items(
+                            parent, item_pattern, item_level, law
+                        ):
+                            if len(it.text) >= min_chunk_chars:
+                                all_chunks.append(it)
             else:
                 all_chunks.extend(art_chunks)
     else:
@@ -658,6 +693,35 @@ def chunk_text(
         f" clauses: {sum(1 for c in final if c.level in ('clause',))})"
     )
     return final
+
+
+def _split_items(
+    parent: Chunk,
+    pattern: re.Pattern,
+    level: str,
+    law: str,
+) -> list[Chunk]:
+    """
+    Split lettered items "(a) ..." out of *parent*, referenced by the parent's
+    leading number: items of clause "4.8.2" become "4.8.2(a)", "4.8.2(b)", ...
+    The parent's lead-in text is not emitted separately; it stays in *parent*.
+    """
+    items = _split_by_pattern(
+        parent.text, pattern, level, law,
+        parent_ref=parent.article_ref, base_offset=parent.char_offset,
+    )
+    num = _LEADING_NUMBER.match(parent.article_ref)
+    base = num.group(0) if num else parent.article_ref
+    out = []
+    for it in items:
+        letter = _ITEM_LETTER.match(it.text)
+        ref = f"{base}({letter.group(1)})"[:80] if letter else it.article_ref
+        # Rebuild rather than mutate: chunk_id hashes article_ref.
+        out.append(Chunk.make(
+            law=law, article_ref=ref, parent_ref=parent.article_ref,
+            level=level, text=it.text, char_offset=it.char_offset,
+        ))
+    return out
 
 
 def _split_large_chunk(chunk: Chunk, max_chars: int) -> list[Chunk]:
