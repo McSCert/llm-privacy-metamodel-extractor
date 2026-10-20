@@ -1,0 +1,106 @@
+query_id,query,principle_name,relevant_pipeda_references
+q1,Who is responsible for protecting users' personal information collected by a mobile tracking app?,Accountability,4.1.1;4.1.3;4.1.4
+q2,"If a mobile app mishandles a user's location history, who should be held responsible?",Accountability,4.1.1;4.1.3
+q3,"If a tracking app uses an outside company to store location records, who is responsible for keeping that information protected?",Accountability,4.1.3
+q4,How can a user find out who oversees privacy at a mobile tracking app company?,Accountability,4.1.2
+q5,What should a tracking app company do to ensure its employees handle users' location data appropriately?,Accountability,4.1.4
+q6,"If different employees maintain a tracking app, who is ultimately responsible for its privacy practices?",Accountability,4.1.1
+q7,How should a mobile tracking app ensure that an external analytics provider protects user data to a comparable standard?,Accountability,4.1.3
+q8,How should a tracking app company respond when a user complains about how their location data is handled?,Accountability,4.1.4
+q9,Can a mobile app company assign privacy responsibilities to different members of its development team?,Accountability,4.1.1
+q10,Who is accountable if a mobile tracking app fails to follow privacy requirements?,Accountability,4.1.1
+q11,What procedures should a tracking app company establish to protect users' personal information and address privacy complaints?,Accountability,4.1.4
+q12,When should a location-tracking app decide why it needs to collect a user's information?,Identifying Purposes,4.2.1
+q13,Should a fitness app document why it collects users' activity and location data?,Identifying Purposes,4.2.1
+q14,How can a tracking app determine which user details it actually needs to provide its features?,Identifying Purposes,4.2.2
+q15,Should a mobile app explain why it wants access to a user's location before collecting it?,Identifying Purposes,4.2.3
+q16,Can a tracking app explain its reasons for collecting location data only after it has already started collecting it?,Identifying Purposes,4.2.3
+q17,A fitness app originally collects location data to map running routes but later wants to use it for targeted advertising. What must it do first?,Identifying Purposes,4.2.3; 4.2.4
+q18,"Does a tracking app have to explain its data collection purposes in writing, or can it explain them through an in-app message?",Identifying Purposes,4.2.3
+q19,Why should a fitness app decide which features need location data before requesting access to it?,Identifying Purposes,4.2.2
+q20,"Who should be told why a mobile tracking app collects their information, and when should they be told?",Identifying Purposes,4.2.3
+q21,What must a tracking app do before using location history for a purpose that users were not originally told about?,Identifying Purposes,4.2.4
+q22,Can a company collect someone's personal details and decide later how it wants to use them?,Consent,4.3.1
+q23,How should a mobile tracking app explain what it does with a user's location history so they understand it?,Consent,4.3.2
+q24,Can a location-tracking app refuse to provide its basic features unless users agree to share their location with unrelated advertisers?,Consent,4.3.3
+q25,Should a health-tracking app ask for a different level of permission to collect sensitive health information than to collect less sensitive usage data?,Consent,4.3.4;4.3.6
+q26,"If someone installs a running app to record their routes, can the app assume they also agree to receive promotional messages based on their activity?",Consent, 4.3.5
+q27,Can a GPS tracking app share a user's location history with a data broker if the user only agreed to location tracking within the app?,Consent, 4.3.1;4.3.5
+q28,What does a user have to sign to give a mobile app permission to track their location?,Consent,4.3.7
+q29,Can a parent or legan guardian authorize a mobile app to collect information on behalf of someone they represent?,Consent,4.3.6
+q30,"If someone turns off location tracking after previously enabling it, what must the app tell them?",Consent,4.3.8
+q31,Can a mobile app mislead users about why it needs their location so that they will agree to tracking?,Consent,4.3.5;4.3.2
+q32,When might a tracking app rely on implied consent rather than asking users to explicitly approve data collection?,Consent,4.3.6
+q33,"If a user withdraws permission for a mobile tracking app to collect their location, what should the app do?",Consent,4.3.8
+q34,What personal information does a fitness tracking app actually need to collect to track daily steps?,Limiting Collection,4.4.1
+q35,Does a fitness app need continuous GPS access if it only tracks the number of steps a user takes?,Limiting Collection,4.4.1
+q36,Should a fitness app collect a user's date of birth if an age range is sufficient for its features?,Limiting Collection,4.4.1
+q37,"Can a fitness app collect heart rate, sleep patterns, and location data when these are not required for the user's selected features?",Limiting Collection,4.4.1
+q38,How should a fitness app limit the types of personal information it collects from users?,Limiting Collection,4.4.1
+q39,Can a fitness app collect contacts and call logs when its purpose is to track workouts?,Limiting Collection,4.4.1
+q40,Is a fitness app allowed to collect location data for targeted advertising while telling users it is only used to map running routes?,Limiting Collection,4.4.2
+q41,Can a fitness app obtain consent for health data collection by hiding its actual data collection purposes in misleading language?,Limiting Collection,4.4.2
+q42,Is it deceptive for a fitness app to claim that collecting personal information is necessary for workout tracking when it is actually optional?,Limiting Collection,4.4.2
+q43,How should a fitness app determine what personal information is necessary for its stated tracking purposes?,Limiting Collection,4.4.3
+q44,How do a user's stated fitness tracking preferences relate to the personal information the app collects?,Limiting Collection,4.4.3
+q45,"If a user agrees to share GPS data for running routes, can the app also collect location data for unrelated purposes?",Limiting Collection,4.4.3
+q46,Can a fitness app use my workout history to recommend products after I only agreed to fitness tracking?,Limiting Use Disclosure and Retention,4.5.1;4.2.1;4.3.2
+q47,Can a fitness app use my heart rate data to train an AI model for a purpose unrelated to tracking my health?,Limiting Use Disclosure and Retention,4.5.1;4.2.1;4.3.2
+q48,Can a fitness app share my running routes with advertisers without asking me first?,Limiting Use Disclosure and Retention,4.5.4
+q49,Is a fitness app allowed to send my sleep and activity data to a third-party analytics company?,Limiting Use Disclosure and Retention,4.5.4
+q50,Can my fitness app share my workout history with my insurance company without my knowledge?,Limiting Use Disclosure and Retention,4.5.4
+q51,How long can a fitness app keep my old workout records after I stop using it?,Limiting Use Disclosure and Retention,4.5.2;4.5.3
+q52,Does a fitness app need a policy explaining how long it stores my personal data?,Limiting Use Disclosure and Retention,4.5.2
+q53,Should a fitness app delete my GPS history once it is no longer needed for tracking my runs?,Limiting Use Disclosure and Retention,4.5.3
+q54,Can a fitness app keep my heart rate and sleep records forever in case they become useful later?,Limiting Use Disclosure and Retention,4.5.3;4.5.2;4.5.1
+q55,How can I access the personal information a fitness app used to make a decision about my account?,Limiting Use Disclosure and Retention,4.5.4
+q56,What should a fitness app do if it records the wrong number of steps during a workout?,Accuracy,4.6.1
+q57,Can a fitness app use an incorrect heart rate reading to assess a user's fitness progress?,Accuracy,4.6.1
+q58,How can a fitness app ensure that outdated weight and activity records do not affect personalized health recommendations?,Accuracy,4.6.1;4.2.1
+q59,Does a fitness app need to update a user's personal information every day even when the information has not changed?,Accuracy,4.6.2
+q60,Should a fitness app continuously refresh GPS and activity data even when doing so is unnecessary for its features?,Accuracy,4.6.2
+q61,How often should a fitness app verify ongoing workout data that it shares with third-party services?,Accuracy,4.6.3
+q62,Can a fitness app send inaccurate activity summaries to an insurance company that uses them to assess a user?,Accuracy,4.6.1;4.6.3
+q63,What should a fitness app do when a user reports that their recorded workout duration is incorrect?,Accuracy,4.6.1
+q64,Should a fitness app correct outdated heart rate records before using them to generate fitness recommendations?,Accuracy,4.6.1;4.6.3
+q65,How can a user request access to their fitness records to check whether the information is accurate?,Accuracy,4.6.1
+q66,How should a fitness app protect users' personal information from hackers and unauthorized access?,Safeguards,4.7.1
+q67,What security measures should a fitness app use to prevent someone from accessing another user's workout history?,Safeguards,4.7.1;4.7.3
+q68,Should a fitness app use stronger security for heart rate and sleep data than for less sensitive profile information?,Safeguards,4.7.2;4.3.4
+q69,How should a fitness app protect personal information stored on users' phones and on its servers?,Safeguards,4.7.1;4.7.3
+q70,Should a fitness app encrypt users' GPS routes and require passwords or authentication to access their accounts?,Safeguards,4.7.3
+q71,How can a fitness company restrict employee access to users' health and workout records?,Safeguards,4.7.3;4.7.4
+q72,What should fitness app employees know about keeping users' personal information confidential?,Safeguards,4.7.4
+q73,How can a fitness app prevent personal information from being exposed when old user records are deleted?,Safeguards,4.7.5;4.5.3
+q74,"What protections should a fitness app use to prevent personal information from being stolen, copied, or modified without permission?",Safeguards,4.7.1;4.7.3
+q75,How should a fitness app secure sensitive health data when sharing it with an authorized third-party service?,Safeguards,4.7.1;4.7.2;4.7.3
+q76,Where can I find a fitness app's privacy policy explaining how it handles my personal information?,Openness,4.8.1
+q78,Does a fitness app need to explain its privacy practices in language that ordinary users can understand?,Openness,4.8.1
+q79,How can I contact the person responsible for handling privacy complaints about a fitness app?,Openness,4.8.2;4.1.3
+q80,How can I find out what personal information a fitness app stores about me and how it uses that information?,Openness,4.8.2
+q81,Should a fitness app explain how users can request access to their stored workout and heart rate records?,Openness,4.8.2;4.9.1
+q82,Does a fitness app need to disclose whether it shares users' personal information with companies under the same parent organization?,Openness,4.8.2
+q83,Should a fitness app provide users with a copy of documents explaining its privacy policies and standards?,Openness,4.8.2
+q84,What are some ways a fitness app can make its privacy policy available to users?,Openness,4.8.3
+q85,Can a fitness app make its privacy practices available through an easily accessible page on its website or mobile app?,Openness,4.8.3
+q86,How can a fitness app make information about its data collection and handling practices available to users who have difficulty understanding technical language?,Openness,4.8.1;4.8.3
+q87,Can I ask a fitness app whether it stores any personal information about me?,Individual Access,4.9.1
+q88,Can I get a copy of my workout history and heart rate data stored by a fitness app?,Individual Access,4.9.1
+q89,Can I find out where my fitness app obtained my personal information and how it has used it?,Individual Access,4.9.1
+q90,Can a fitness app tell me which third-party companies have received my GPS routes or workout records?,Individual Access,4.9.1;4.9.3
+q91,What information can a fitness app ask me to provide before showing me my personal records?,Individual Access,4.9.2
+q92,"How quickly must a fitness app respond to my request for my personal information, and can it charge me a fee?",Individual Access,4.9.4
+q93,What should a fitness app do if I prove that my recorded workout duration or heart rate data is incorrect?,Individual Access,4.9.5;4.6.1
+q94,"If a fitness app refuses to correct disputed fitness data, must it record my disagreement?",Individual Access,4.9.6
+q95,"If a fitness app corrects my personal information, should it notify third parties that received the incorrect data?",Individual Access,4.9.5
+q96,Can a fitness app explain abbreviations or codes in my downloaded fitness records so I can understand them?,Individual Access,4.9.4
+q97,Who is responsible for ensuring a fitness app follows privacy requirements when handling users' personal information?,Challenging Compliance,4.10.1;4.1.1
+q98,How can I file a complaint if a fitness app mishandles my heart rate or location data?,Challenging Compliance,4.10.2
+q99,Does a fitness app need to provide an easy way for users to raise concerns about its privacy practices?,Challenging Compliance,4.10.2
+q100,What should a fitness app do when a user asks how to challenge its collection or use of personal information?,Challenging Compliance,4.10.2;4.10.3
+q101,Should a fitness app tell users how to contact the appropriate organization to complain about a privacy issue?,Challenging Compliance,4.10.3;4.8.2
+q102,Can a fitness app ignore a complaint about sharing users' workout history without permission?,Challenging Compliance,4.10.4
+q103,What steps should a fitness app take after confirming that it improperly disclosed a user's GPS history?,Challenging Compliance,4.10.4
+q104,"If several users complain about the same privacy issue, should a fitness app investigate the complaints and review its procedures?",Challenging Compliance,4.10.4
+q105,Can a fitness app change its privacy policies after an investigation finds that its practices violate its stated commitments?,Challenging Compliance,4.10.4
+q106,Where can a user escalate a privacy complaint if they are dissatisfied with a fitness app's handling of their personal information?,Challenging Compliance,4.10.3
