@@ -42,7 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from rag_pipeline.embedder import BM25Embedder, rank_by_similarity
+from rag_pipeline.embedder import Embedder, rank_by_similarity
 from rag_pipeline.store import ChunkStore
 
 log = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ class Retriever:
         self._embedder_paths: dict[str, Path] = {
             k.upper(): Path(v) for k, v in embedder_paths.items()
         }
-        self._embedder_cache: dict[str, BM25Embedder] = {}
+        self._embedder_cache: dict[str, Embedder] = {}
 
     def close(self) -> None:
         """
@@ -188,7 +188,7 @@ class Retriever:
             log.debug(f"[retrieve] No chunks for {law}/{article_ref}/{concept}")
             return ""
 
-        # ── Stage 2: BM25 cosine rerank ───────────────────────────────────────
+        # ── Stage 2: embedding-based rerank ───────────────────────────────────────
         return self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
 
     def retrieve_for_prompt(
@@ -279,14 +279,14 @@ class Retriever:
         top_k: int,
     ) -> str:
         """
-        Embed the query with BM25, rerank *candidates_raw* by cosine similarity,
+        Embed the query with the loaded embedder, rerank *candidates_raw* by cosine similarity,
         and return the concatenated texts of the top-k results.
         """
         # Build discriminative query text
         expansion = _CONCEPT_QUERY_EXPANSION.get(concept, concept)
         query_text = f"{concept} {article_ref} {expansion}"
 
-        # Get the fitted BM25Embedder for this law
+        # Get the fitted embedder for this law
         embedder = self._load_embedder(law)
 
         if embedder is None:
@@ -341,9 +341,9 @@ class Retriever:
 
     # ── Embedder loading ──────────────────────────────────────────────────────
 
-    def _load_embedder(self, law: str) -> Optional[BM25Embedder]:
+    def _load_embedder(self, law: str) -> Optional[Embedder]:
         """
-        Load and cache the BM25Embedder for *law* from its pickle file.
+        Load and cache the embedder for *law* from its pickle file.
 
         Returns None (with a warning) if the path is missing or the pickle
         is unreadable, so retrieval can degrade gracefully instead of crashing.
@@ -366,8 +366,8 @@ class Retriever:
 
         try:
             with open(emb_path, "rb") as fh:
-                embedder: BM25Embedder = pickle.load(fh)
-            log.info(f"[retrieve] Loaded BM25 embedder for {law} from {emb_path}")
+                embedder: Embedder = pickle.load(fh)
+            log.info(f"[retrieve] Loaded embedder for {law} from {emb_path}")
             self._embedder_cache[law] = embedder
             return embedder
         except Exception as exc:

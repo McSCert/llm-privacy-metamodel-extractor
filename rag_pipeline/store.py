@@ -44,7 +44,9 @@ from typing import Optional
 import numpy as np
 
 from rag_pipeline.chunker import chunk_file
-from rag_pipeline.embedder import TFIDFEmbedder, BM25Embedder
+from rag_pipeline.embedder import TFIDFEmbedder, BM25Embedder, SentenceTransformerEmbedder, get_embedder_class
+
+EMBEDDER_CLASS = BM25Embedder
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +59,22 @@ log = logging.getLogger(__name__)
 #   SentenceTransformerEmbedder — best quality; needs: pip install sentence-transformers
 #
 # After changing, delete data/chunks_*_embedder.pkl and re-run --stage ingest.
-EMBEDDER_CLASS = BM25Embedder  # swap to TFIDFEmbedder or SentenceTransformerEmbedder
+
+# swap between all embedder types
+EMBEDDER_REGISTRY = {
+    "tfidf": TFIDFEmbedder,
+    "bm25": BM25Embedder,
+    "semantic": SentenceTransformerEmbedder,
+}
+
+def get_embedder_class(name: str):
+    name = name.lower().strip()
+    if name not in EMBEDDER_REGISTRY:
+        valid = ", ".join(sorted(EMBEDDER_REGISTRY))
+        raise ValueError(
+            f"Unknown embedder '{name}'. Expected one of: {valid}"
+        )
+    return EMBEDDER_REGISTRY[name]
 
 # ---------------------------------------------------------------------------
 # Keyword → concept tag mapping used by the ingest-time tagger.
@@ -383,7 +400,7 @@ def ingest_file(
     path: Path,
     law: str,
     db_path: "Path | str | ChunkStore",
-    embedder_path: Path,
+    embedder_path: Path, embedder_name: str = "bm25"
 ) -> dict:
     """
     Chunk, embed, and persist one law file.
@@ -392,7 +409,7 @@ def ingest_file(
     -----
     1. chunk_file() → hierarchical chunks (article/principle/clause level).
     2. Keyword tagger annotates each chunk with relevant concept tags.
-    3. EMBEDDER_CLASS().fit(all_texts) — one index per law file.
+    3. EMBEDDERS[embedder_name]().fit(all_texts) — one index per law file.
     4. doc_vectors() → L2-normalised score rows (one per chunk).
     5. Chunks + vectors → SQLite via ChunkStore.insert_chunks().
     6. Fitted embedder pickled to *embedder_path* for query-time retrieval.
@@ -445,7 +462,8 @@ def ingest_file(
         texts.append(chunk.get("text", ""))
 
     # ── 3. Fit embedder ───────────────────────────────────────────────────────
-    embedder = EMBEDDER_CLASS()
+    embedder_class = get_embedder_class(embedder_name)
+    embedder = embedder_class()
     embedder.fit(texts)
 
     # ── 4. Extract per-document vectors ───────────────────────────────────────
@@ -486,6 +504,6 @@ def ingest_file(
     with open(embedder_path, "wb") as fh:
         pickle.dump(embedder, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
-    log.info(f"[ingest] {law}: {EMBEDDER_CLASS.__name__} embedder saved → {embedder_path}")
+    log.info(f"[ingest] {law}: {EMBEDDERS[embedder_name].__name__} embedder saved → {embedder_path}")
 
     return {"chunks_produced": n_produced, "chunks_written": n_written}
