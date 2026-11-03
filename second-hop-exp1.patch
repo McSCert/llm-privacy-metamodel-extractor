@@ -1,0 +1,601 @@
+diff --git a/diagnose_second_hop.py b/diagnose_second_hop.py
+new file mode 100644
+index 0000000..52b1bdd
+--- /dev/null
++++ b/diagnose_second_hop.py
+@@ -0,0 +1,125 @@
++"""
++diagnose_second_hop.py — offline checks for second-hop retrieval. No LLM calls.
++
++Builds every Pass-1 prompt the pipeline would send for PIPEDA Principles
++4.1-4.10, exactly as stage_extract() does (same article list, same concept-tag
++pre-filter, same retriever call, same prompt builder), and writes them to a
++JSON file keyed by "<article_ref> | <concept>".
++
++    python3 diagnose_second_hop.py --out prompts.off.json
++    python3 diagnose_second_hop.py --second-hop --out prompts.on.json
++    python3 diagnose_second_hop.py --compare prompts.off.json prompts.on.json
++
++--compare prints which prompts changed and by how many characters, plus the
++largest prompt in each file. Prompts are compared byte for byte.
++
++The detected-reference table is printed whenever --second-hop is given.
++
++Embedder: pass --embedder to use the real BM25 pickle. Without it the
++retriever falls back to DB order. That only matters for 4.3 (two candidate
++chunks, both returned at top_k=3, possibly in a different order), and it is
++the same for both runs, so an off/on comparison is still valid.
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++import logging
++import re
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parent))
++
++from privacy_schema.prompts import build_concept_prompt          # noqa: E402
++from rag_pipeline.retriever import Retriever                     # noqa: E402
++from rag_pipeline.store import ChunkStore                        # noqa: E402
++from run_pipeline import PASS1_CONCEPTS                          # noqa: E402
++
++ARTICLES = ("4.1 Principle 1,4.2 Principle,4.3 Principle,4.4 Principle,"
++            "4.5 Principle,4.6 Principle,4.7 Principle,4.8 Principle,"
++            "4.9 Principle,4.10 Principle")
++LAW = "PIPEDA"
++
++
++def _filter() -> re.Pattern:
++    # Same construction as run_pipeline.main(): substrings, case-insensitive.
++    parts = [re.escape(p.strip()) for p in ARTICLES.split(",") if p.strip()]
++    return re.compile("|".join(parts), re.IGNORECASE)
++
++
++def build_prompts(db: Path, embedder: Path | None, top_k: int,
++                  second_hop: bool) -> dict[str, str]:
++    filt = _filter()
++    kwargs = {"second_hop": True} if second_hop else {}
++    retriever = Retriever(db, {LAW: embedder or Path("/nonexistent.pkl")},
++                          **kwargs)
++    out: dict[str, str] = {}
++    with ChunkStore(db) as store:
++        arts = store.list_articles(
++            law=LAW, levels=["article", "section", "principle", "document"])
++        for art in arts:
++            ref = art["article_ref"]
++            if not filt.search(ref):
++                continue
++            tags = art.get("concept_tags", [])
++            for concept in PASS1_CONCEPTS:
++                if concept not in tags:
++                    continue
++                rag = retriever.retrieve_for_prompt(
++                    concept=concept, law=LAW, article_ref=ref, top_k=top_k)
++                if rag.startswith("[No relevant"):
++                    continue
++                system, user = build_concept_prompt(concept, LAW, ref, rag)
++                out[f"{ref} | {concept}"] = system + "\n\n" + user
++    retriever.close()
++    return out
++
++
++def compare(a_path: Path, b_path: Path) -> int:
++    a = json.loads(a_path.read_text())
++    b = json.loads(b_path.read_text())
++    keys = sorted(set(a) | set(b))
++    changed = [k for k in keys if a.get(k) != b.get(k)]
++    print(f"{len(keys)} prompts; {len(keys) - len(changed)} identical; "
++          f"{len(changed)} changed")
++    for k in changed:
++        la, lb = len(a.get(k, "")), len(b.get(k, ""))
++        print(f"  {k:55s} {la:6d} -> {lb:6d} chars ({lb - la:+d})")
++    for name, d in ((a_path.name, a), (b_path.name, b)):
++        k = max(d, key=lambda x: len(d[x]))
++        print(f"largest in {name}: {len(d[k])} chars  [{k}]")
++    return 0
++
++
++def main() -> int:
++    p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
++    p.add_argument("--db", default="data/chunks.db", type=Path)
++    p.add_argument("--embedder", type=Path, default=None)
++    p.add_argument("--top-k", type=int, default=3)
++    p.add_argument("--second-hop", action="store_true")
++    p.add_argument("--out", type=Path)
++    p.add_argument("--compare", nargs=2, type=Path, metavar=("A", "B"))
++    args = p.parse_args()
++    logging.basicConfig(level=logging.ERROR)
++
++    if args.compare:
++        return compare(*args.compare)
++    if not args.out:
++        p.error("--out is required unless --compare is given")
++
++    if args.second_hop:
++        from rag_pipeline.second_hop import reference_table
++        with ChunkStore(args.db) as store:
++            print(reference_table(store, LAW))
++
++    prompts = build_prompts(args.db, args.embedder, args.top_k,
++                            args.second_hop)
++    args.out.write_text(json.dumps(prompts, indent=1, ensure_ascii=False))
++    print(f"wrote {len(prompts)} prompts to {args.out}")
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/rag_pipeline/retriever.py b/rag_pipeline/retriever.py
+index 04b55b2..48c5e4b 100644
+--- a/rag_pipeline/retriever.py
++++ b/rag_pipeline/retriever.py
+@@ -42,6 +42,7 @@ from dataclasses import dataclass
+ from pathlib import Path
+ from typing import Optional
+ 
++from rag_pipeline import second_hop as _second_hop
+ from rag_pipeline.embedder import BM25Embedder, rank_by_similarity
+ from rag_pipeline.store import ChunkStore
+ 
+@@ -112,12 +113,17 @@ class Retriever:
+                          Retriever(db_path, embedder_paths)
+     embedder_paths : Mapping of law name → path to pickled embedder pickle,
+                      as returned by stage_ingest().
++    second_hop     : When True, append the text of obligation-bearing
++                     cross-references after the retrieved text
++                     (see rag_pipeline/second_hop.py). Default False, which
++                     leaves retrieval output unchanged.
+     """
+ 
+     def __init__(
+         self,
+         store_or_path: "ChunkStore | Path | str",
+         embedder_paths: dict[str, "Path | str"],
++        second_hop: bool = False,
+     ) -> None:
+         # Accept either an open ChunkStore or a db path (original interface)
+         if isinstance(store_or_path, ChunkStore):
+@@ -133,6 +139,7 @@ class Retriever:
+             k.upper(): Path(v) for k, v in embedder_paths.items()
+         }
+         self._embedder_cache: dict[str, BM25Embedder] = {}
++        self._second_hop = second_hop
+ 
+     def close(self) -> None:
+         """
+@@ -189,7 +196,12 @@ class Retriever:
+             return ""
+ 
+         # ── Stage 2: BM25 cosine rerank ───────────────────────────────────────
+-        return self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
++        text = self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
++
++        # ── Stage 3 (optional): obligation-bearing cross-references ─────────
++        if self._second_hop:
++            text = _second_hop.append_references(self._store, law, article_ref, text)
++        return text
+ 
+     def retrieve_for_prompt(
+         self,
+diff --git a/rag_pipeline/second_hop.py b/rag_pipeline/second_hop.py
+new file mode 100644
+index 0000000..0ddb198
+--- /dev/null
++++ b/rag_pipeline/second_hop.py
+@@ -0,0 +1,190 @@
++"""
++rag_pipeline/second_hop.py — follow obligation-bearing cross-references.
++
++WHY THIS EXISTS
++---------------
++Retrieval is scoped to the article under extraction, so when a clause applies
++an obligation stated in another clause, the model never sees that obligation.
++PIPEDA 4.4.1: "Organizations shall specify the type of information collected
++... in accordance with the Openness principle (Clause 4.8)". The Openness rule
++lives in 4.8; extracting 4.4 alone misses the Transparency constraint that
++gold v2.1 records at 4.4 (annotation rule of 2026-10-05: a cross-reference
++incorporates the referenced obligation into the citing clause).
++
++WHAT IT DOES
++------------
++1. Detect only OBLIGATION-BEARING references: a clause reference that follows
++   an obligation phrase ("in accordance with", "comply with", ...) in the same
++   sentence. Pointer references ("linked closely to", "please refer to",
++   "see Clause", "is discussed in") are ignored. In PIPEDA Schedule 1 that
++   leaves exactly 4.2.1 -> 4.8, 4.9 and 4.4.1 -> 4.8.
++2. Fetch the referenced text:
++     - a whole principle ("Clause 4.8")  -> its OPENING RULE only: the
++       principle heading and statement, up to its first numbered sub-clause
++       or "Note:" paragraph;
++     - a specific clause ("Clause 4.5.3") -> that clause's own chunk.
++3. Append each one under a fixed label, after the primary text:
++       --- REFERENCED CONTEXT (Clause 4.8, cited by this clause) ---
++   No instruction is added to the prompt; the label is the only new wording.
++4. One hop only: references inside fetched text are not followed.
++
++SCOPE AND LIMITS
++----------------
++- The reference pattern ("Clause N.N") and the principle lookup
++  ("<N.N> Principle ...") are PIPEDA Schedule 1 conventions. Other laws
++  (GDPR "Article 6(1)") need their own patterns; nothing fires for them today.
++- Deferring references without a clause number ("the purposes identified by
++  the organization") are deliberately NOT handled here. That is experiment 2.
++- Off unless Retriever(second_hop=True) / run_pipeline --second-hop. With it
++  off, retrieval output is byte-identical to before this module existed.
++"""
++
++from __future__ import annotations
++
++import logging
++import re
++from typing import Iterable, Optional
++
++log = logging.getLogger(__name__)
++
++LABEL = "--- REFERENCED CONTEXT (Clause {ref}, cited by this clause) ---"
++
++# Phrases that make the following reference part of the citing clause's
++# obligation. Kept short and explicit so the detector is reviewable.
++OBLIGATION_PHRASES: tuple[str, ...] = (
++    "in accordance with",
++    "in compliance with",
++    "comply with",
++    "pursuant to",
++    "as required by",
++)
++
++_TRIGGER = re.compile(
++    r"\b(?:" + "|".join(re.escape(p) for p in OBLIGATION_PHRASES) + r")\b",
++    re.IGNORECASE,
++)
++_CLAUSE_REF = re.compile(r"\bClauses?\s+(\d+(?:\.\d+)+)", re.IGNORECASE)
++# A sentence ends at a full stop followed by whitespace. "4.8" has no
++# whitespace after its dot, so clause numbers never end a sentence.
++_SENTENCE_END = re.compile(r"\.\s")
++# A trigger governs references at most this far into its sentence.
++_MAX_SCOPE = 250
++
++
++def _flatten(text: str) -> str:
++    """Undo PDF line wrapping, for detection only (fetched text stays raw)."""
++    t = re.sub(r"-\s*\n\s*", "", text)          # "prin-\nciple" -> "principle"
++    t = re.sub(r"\s+", " ", t)
++    # Clause numbers are never split across lines in the PIPEDA corpus
++    # (checked 2026-11-02). Do not try to re-join "4. 8": that also glues a
++    # sentence-final "4.3.4." to the next clause number "4.7.3".
++    return t
++
++
++def own_clause(article_ref: str) -> str:
++    """'4.4 Principle 4 — Limiting' -> '4.4'; '4.5.3' -> '4.5.3'."""
++    m = re.match(r"\s*(\d+(?:\.\d+)*)", article_ref or "")
++    return m.group(1) if m else ""
++
++
++def _is_self(ref: str, own: str) -> bool:
++    return bool(own) and (ref == own or ref.startswith(own + "."))
++
++
++def find_references(text: str) -> list[tuple[str, bool, str]]:
++    """
++    Every clause reference in *text*, in order, as
++    (clause, obligation_bearing, context_snippet).
++    """
++    flat = _flatten(text)
++    # Character spans governed by an obligation phrase.
++    scopes: list[tuple[int, int]] = []
++    for m in _TRIGGER.finditer(flat):
++        end = _SENTENCE_END.search(flat, m.end())
++        stop = min(end.start() if end else len(flat), m.end() + _MAX_SCOPE)
++        scopes.append((m.start(), stop))
++
++    out = []
++    for m in _CLAUSE_REF.finditer(flat):
++        governed = any(a <= m.start() < b for a, b in scopes)
++        snippet = flat[max(0, m.start() - 70): m.end() + 1]
++        out.append((m.group(1), governed, snippet))
++    return out
++
++
++def obligation_references(text: str, own: str = "") -> list[str]:
++    """Obligation-bearing references in *text*, de-duplicated, self excluded."""
++    seen: list[str] = []
++    for ref, governed, _ in find_references(text):
++        if governed and not _is_self(ref, own) and ref not in seen:
++            seen.append(ref)
++    return seen
++
++
++def opening_rule(principle_ref: str, text: str) -> str:
++    """
++    The heading and statement of a principle chunk, up to its first numbered
++    sub-clause ("4.8.1") or a "Note:" paragraph.
++    """
++    stop = re.compile(
++        rf"^\s*(?:{re.escape(principle_ref)}\.1\b|Note:)", re.MULTILINE)
++    m = stop.search(text)
++    return (text[: m.start()] if m else text).strip()
++
++
++def fetch_referenced_text(store, law: str, ref: str) -> Optional[str]:
++    """Opening rule for a principle reference, else the clause's own chunk."""
++    rows = store.get_chunks(law=law)
++    if ref.count(".") == 1:
++        for r in rows:
++            if r["article_ref"].startswith(f"{ref} Principle"):
++                return opening_rule(ref, r["text"])
++    for r in rows:
++        if r["article_ref"] == ref:
++            return r["text"].strip()
++    return None
++
++
++def append_references(store, law: str, article_ref: str, rag_text: str) -> str:
++    """
++    Return *rag_text* followed by one labelled block per obligation-bearing
++    reference it contains. Returns *rag_text* unchanged when there are none.
++    """
++    if not rag_text:
++        return rag_text
++    blocks = []
++    for ref in obligation_references(rag_text, own_clause(article_ref)):
++        body = fetch_referenced_text(store, law, ref)
++        if not body:
++            log.warning(f"[second-hop] {law} {article_ref}: Clause {ref} "
++                        f"cited but not found in the corpus — skipped")
++            continue
++        blocks.append(LABEL.format(ref=ref) + "\n" + body)
++        log.debug(f"[second-hop] {law} {article_ref}: + Clause {ref} "
++                  f"({len(body)} chars)")
++    if not blocks:
++        return rag_text
++    return rag_text + "\n\n" + "\n\n".join(blocks)
++
++
++def reference_table(store, law: str,
++                    article_refs: Optional[Iterable[str]] = None) -> str:
++    """
++    Human-readable table of every clause reference in the principle-level
++    chunks, marked FOLLOW (obligation-bearing) or ignore (pointer), with the
++    size of what would be fetched. For review before any LLM run.
++    """
++    rows = [r for r in store.get_chunks(law=law) if " Principle " in r["article_ref"]]
++    if article_refs is not None:
++        wanted = set(article_refs)
++        rows = [r for r in rows if r["article_ref"] in wanted]
++    lines = [f"{'from':6} {'to':7} {'action':7} {'fetch':>6}  context"]
++    for r in rows:
++        own = own_clause(r["article_ref"])
++        for ref, governed, snippet in find_references(r["text"]):
++            follow = governed and not _is_self(ref, own)
++            body = fetch_referenced_text(store, law, ref) if follow else None
++            size = f"{len(body)}c" if body else ("MISSING" if follow else "")
++            lines.append(f"{own:6} {ref:7} {'FOLLOW' if follow else 'ignore':7} "
++                         f"{size:>6}  …{snippet}")
++    return "\n".join(lines)
+diff --git a/run_pipeline.py b/run_pipeline.py
+index 3cca534..b7be997 100644
+--- a/run_pipeline.py
++++ b/run_pipeline.py
+@@ -1160,6 +1160,7 @@ def stage_extract(
+     max_retries:      int,
+     article_filter:   Optional[re.Pattern],
+     use_concept_tags: bool = True,
++    second_hop:       bool = False,
+ ) -> dict[str, list[dict]]:
+     """
+     Pass 1: for every (law, article, concept) triple that passes the filters,
+@@ -1182,6 +1183,7 @@ def stage_extract(
+     log.info("STAGE 2 — EXTRACT (Pass 1)")
+     log.info("=" * 60)
+     log.info(f"  Concept-tag filter : {'ON' if use_concept_tags else 'OFF'}")
++    log.info(f"  Second-hop refs    : {'ON' if second_hop else 'OFF'}")
+     _load_known_refs(db_path)
+     if article_filter:
+         log.info(f"  Article filter     : {article_filter.pattern}")
+@@ -1229,7 +1231,8 @@ def stage_extract(
+                 f"({skipped} skipped by filter)"
+             )
+ 
+-            retriever   = Retriever(db_path, {law: embedder_paths[law]})
++            retriever   = Retriever(db_path, {law: embedder_paths[law]},
++                                    second_hop=second_hop)
+             law_results = []
+ 
+             for art in to_process:
+@@ -1824,6 +1827,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
+         "--no-concept-tags", action="store_true",
+         help="Disable concept-tag pre-filtering (~3x more calls, ISSUE-3).",
+     )
++    ex.add_argument(
++        "--second-hop", action="store_true",
++        help=(
++            "Append the text of obligation-bearing cross-references "
++            "('in accordance with ... (Clause 4.8)') to the retrieved text. "
++            "Off by default. See rag_pipeline/second_hop.py."
++        ),
++    )
+ 
+     run = p.add_argument_group("Run Mode")
+     run.add_argument(
+@@ -1915,6 +1926,7 @@ def main() -> None:
+             max_retries      = args.max_retries,
+             article_filter   = article_filter,
+             use_concept_tags = not args.no_concept_tags,
++            second_hop       = args.second_hop,
+         )
+ 
+         _save_pass1(extraction_results, repo_path)
+diff --git a/tests/test_second_hop.py b/tests/test_second_hop.py
+new file mode 100644
+index 0000000..372ce28
+--- /dev/null
++++ b/tests/test_second_hop.py
+@@ -0,0 +1,163 @@
++"""
++test_second_hop.py — regression tests for obligation-bearing cross-references.
++
++No test framework required (same convention as test_citations.py):
++
++    python3 tests/test_second_hop.py
++
++The corpus test pins the full set of references the detector follows in
++PIPEDA Schedule 1. If it changes, the experiment changed — review the
++reference table (diagnose_second_hop.py --second-hop) before re-running.
++"""
++
++from __future__ import annotations
++
++import sys
++import traceback
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT))
++
++from rag_pipeline.second_hop import (                      # noqa: E402
++    LABEL,
++    append_references,
++    find_references,
++    obligation_references,
++    opening_rule,
++    own_clause,
++)
++
++# ── Detection ────────────────────────────────────────────────────────────────
++
++def test_obligation_phrase_is_followed():
++    t = ("4.4.1 Organizations shall specify the type of information collected "
++         "as part of their information-handling policies and practices, in "
++         "accordance with the Openness prin-\nciple (Clause 4.8).")
++    assert obligation_references(t) == ["4.8"]
++
++
++def test_coordinated_references_share_the_trigger():
++    t = ("4.2.1 The organization shall document the purposes ... in order to "
++         "comply with the Openness principle (Clause 4.8) and the Individual "
++         "Access principle (Clause 4.9). 4.2.2 Identifying the purposes ...")
++    assert obligation_references(t) == ["4.8", "4.9"]
++
++
++def test_pointer_references_are_ignored():
++    for t in (
++        "This principle is linked closely to the Consent principle (Clause 4.3).",
++        "For an elaboration on consent, please refer to the Consent principle (Clause 4.3).",
++        "shall document this purpose (see Clause 4.2.1).",
++        "The concept of sensitivity is discussed in Clause 4.3.4.",
++    ):
++        assert obligation_references(t) == [], t
++
++
++def test_trigger_does_not_cross_a_sentence_end():
++    t = ("must comply with the policy. 4.4.3 This principle is linked closely "
++         "to the Identifying Purposes principle (Clause 4.2).")
++    assert obligation_references(t) == []
++
++
++def test_sentence_final_clause_number_is_not_glued_to_the_next():
++    t = "is discussed in Clause 4.3.4.\n4.7.3\nThe methods of protection"
++    assert [r for r, _, _ in find_references(t)] == ["4.3.4"]
++
++
++def test_self_reference_is_excluded():
++    t = "in accordance with Clause 4.4.2 and Clause 4.8"
++    assert obligation_references(t, own="4.4") == ["4.8"]
++
++
++def test_own_clause():
++    assert own_clause("4.4 Principle 4 — Limiting") == "4.4"
++    assert own_clause("4.10 Principle 10 — Challenging") == "4.10"
++    assert own_clause("4.5.3") == "4.5.3"
++
++
++# ── Fetching ─────────────────────────────────────────────────────────────────
++
++def test_opening_rule_stops_at_first_subclause():
++    t = ("4.8 Principle 8 — Openness\nAn organization shall make readily "
++         "available ...\n4.8.1\nOrganizations shall be open ...")
++    assert opening_rule("4.8", t).endswith("readily available ...")
++
++
++def test_opening_rule_stops_at_note():
++    t = ("4.9 Principle 9 — Individual\nAccess\nUpon request ... amended as "
++         "appropriate.\nNote: In certain situations ...\n4.9.1\n...")
++    assert opening_rule("4.9", t).endswith("amended as appropriate.")
++
++
++def test_opening_rule_does_not_stop_at_4_10():
++    t = "4.1 Principle 1 — Accountability\nAn organization is responsible ...\n4.1.1\n..."
++    assert "4.1.1" not in opening_rule("4.1", t)
++
++
++class _FakeStore:
++    def __init__(self, rows):
++        self.rows = rows
++
++    def get_chunks(self, law, article_ref=None, concept_tags=None):
++        return [r for r in self.rows if article_ref in (None, r["article_ref"])]
++
++
++def test_append_adds_labelled_block_and_keeps_primary_text_first():
++    store = _FakeStore([{"article_ref": "4.8 Principle 8 — Openness",
++                         "text": "4.8 Principle 8 — Openness\nRULE\n4.8.1\nMORE"}])
++    primary = "in accordance with the Openness principle (Clause 4.8)."
++    out = append_references(store, "PIPEDA", "4.4 Principle 4 — Limiting", primary)
++    assert out.startswith(primary)
++    assert LABEL.format(ref="4.8") in out
++    assert "RULE" in out and "MORE" not in out
++
++
++def test_append_is_identity_without_references():
++    store = _FakeStore([])
++    t = "linked closely to the Consent principle (Clause 4.3)."
++    assert append_references(store, "PIPEDA", "4.4 Principle 4", t) is t
++
++
++def test_missing_reference_is_skipped_not_invented():
++    store = _FakeStore([])
++    t = "in accordance with Clause 9.9."
++    assert append_references(store, "PIPEDA", "4.4 Principle 4", t) == t
++
++
++# ── Corpus ───────────────────────────────────────────────────────────────────
++
++def test_pipeda_schedule1_follows_exactly_three_references():
++    db = ROOT / "data" / "chunks.db"
++    if not db.exists():
++        print("  skip  (no data/chunks.db)")
++        return
++    from rag_pipeline.store import ChunkStore
++    found = {}
++    with ChunkStore(db) as store:
++        for r in store.get_chunks(law="PIPEDA"):
++            if " Principle " not in r["article_ref"]:
++                continue
++            own = own_clause(r["article_ref"])
++            refs = obligation_references(r["text"], own)
++            if refs:
++                found[own] = refs
++    assert found == {"4.2": ["4.8", "4.9"], "4.4": ["4.8"]}, found
++
++
++# ── Runner ───────────────────────────────────────────────────────────────────
++
++if __name__ == "__main__":
++    tests = [(n, f) for n, f in sorted(globals().items())
++             if n.startswith("test_") and callable(f)]
++    failed = 0
++    for name, fn in tests:
++        try:
++            fn()
++            print(f"  ok    {name}")
++        except Exception:
++            failed += 1
++            print(f"  FAIL  {name}")
++            traceback.print_exc()
++    print(f"\n{len(tests) - failed} passed, {failed} failed")
++    sys.exit(1 if failed else 0)

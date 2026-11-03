@@ -1160,6 +1160,7 @@ def stage_extract(
     max_retries:      int,
     article_filter:   Optional[re.Pattern],
     use_concept_tags: bool = True,
+    second_hop:       bool = False,
 ) -> dict[str, list[dict]]:
     """
     Pass 1: for every (law, article, concept) triple that passes the filters,
@@ -1182,6 +1183,7 @@ def stage_extract(
     log.info("STAGE 2 — EXTRACT (Pass 1)")
     log.info("=" * 60)
     log.info(f"  Concept-tag filter : {'ON' if use_concept_tags else 'OFF'}")
+    log.info(f"  Second-hop refs    : {'ON' if second_hop else 'OFF'}")
     _load_known_refs(db_path)
     if article_filter:
         log.info(f"  Article filter     : {article_filter.pattern}")
@@ -1229,7 +1231,8 @@ def stage_extract(
                 f"({skipped} skipped by filter)"
             )
 
-            retriever   = Retriever(db_path, {law: embedder_paths[law]})
+            retriever   = Retriever(db_path, {law: embedder_paths[law]},
+                                    second_hop=second_hop)
             law_results = []
 
             for art in to_process:
@@ -1824,6 +1827,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--no-concept-tags", action="store_true",
         help="Disable concept-tag pre-filtering (~3x more calls, ISSUE-3).",
     )
+    ex.add_argument(
+        "--second-hop", action="store_true",
+        help=(
+            "Append the text of obligation-bearing cross-references "
+            "('in accordance with ... (Clause 4.8)') to the retrieved text. "
+            "Off by default. See rag_pipeline/second_hop.py."
+        ),
+    )
 
     run = p.add_argument_group("Run Mode")
     run.add_argument(
@@ -1915,6 +1926,7 @@ def main() -> None:
             max_retries      = args.max_retries,
             article_filter   = article_filter,
             use_concept_tags = not args.no_concept_tags,
+            second_hop       = args.second_hop,
         )
 
         _save_pass1(extraction_results, repo_path)
