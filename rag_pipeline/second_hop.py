@@ -27,6 +27,14 @@ WHAT IT DOES
        --- REFERENCED CONTEXT (Clause 4.8, cited by this clause) ---
    No instruction is added to the prompt; the label is the only new wording.
 4. One hop only: references inside fetched text are not followed.
+5. After Pass 1, drop any extracted list value whose `source_clause` points
+   outside the principle being extracted (`filter_out_of_principle`). With
+   referenced context in the prompt, the model sometimes lifts a value *out of*
+   the referenced clause (PIPEDA 4.2: an `Access` right cited "Clause 4.9")
+   instead of incorporating an obligation into the citing clause (4.4:
+   `Transparency` cited "4.4.1"). The gold rule (2026-10-05) incorporates
+   obligations, not values stated or granted elsewhere; the citation tells the
+   two apart. Measured on PIPEDA: removes exactly that one value.
 
 SCOPE AND LIMITS
 ----------------
@@ -41,6 +49,7 @@ SCOPE AND LIMITS
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from typing import Iterable, Optional
@@ -188,3 +197,59 @@ def reference_table(store, law: str,
             lines.append(f"{own:6} {ref:7} {'FOLLOW' if follow else 'ignore':7} "
                          f"{size:>6}  …{snippet}")
     return "\n".join(lines)
+
+
+def _cites_outside(source_clause: str, law: str, own: str) -> Optional[str]:
+    """
+    The canonical clause a value cites, if it lies outside *own* (not equal to
+    it and not a descendant of it); otherwise None. Values with no parseable
+    clause are kept.
+    """
+    from citations import canonical_clause      # pure module, repo root
+    primary = canonical_clause(source_clause or "", law)[2]
+    if primary and not _is_self(primary, own):
+        return primary
+    return None
+
+
+def filter_out_of_principle(
+    concepts: dict[str, str], law: str, article_ref: str,
+) -> tuple[dict[str, str], list[dict]]:
+    """
+    Drop Pass-1 list values whose `source_clause` points outside the article.
+
+    *concepts* maps concept name -> Pass-1 JSON string, as stored in the
+    Pass-1 record. Only JSON *lists* are filtered (Right, Purpose, Constraint
+    and other multi-instance concepts); single-object concepts are untouched.
+    A concept's string is rewritten only when something is removed, so an
+    unaffected concept stays byte-identical.
+
+    Returns (new_concepts, removed), where each removed entry is
+    {"concept", "type", "cites", "source_clause"}.
+    """
+    own = own_clause(article_ref)
+    out = dict(concepts)
+    removed: list[dict] = []
+    if not own:
+        return out, removed
+    for concept, raw in concepts.items():
+        try:
+            obj = json.loads(raw) if raw else None
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(obj, list):
+            continue
+        keep = []
+        for v in obj:
+            sc = v.get("source_clause", "") if isinstance(v, dict) else ""
+            cited = _cites_outside(sc, law, own)
+            if cited:
+                removed.append({"concept": concept,
+                                "type": v.get("type"),
+                                "cites": cited,
+                                "source_clause": sc})
+                continue
+            keep.append(v)
+        if len(keep) != len(obj):
+            out[concept] = json.dumps(keep)
+    return out, removed

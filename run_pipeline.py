@@ -136,6 +136,7 @@ from rag_pipeline.store     import ChunkStore, ingest_file
 from rag_pipeline.retriever import Retriever
 
 from citations import known_clauses, normalise_statement, PROBLEM_FLAGS
+from rag_pipeline.second_hop import filter_out_of_principle
 from privacy_schema.prompts import (
     build_concept_prompt,
     build_assembler_prompt,
@@ -344,6 +345,7 @@ class PipelineStats:
     tokens_in:                   int = 0
     tokens_out:                  int = 0
     citation_flags:              dict = field(default_factory=dict)
+    second_hop_filtered:         int = 0   # Pass-1 values dropped: cited outside their principle
     max_prompt_tokens:           int = 0
     prompt_token_samples:        list = field(default_factory=list)
     suspected_truncations:       list = field(default_factory=list)
@@ -381,6 +383,8 @@ class PipelineStats:
             f"  Pass-2 calls         : {self.pass2_attempts}  "
             f"(ok={self.pass2_success}  failed={self.pass2_failed})"
         )
+        if self.second_hop_filtered:
+            log.info(f"  Out-of-principle     : {self.second_hop_filtered} Pass-1 value(s) dropped (second hop)")
         log.info(f"  Statements stored    : {self.statements_stored}")
         log.info(f"  XMI files written    : {self.xmi_files_written}")
         log.info(f"  Total LLM calls      : {self.api_calls}")
@@ -1277,6 +1281,19 @@ def stage_extract(
                         f"    {concept:22s} {'OK' if result.success else 'FAIL':4s} "
                         f"(attempts={result.attempts})"
                     )
+
+                # ── Second hop: drop values lifted out of referenced clauses ──
+                if second_hop:
+                    art_record["concepts"], dropped = filter_out_of_principle(
+                        art_record["concepts"], law, article_ref,
+                    )
+                    for r in dropped:
+                        stats.second_hop_filtered += 1
+                        log.info(
+                            f"    second-hop filter: dropped {r['concept']} "
+                            f"{r['type']} (cites {r['cites']}, "
+                            f"raw {r['source_clause']!r})"
+                        )
 
                 law_results.append(art_record)
 

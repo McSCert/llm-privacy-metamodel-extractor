@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from rag_pipeline.second_hop import (                      # noqa: E402
     LABEL,
+    filter_out_of_principle,
     append_references,
     find_references,
     obligation_references,
@@ -123,6 +124,50 @@ def test_missing_reference_is_skipped_not_invented():
     store = _FakeStore([])
     t = "in accordance with Clause 9.9."
     assert append_references(store, "PIPEDA", "4.4 Principle 4", t) == t
+
+
+# ── Out-of-principle filter ──────────────────────────────────────────────────
+
+def test_filter_drops_value_cited_to_referenced_clause():
+    concepts = {
+        "Right": '[{"type": "Access", "source_clause": "Clause 4.9"}]',
+        "Constraint": '[{"type": "PurposeLimitation", "source_clause": "4.2.4"}]',
+    }
+    out, removed = filter_out_of_principle(concepts, "PIPEDA", "4.2 Principle 2 — Identifying")
+    assert out["Right"] == "[]"
+    assert out["Constraint"] is concepts["Constraint"]
+    assert [(r["concept"], r["type"], r["cites"]) for r in removed] == [("Right", "Access", "4.9")]
+
+
+def test_filter_keeps_incorporated_obligation_cited_to_own_clause():
+    raw = ('[{"type": "PurposeLimitation", "source_clause": "4.4"}, '
+           '{"type": "Transparency", "source_clause": "4.4.1"}]')
+    out, removed = filter_out_of_principle({"Constraint": raw}, "PIPEDA", "4.4 Principle 4 — Limiting")
+    assert out["Constraint"] is raw and removed == []
+
+
+def test_filter_keeps_law_only_and_uncited_values():
+    raw = '[{"type": "Objection", "source_clause": "PIPEDA"}, {"type": "Access"}]'
+    out, removed = filter_out_of_principle({"Right": raw}, "PIPEDA", "4.9 Principle 9 — Individual")
+    assert out["Right"] is raw and removed == []
+
+
+def test_filter_keeps_misspelled_law_in_own_principle():
+    raw = '[{"type": "Objection", "source_clause": "PIPADE Art.4.3 Principle 3 - Consent"}]'
+    out, removed = filter_out_of_principle({"ConsentWithdrawal": raw}, "PIPEDA", "4.3 Principle 3 - Consent")
+    assert out["ConsentWithdrawal"] is raw and removed == []
+
+
+def test_filter_ignores_single_object_concepts():
+    raw = '{"type": "Consent", "source_clause": "Clause 4.9"}'
+    out, removed = filter_out_of_principle({"LegalBasis": raw}, "PIPEDA", "4.2 Principle 2")
+    assert out["LegalBasis"] is raw and removed == []
+
+
+def test_filter_does_not_treat_4_10_as_inside_4_1():
+    raw = '[{"type": "Complaint", "source_clause": "4.10.2"}]'
+    out, removed = filter_out_of_principle({"Right": raw}, "PIPEDA", "4.1 Principle 1 — Accountability")
+    assert out["Right"] == "[]" and removed[0]["cites"] == "4.10.2"
 
 
 # ── Corpus ───────────────────────────────────────────────────────────────────
