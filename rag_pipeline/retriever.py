@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from rag_pipeline import second_hop as _second_hop
 from rag_pipeline.embedder import BM25Embedder, rank_by_similarity
 from rag_pipeline.store import ChunkStore
 
@@ -112,12 +113,17 @@ class Retriever:
                          Retriever(db_path, embedder_paths)
     embedder_paths : Mapping of law name → path to pickled embedder pickle,
                      as returned by stage_ingest().
+    second_hop     : When True, append the text of obligation-bearing
+                     cross-references after the retrieved text
+                     (see rag_pipeline/second_hop.py). Default False, which
+                     leaves retrieval output unchanged.
     """
 
     def __init__(
         self,
         store_or_path: "ChunkStore | Path | str",
         embedder_paths: dict[str, "Path | str"],
+        second_hop: bool = False,
     ) -> None:
         # Accept either an open ChunkStore or a db path (original interface)
         if isinstance(store_or_path, ChunkStore):
@@ -133,6 +139,7 @@ class Retriever:
             k.upper(): Path(v) for k, v in embedder_paths.items()
         }
         self._embedder_cache: dict[str, BM25Embedder] = {}
+        self._second_hop = second_hop
 
     def close(self) -> None:
         """
@@ -189,7 +196,12 @@ class Retriever:
             return ""
 
         # ── Stage 2: BM25 cosine rerank ───────────────────────────────────────
-        return self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
+        text = self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
+
+        # ── Stage 3 (optional): obligation-bearing cross-references ─────────
+        if self._second_hop:
+            text = _second_hop.append_references(self._store, law, article_ref, text)
+        return text
 
     def retrieve_for_prompt(
         self,
