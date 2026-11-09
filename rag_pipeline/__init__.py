@@ -35,6 +35,7 @@ from .embedder import (
     BM25Embedder,
     SentenceTransformerEmbedder,
     cosine_similarity,
+    hybrid_rank_by_similarity,
     rank_by_similarity,
 )
 from .store    import ChunkStore, ingest_file, EMBEDDER_CLASS
@@ -50,7 +51,7 @@ __all__ = [
     "Chunk", "chunk_file", "chunk_text", "concept_tagger",
     # embedder
     "TFIDFEmbedder", "BM25Embedder", "SentenceTransformerEmbedder",
-    "cosine_similarity", "rank_by_similarity",
+    "cosine_similarity", "hybrid_rank_by_similarity", "rank_by_similarity",
     # store
     "ChunkStore", "ingest_file", "EMBEDDER_CLASS",
     # retriever

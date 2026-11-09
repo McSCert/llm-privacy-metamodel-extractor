@@ -1,7 +1,7 @@
 # test_embedder.py
 import pickle, tempfile
 from pathlib import Path
-from rag_pipeline.embedder import BM25Embedder, cosine_similarity, rank_by_similarity
+from rag_pipeline.embedder import BM25Embedder, cosine_similarity, hybrid_rank_by_similarity, rank_by_similarity
 
 docs = [
     "The organization must obtain consent before collecting personal data.",
@@ -41,7 +41,14 @@ print(f"Top-3 for 'consent personal data': {[r[0] for r in ranked]}")
 assert ranked[0][0] == "doc0", f"Expected doc0 first, got {ranked[0][0]}"
 print("Semantic ranking correct  OK")
 
-# 6. Pickle round-trip (what store.py does)
+# 6. Hybrid fusion keeps the strongest candidate in the top rank
+bm25_ranked = rank_by_similarity(q, candidates, top_k=5)
+dense_ranked = [("doc0", 0.92), ("doc1", 0.81), ("doc2", 0.70), ("doc3", 0.40), ("doc4", 0.22)]
+hybrid_ranked = hybrid_rank_by_similarity(bm25_ranked, dense_ranked, top_k=3, bm25_weight=0.5)
+assert hybrid_ranked[0][0] == "doc0"
+print("Hybrid fusion  OK")
+
+# 7. Pickle round-trip (what store.py does)
 with tempfile.TemporaryDirectory() as td:
     path = Path(td) / "emb.pkl"
     with open(path, "wb") as f:

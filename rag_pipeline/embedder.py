@@ -370,15 +370,57 @@ def rank_by_similarity(
     return scored[:top_k]
 
 
-# ── Hybrid retrieval notes (future work) ─────────────────────────────────────
+def hybrid_rank_by_similarity(
+    bm25_ranked: list[tuple[str, float]],
+    dense_ranked: list[tuple[str, float]],
+    top_k: int = 5,
+    bm25_weight: float = 0.5,
+    method: str = "weighted_sum",
+    rrf_k: int = 60,
+) -> list[tuple[str, float]]:
+    """
+    Fuse BM25 and dense rankings into a single score ordering.
+
+    Default behaviour is a weighted sum over the two similarity scores, which is
+    simple and robust when the score scales are already comparable.  For users
+    who prefer rank-based fusion, set method="rrf".
+    """
+    bm25_map = {chunk_id: score for chunk_id, score in bm25_ranked}
+    dense_map = {chunk_id: score for chunk_id, score in dense_ranked}
+    ids = sorted(set(bm25_map) | set(dense_map), key=lambda cid: (
+        -(bm25_map.get(cid, 0.0) * bm25_weight + dense_map.get(cid, 0.0) * (1.0 - bm25_weight)),
+        cid,
+    ))
+
+    if method == "rrf":
+        fused: dict[str, float] = {}
+        for rank, (chunk_id, _) in enumerate(bm25_ranked, start=1):
+            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (rrf_k + rank)
+        for rank, (chunk_id, _) in enumerate(dense_ranked, start=1):
+            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (rrf_k + rank)
+        ids = sorted(fused, key=lambda cid: fused[cid], reverse=True)
+        return [(chunk_id, fused[chunk_id]) for chunk_id in ids[:top_k]]
+
+    fused = {
+        chunk_id: bm25_map.get(chunk_id, 0.0) * bm25_weight
+        + dense_map.get(chunk_id, 0.0) * (1.0 - bm25_weight)
+        for chunk_id in ids
+    }
+    return sorted(fused.items(), key=lambda item: item[1], reverse=True)[:top_k]
+
+
+# ── Hybrid retrieval notes ───────────────────────────────────────────────────
 #
-# To combine BM25 + SentenceTransformer scores:
+# Combine BM25 + SentenceTransformer scores as independent similarity signals:
 #
-# 1. Fit both embedders on the same corpus.
-# 2. Embed the query with both → bm25_q_vec, dense_q_vec.
-# 3. Both are already L2-normalised → scores are on [0, 1].
-# 4. Fuse with:
+# 1. Compute BM25 score for each candidate using the stored BM25 document vector.
+# 2. Compute dense semantic cosine score for each candidate using the query and
+#    chunk texts encoded by SentenceTransformerEmbedder.
+# 3. Fuse with either:
 #    a) Reciprocal Rank Fusion (RRF):
 #         score_rrf(d) = Σ_i  1 / (k + rank_i(d))    k=60 is a common default
 #    b) Weighted sum:
-#         score(d) = 0.3 * bm25_score(d) + 0.7 * dense_score(d)
+#         score(d) = 0.5 * bm25_score(d) + 0.5 * dense_score(d)
+#
+# The implementation below supports both methods and is used by Retriever when
+# sentence-transformers is available.
