@@ -43,7 +43,13 @@ from pathlib import Path
 from typing import Optional
 
 from rag_pipeline import second_hop as _second_hop
-from rag_pipeline.embedder import BM25Embedder, rank_by_similarity
+from rag_pipeline.embedder import (
+    BM25Embedder,
+    SentenceTransformerEmbedder,
+    cosine_similarity,
+    hybrid_rank_by_similarity,
+    rank_by_similarity,
+)
 from rag_pipeline.store import ChunkStore
 
 log = logging.getLogger(__name__)
@@ -124,6 +130,7 @@ class Retriever:
         store_or_path: "ChunkStore | Path | str",
         embedder_paths: dict[str, "Path | str"],
         second_hop: bool = False,
+        bm25_weight: float = 0.5,
     ) -> None:
         # Accept either an open ChunkStore or a db path (original interface)
         if isinstance(store_or_path, ChunkStore):
@@ -140,6 +147,17 @@ class Retriever:
         }
         self._embedder_cache: dict[str, BM25Embedder] = {}
         self._second_hop = second_hop
+        self._bm25_weight = self._validate_weight(bm25_weight)
+
+    @staticmethod
+    def _validate_weight(value: float) -> float:
+        """Clamp hybrid fusion weights into a sensible [0, 1] range."""
+        value = float(value)
+        if value < 0.0:
+            return 0.0
+        if value > 1.0:
+            return 1.0
+        return value
 
     def close(self) -> None:
         """
@@ -167,6 +185,7 @@ class Retriever:
         concept: str,
         top_k: int = 3,
         use_concept_tags: bool = True,
+        bm25_weight: float | None = None,
     ) -> str:
         """
         Retrieve and return the concatenated text of the *top_k* most relevant
@@ -187,6 +206,9 @@ class Retriever:
         Empty string when no chunks are found.
         """
         law = law.upper()
+        active_bm25_weight = self._validate_weight(
+            self._bm25_weight if bm25_weight is None else bm25_weight
+        )
 
         # ── Stage 1: candidate retrieval ─────────────────────────────────────
         candidates_raw = self._get_candidates(law, article_ref, concept, use_concept_tags)
@@ -196,7 +218,14 @@ class Retriever:
             return ""
 
         # ── Stage 2: BM25 cosine rerank ───────────────────────────────────────
-        text = self._rerank_and_format(law, article_ref, concept, candidates_raw, top_k)
+        text = self._rerank_and_format(
+            law,
+            article_ref,
+            concept,
+            candidates_raw,
+            top_k,
+            bm25_weight=active_bm25_weight,
+        )
 
         # ── Stage 3 (optional): obligation-bearing cross-references ─────────
         if self._second_hop:
@@ -210,6 +239,7 @@ class Retriever:
         article_ref: Optional[str] = None,
         top_k: int = 3,
         use_concept_tags: bool = True,
+        bm25_weight: float | None = None,
     ) -> str:
         """
         Prompt-ready retrieval — matches the original call signature used by
@@ -228,6 +258,7 @@ class Retriever:
             concept=concept,
             top_k=top_k,
             use_concept_tags=use_concept_tags,
+            bm25_weight=bm25_weight,
         )
 
     # ── Stage 1 helpers ───────────────────────────────────────────────────────
@@ -289,12 +320,12 @@ class Retriever:
         concept: str,
         candidates_raw: list[dict],
         top_k: int,
+        bm25_weight: float = 0.5,
     ) -> str:
         """
-        Embed the query with BM25, rerank *candidates_raw* by cosine similarity,
-        and return the concatenated texts of the top-k results.
+        Embed the query with BM25, optionally add semantic re-ranking, and return
+        the concatenated texts of the top-k results.
         """
-        # Build discriminative query text
         expansion = _CONCEPT_QUERY_EXPANSION.get(concept, concept)
         query_text = f"{concept} {article_ref} {expansion}"
 
@@ -333,14 +364,33 @@ class Retriever:
             texts = [c["text"] for c in candidates_raw[:top_k]]
             return "\n\n".join(texts)
 
-        # Cosine rerank
-        ranked = rank_by_similarity(query_vec, candidates_for_ranking, top_k=top_k)
+        bm25_ranked = rank_by_similarity(query_vec, candidates_for_ranking, top_k=None)
+        dense_ranked: list[tuple[str, float]] = []
 
-        log.debug(
-            f"[retrieve] {law}/{article_ref}/{concept}: "
-            f"{len(candidates_for_ranking)} candidates → top-{len(ranked)} selected "
-            f"(best score={ranked[0][1]:.3f})"
-        )
+        try:
+            dense_ranked = self._semantic_rank(query_text, candidates_raw)
+        except Exception as exc:
+            log.debug(f"[retrieve] semantic rerank unavailable for {law}: {exc}")
+
+        if dense_ranked:
+            ranked = hybrid_rank_by_similarity(
+                bm25_ranked,
+                dense_ranked,
+                top_k=top_k,
+                bm25_weight=bm25_weight,
+            )
+            log.debug(
+                f"[retrieve] {law}/{article_ref}/{concept}: "
+                f"hybrid rank across {len(candidates_for_ranking)} candidates "
+                f"(best score={ranked[0][1]:.3f})"
+            )
+        else:
+            ranked = bm25_ranked[:top_k]
+            log.debug(
+                f"[retrieve] {law}/{article_ref}/{concept}: "
+                f"BM25 only across {len(candidates_for_ranking)} candidates "
+                f"(best score={ranked[0][1]:.3f})"
+            )
 
         # Build lookup and assemble output
         text_lookup = {c["id"]: c["text"] for c in candidates_raw}
@@ -350,6 +400,33 @@ class Retriever:
             if chunk_id in text_lookup
         ]
         return "\n\n".join(texts)
+
+    def _semantic_rank(
+        self,
+        query_text: str,
+        candidates_raw: list[dict],
+        top_k: int | None = None,
+    ) -> list[tuple[str, float]]:
+        """Compute dense semantic cosine scores for candidate chunks."""
+        scored_candidates = [
+            (c["id"], c["text"]) for c in candidates_raw if c.get("text")
+        ]
+        if not scored_candidates:
+            return []
+        try:
+            model = SentenceTransformerEmbedder()
+            query_vec = model.embed(query_text)
+            texts = [text for _, text in scored_candidates]
+            doc_vecs = model.embed_batch(texts)
+            scored = [
+                (chunk_id, cosine_similarity(query_vec, vec))
+                for (chunk_id, _), vec in zip(scored_candidates, doc_vecs)
+            ]
+            scored.sort(key=lambda x: x[1], reverse=True)
+            return scored[:top_k] if top_k is not None else scored
+        except Exception as exc:
+            log.debug(f"[retrieve] semantic rank failed: {exc}")
+            return []
 
     # ── Embedder loading ──────────────────────────────────────────────────────
 
@@ -393,6 +470,7 @@ class Retriever:
         concept: str,
         top_k: int = 3,
         use_concept_tags: bool = True,
+        bm25_weight: float | None = None,
     ) -> list[RetrievedChunk]:
         """
         Same as retrieve() but returns structured RetrievedChunk objects
@@ -408,6 +486,9 @@ class Retriever:
         List of RetrievedChunk sorted by descending similarity score.
         """
         law = law.upper()
+        active_bm25_weight = self._validate_weight(
+            self._bm25_weight if bm25_weight is None else bm25_weight
+        )
         candidates_raw = self._get_candidates(law, article_ref, concept, use_concept_tags)
         if not candidates_raw:
             return []
@@ -427,10 +508,20 @@ class Retriever:
                     if c.get("vector") is not None
                 ]
                 if ranking_input:
-                    ranked_ids = {
-                        chunk_id: score
-                        for chunk_id, score in rank_by_similarity(query_vec, ranking_input, top_k=top_k)
-                    }
+                    bm25_ranked = rank_by_similarity(query_vec, ranking_input, top_k=None)
+                    bm25_scores = {chunk_id: score for chunk_id, score in bm25_ranked}
+                    dense_ranked = self._semantic_rank(query_text, candidates_raw)
+                    dense_scores = {chunk_id: score for chunk_id, score in dense_ranked}
+                    if dense_ranked:
+                        fused = hybrid_rank_by_similarity(
+                            bm25_ranked,
+                            dense_ranked,
+                            top_k=top_k,
+                            bm25_weight=active_bm25_weight,
+                        )
+                        ranked_ids = {chunk_id: score for chunk_id, score in fused}
+                    else:
+                        ranked_ids = {chunk_id: score for chunk_id, score in bm25_ranked[:top_k]}
                     scored = [
                         (c, ranked_ids[c["id"]])
                         for c in candidates_raw
