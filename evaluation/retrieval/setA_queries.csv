@@ -1,0 +1,52 @@
+query_id,law,principle,principle_name,concept,gold_label,query
+q01,PIPEDA,4.1,Accountability,LegalBasis,LegalObligation,LegalBasis 4.1 legal basis consent lawful grounds
+q02,PIPEDA,4.1,Accountability,ProcessingActivity,Use,ProcessingActivity 4.1 processing collect use disclose activity
+q03,PIPEDA,4.1,Accountability,Actor,DataController,Actor 4.1 actor organization controller processor individual
+q04,PIPEDA,4.1,Accountability,Constraint,Security|Transparency,Constraint 4.1 constraint limitation obligation safeguard
+q05,PIPEDA,4.1,Accountability,DataTransfer,TRUE,DataTransfer 4.1 transfer third country cross-border mechanism
+q06,PIPEDA,4.2,Identifying Purposes,LegalBasis,LegalObligation,LegalBasis 4.2 legal basis consent lawful grounds
+q07,PIPEDA,4.2,Identifying Purposes,ProcessingActivity,Collect,ProcessingActivity 4.2 processing collect use disclose activity
+q08,PIPEDA,4.2,Identifying Purposes,Actor,DataController,Actor 4.2 actor organization controller processor individual
+q09,PIPEDA,4.2,Identifying Purposes,Constraint,PurposeLimitation|Transparency,Constraint 4.2 constraint limitation obligation safeguard
+q10,PIPEDA,4.3,Consent,LegalBasis,Consent,LegalBasis 4.3 legal basis consent lawful grounds
+q11,PIPEDA,4.3,Consent,ProcessingActivity,Collect,ProcessingActivity 4.3 processing collect use disclose activity
+q12,PIPEDA,4.3,Consent,Actor,DataController,Actor 4.3 actor organization controller processor individual
+q13,PIPEDA,4.3,Consent,Purpose,Security|LegalCompliance|ServiceProvision,Purpose 4.3 purpose objective reason goal
+q14,PIPEDA,4.3,Consent,Right,Objection,Right 4.3 right access correction deletion request
+q15,PIPEDA,4.3,Consent,Constraint,PurposeLimitation|Transparency,Constraint 4.3 constraint limitation obligation safeguard
+q16,PIPEDA,4.3,Consent,DataTransfer,TRUE,DataTransfer 4.3 transfer third country cross-border mechanism
+q17,PIPEDA,4.3,Consent,ConsentWithdrawal,TRUE,ConsentWithdrawal 4.3 withdraw withdrawal revoke opt-out consent
+q18,PIPEDA,4.4,Limiting Collection,LegalBasis,LegalObligation,LegalBasis 4.4 legal basis consent lawful grounds
+q19,PIPEDA,4.4,Limiting Collection,ProcessingActivity,Collect,ProcessingActivity 4.4 processing collect use disclose activity
+q20,PIPEDA,4.4,Limiting Collection,Actor,DataController,Actor 4.4 actor organization controller processor individual
+q21,PIPEDA,4.4,Limiting Collection,Constraint,PurposeLimitation|Usage|Transparency,Constraint 4.4 constraint limitation obligation safeguard
+q22,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",LegalBasis,LegalObligation,LegalBasis 4.5 legal basis consent lawful grounds
+q23,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",ProcessingActivity,Use,ProcessingActivity 4.5 processing collect use disclose activity
+q24,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",Actor,DataController,Actor 4.5 actor organization controller processor individual
+q25,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",Constraint,PurposeLimitation|Retention|Temporal,Constraint 4.5 constraint limitation obligation safeguard
+q26,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",RetentionPolicy,TRUE,RetentionPolicy 4.5 retention period duration keep destroy
+q27,PIPEDA,4.6,Accuracy,LegalBasis,LegalObligation,LegalBasis 4.6 legal basis consent lawful grounds
+q28,PIPEDA,4.6,Accuracy,ProcessingActivity,Use,ProcessingActivity 4.6 processing collect use disclose activity
+q29,PIPEDA,4.6,Accuracy,Actor,DataController,Actor 4.6 actor organization controller processor individual
+q30,PIPEDA,4.6,Accuracy,Constraint,Accuracy|PurposeLimitation,Constraint 4.6 constraint limitation obligation safeguard
+q31,PIPEDA,4.7,Safeguards,LegalBasis,LegalObligation,LegalBasis 4.7 legal basis consent lawful grounds
+q32,PIPEDA,4.7,Safeguards,ProcessingActivity,Store,ProcessingActivity 4.7 processing collect use disclose activity
+q33,PIPEDA,4.7,Safeguards,Actor,DataController,Actor 4.7 actor organization controller processor individual
+q34,PIPEDA,4.7,Safeguards,Constraint,Security,Constraint 4.7 constraint limitation obligation safeguard
+q35,PIPEDA,4.8,Openness,LegalBasis,LegalObligation,LegalBasis 4.8 legal basis consent lawful grounds
+q36,PIPEDA,4.8,Openness,ProcessingActivity,Use,ProcessingActivity 4.8 processing collect use disclose activity
+q37,PIPEDA,4.8,Openness,Actor,DataController,Actor 4.8 actor organization controller processor individual
+q38,PIPEDA,4.8,Openness,Right,Access|Complaint,Right 4.8 right access correction deletion request
+q39,PIPEDA,4.8,Openness,Constraint,Transparency,Constraint 4.8 constraint limitation obligation safeguard
+q40,PIPEDA,4.8,Openness,DataTransfer,TRUE,DataTransfer 4.8 transfer third country cross-border mechanism
+q41,PIPEDA,4.9,Individual Access,LegalBasis,LegalObligation,LegalBasis 4.9 legal basis consent lawful grounds
+q42,PIPEDA,4.9,Individual Access,ProcessingActivity,Use,ProcessingActivity 4.9 processing collect use disclose activity
+q43,PIPEDA,4.9,Individual Access,Actor,DataController,Actor 4.9 actor organization controller processor individual
+q44,PIPEDA,4.9,Individual Access,Right,Access|Rectification,Right 4.9 right access correction deletion request
+q45,PIPEDA,4.9,Individual Access,Constraint,Transparency|Accuracy,Constraint 4.9 constraint limitation obligation safeguard
+q46,PIPEDA,4.9,Individual Access,DataTransfer,TRUE,DataTransfer 4.9 transfer third country cross-border mechanism
+q47,PIPEDA,4.10,Challenging Compliance,LegalBasis,LegalObligation,LegalBasis 4.10 legal basis consent lawful grounds
+q48,PIPEDA,4.10,Challenging Compliance,ProcessingActivity,Use,ProcessingActivity 4.10 processing collect use disclose activity
+q49,PIPEDA,4.10,Challenging Compliance,Actor,DataController,Actor 4.10 actor organization controller processor individual
+q50,PIPEDA,4.10,Challenging Compliance,Right,Complaint,Right 4.10 right access correction deletion request
+q51,PIPEDA,4.10,Challenging Compliance,Constraint,Transparency,Constraint 4.10 constraint limitation obligation safeguard
