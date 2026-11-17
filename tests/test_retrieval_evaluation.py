@@ -8,6 +8,7 @@ from evaluation.evaluate_retrieval import (
     is_in_principle,
     normalize_reference,
     parse_gold_references,
+    rank_cross_encoder_scores,
 )
 
 
@@ -83,6 +84,26 @@ class RetrievalEvaluationTests(unittest.TestCase):
         self.assertEqual(metrics["recall_at_k"], 0.0)
         self.assertEqual(metrics["mrr_at_k"], 0.0)
         self.assertEqual(metrics["ndcg_at_k"], 0.0)
+
+    def test_cross_encoder_scores_rank_candidates_and_break_ties_stably(self):
+        first = Chunk("b", "PIPEDA", "4.1.1", "4.1.1", "", (), [1.0])
+        second = Chunk("a", "PIPEDA", "4.1.2", "4.1.2", "", (), [1.0])
+        third = Chunk("c", "PIPEDA", "4.1.3", "4.1.3", "", (), [1.0])
+
+        ranked = rank_cross_encoder_scores(
+            [first, second, third],
+            [0.2, 0.9, 0.9],
+        )
+
+        self.assertEqual(
+            [(chunk.chunk_id, score) for chunk, score in ranked],
+            [("a", 0.9), ("c", 0.9), ("b", 0.2)],
+        )
+
+    def test_cross_encoder_score_count_must_match_candidate_count(self):
+        chunk = Chunk("id", "PIPEDA", "4.1.1", "4.1.1", "", (), [1.0])
+        with self.assertRaisesRegex(ValueError, "0 scores for 1 candidate"):
+            rank_cross_encoder_scores([chunk], [])
 
 
 if __name__ == "__main__":

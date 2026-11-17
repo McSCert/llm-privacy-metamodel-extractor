@@ -4,15 +4,17 @@
 Run from the repository root:
 
     python evaluation/evaluate_retrieval.py --methods bm25
-    python evaluation/evaluate_retrieval.py --methods bm25,semantic,hybrid
+    python evaluation/evaluate_retrieval.py --methods bm25,semantic,hybrid_rrf
+    python evaluation/evaluate_retrieval.py --methods bm25,cross_encoder \
+        --rerank-candidates 5
     python evaluation/evaluate_retrieval.py --methods bm25,semantic,hybrid \
         --bm25-weights 0.2,0.5,0.8 --k 5
 
 The evaluator uses the same candidate pool for every method: all chunks whose
 reference is the query's principle or one of its descendants. Use
 --use-concept-tags to also apply the production concept-tag pre-filter.
-SentenceTransformer methods require the optional sentence-transformers package
-and may download the configured model on first use.
+Semantic and cross-encoder methods require the optional sentence-transformers
+package and may download their configured models on first use.
 """
 
 from __future__ import annotations
@@ -282,6 +284,21 @@ def evaluate_ranking(
     }
 
 
+def rank_cross_encoder_scores(
+    candidates: Sequence[Chunk],
+    scores: Sequence[float],
+) -> list[tuple[Chunk, float]]:
+    """Sort candidate chunks by cross-encoder score, with stable tie-breaking."""
+    if len(candidates) != len(scores):
+        raise ValueError(
+            "cross-encoder returned "
+            f"{len(scores)} scores for {len(candidates)} candidate chunks"
+        )
+    ranked = [(chunk, float(score)) for chunk, score in zip(candidates, scores)]
+    ranked.sort(key=lambda result: (-result[1], result[0].chunk_id))
+    return ranked
+
+
 def parse_csv_list(value: str, cast, option: str):
     try:
         return [cast(part.strip()) for part in value.split(",") if part.strip()]
@@ -311,9 +328,32 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--bm25-weights",
         default="0.2,0.5,0.8",
-        help="BM25 weights for hybrid runs, from 0 to 1",
+        help="BM25 weights for weighted hybrid runs, from 0 to 1",
     )
     parser.add_argument("--model-name", default="intfloat/multilingual-e5-base")
+    parser.add_argument(
+        "--cross-encoder-model",
+        default="cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+        help="Sentence Transformers cross-encoder used by the cross_encoder method",
+    )
+    parser.add_argument(
+        "--rerank-candidates",
+        type=int,
+        default=5,
+        help="Number of BM25-ranked candidates passed to the cross-encoder",
+    )
+    parser.add_argument(
+        "--rrf-k",
+        type=int,
+        default=60,
+        help="RRF rank constant for the hybrid_rrf method",
+    )
+    parser.add_argument(
+        "--hybrid-cross-encoder-bm25-weight",
+        type=float,
+        default=0.5,
+        help="BM25 weight used to generate candidates for hybrid_cross_encoder",
+    )
     parser.add_argument("--k", type=int, default=5, help="Cutoff for @k metrics")
     parser.add_argument(
         "--use-concept-tags",
@@ -338,8 +378,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.k < 1:
         parser.error("--k must be at least 1")
+    if args.rerank_candidates < 1:
+        parser.error("--rerank-candidates must be at least 1")
+    if args.rrf_k < 1:
+        parser.error("--rrf-k must be at least 1")
     methods = [method.strip().lower() for method in args.methods.split(",")]
-    allowed = {"bm25", "semantic", "hybrid"}
+    allowed = {"bm25", "semantic", "hybrid", "hybrid_rrf", "cross_encoder", "hybrid_cross_encoder"}
     unknown = set(methods) - allowed
     if not methods or unknown:
         parser.error(
@@ -347,7 +391,7 @@ def main(argv: list[str] | None = None) -> int:
             f"choose from {', '.join(sorted(allowed))}"
         )
     required_paths = [args.gold, args.db]
-    if "bm25" in methods or "hybrid" in methods:
+    if set(methods) & {"bm25", "hybrid", "hybrid_rrf", "cross_encoder", "hybrid_cross_encoder"}:
         required_paths.append(args.embedder)
     for input_path in required_paths:
         if not input_path.exists():
@@ -380,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
 
     bm25_embedder: BM25Embedder | None = None
     bm25_setup_seconds = 0.0
-    if "bm25" in methods or "hybrid" in methods:
+    if set(methods) & {"bm25", "hybrid", "hybrid_rrf", "cross_encoder", "hybrid_cross_encoder"}:
         missing_vectors = sum(
             chunk.vector is None
             for candidates in candidate_sets
@@ -404,7 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     semantic_embedder: SentenceTransformerEmbedder | None = None
     semantic_vectors: dict[str, list[float]] = {}
     semantic_setup_seconds = 0.0
-    if "semantic" in methods or "hybrid" in methods:
+    if set(methods) & {"semantic", "hybrid", "hybrid_rrf", "hybrid_cross_encoder"}:
         try:
             semantic_embedder = SentenceTransformerEmbedder(args.model_name)
             unique_candidates = {
@@ -428,6 +472,20 @@ def main(argv: list[str] | None = None) -> int:
                 f"`pip install sentence-transformers`. Details: {exc}"
             )
 
+    cross_encoder = None
+    cross_encoder_setup_seconds = 0.0
+    if set(methods) & {"cross_encoder", "hybrid_cross_encoder"}:
+        try:
+            from sentence_transformers import CrossEncoder
+        except ImportError as exc:
+            parser.error(
+                f"cross_encoder needs sentence-transformers; install it with "
+                f"`pip install sentence-transformers`. Details: {exc}"
+            )
+        started = time.perf_counter()
+        cross_encoder = CrossEncoder(args.cross_encoder_model)
+        cross_encoder_setup_seconds = time.perf_counter() - started
+
     runs: list[tuple[str, float | None]] = []
     if "bm25" in methods:
         runs.append(("bm25", None))
@@ -435,6 +493,12 @@ def main(argv: list[str] | None = None) -> int:
         runs.append(("semantic", None))
     if "hybrid" in methods:
         runs.extend((f"hybrid_bm25_{weight:.2f}", weight) for weight in bm25_weights)
+    if "hybrid_rrf" in methods:
+        runs.append(("hybrid_rrf", None))
+    if "cross_encoder" in methods:
+        runs.append(("cross_encoder", None))
+    if "hybrid_cross_encoder" in methods:
+        runs.append(("hybrid_cross_encoder", None))
 
     summary_rows: list[dict[str, object]] = []
     detail_rows: list[dict[str, object]] = []
@@ -448,6 +512,33 @@ def main(argv: list[str] | None = None) -> int:
         dense_ranked: list[tuple[Chunk, float]] = []
         bm25_seconds = 0.0
         dense_seconds = 0.0
+        cross_encoder_seconds = 0.0
+        cross_encoder_ranked: list[tuple[Chunk, float]] = []
+
+        # Generate weighted hybrid ranking for hybrid + cross-encoder
+        hybrid_ce_base_ranked = []
+        hybrid_ce_fusion_seconds = 0.0
+
+        if "hybrid_cross_encoder" in methods:
+            started = time.perf_counter()
+
+            chunks_by_id = {
+                chunk.chunk_id: chunk for chunk in candidates
+            }
+
+            fused = hybrid_rank_by_similarity(
+                [(chunk.chunk_id, score) for chunk, score in bm25_ranked],
+                [(chunk.chunk_id, score) for chunk, score in dense_ranked],
+                top_k=len(candidates),
+                bm25_weight=args.hybrid_cross_encoder_bm25_weight,
+            )
+
+            hybrid_ce_base_ranked = [
+                (chunks_by_id[chunk_id], score)
+                for chunk_id, score in fused
+            ]
+
+            hybrid_ce_fusion_seconds = time.perf_counter() - started
 
         if bm25_embedder is not None:
             started = time.perf_counter()
@@ -478,6 +569,59 @@ def main(argv: list[str] | None = None) -> int:
             dense_ranked.sort(key=lambda result: result[1], reverse=True)
             dense_seconds = time.perf_counter() - started
 
+        cross_encoder_ranked = []
+        hybrid_cross_encoder_ranked = []
+
+        cross_encoder_seconds = 0.0
+        hybrid_cross_encoder_seconds = 0.0
+
+        if cross_encoder is not None:
+
+            # BM25 + cross-encoder
+            if "cross_encoder" in methods:
+                started = time.perf_counter()
+
+                rerank_pool = [
+                    chunk for chunk, _ in bm25_ranked[:args.rerank_candidates]
+                ]
+
+                cross_encoder_scores = list(
+                    cross_encoder.predict(
+                        [(query.query, chunk.text) for chunk in rerank_pool],
+                        show_progress_bar=False,
+                    )
+                )
+
+                cross_encoder_ranked = rank_cross_encoder_scores(
+                    rerank_pool,
+                    cross_encoder_scores,
+                )
+
+                cross_encoder_seconds = time.perf_counter() - started
+
+            # Hybrid + cross-encoder
+            if "hybrid_cross_encoder" in methods:
+                started = time.perf_counter()
+
+                hybrid_rerank_pool = [
+                    chunk
+                    for chunk, _ in hybrid_ce_base_ranked[:args.rerank_candidates]
+                ]
+
+                hybrid_cross_encoder_scores = list(
+                    cross_encoder.predict(
+                        [(query.query, chunk.text) for chunk in hybrid_rerank_pool],
+                        show_progress_bar=False,
+                    )
+                )
+
+                hybrid_cross_encoder_ranked = rank_cross_encoder_scores(
+                    hybrid_rerank_pool,
+                    hybrid_cross_encoder_scores,
+                )
+
+                hybrid_cross_encoder_seconds = time.perf_counter() - started
+
         for method_name, weight in runs:
             if method_name == "bm25":
                 ranked = bm25_ranked
@@ -485,6 +629,32 @@ def main(argv: list[str] | None = None) -> int:
             elif method_name == "semantic":
                 ranked = dense_ranked
                 elapsed = dense_seconds
+            elif method_name == "hybrid_rrf":
+                started = time.perf_counter()
+                chunks_by_id = {chunk.chunk_id: chunk for chunk in candidates}
+                fused = hybrid_rank_by_similarity(
+                    [(chunk.chunk_id, score) for chunk, score in bm25_ranked],
+                    [(chunk.chunk_id, score) for chunk, score in dense_ranked],
+                    top_k=len(candidates),
+                    method="rrf",
+                    rrf_k=args.rrf_k,
+                )
+                ranked = [(chunks_by_id[chunk_id], score) for chunk_id, score in fused]
+                elapsed = (
+                    bm25_seconds + dense_seconds + time.perf_counter() - started
+                )
+            elif method_name == "cross_encoder":
+                ranked = cross_encoder_ranked
+                elapsed = bm25_seconds + cross_encoder_seconds
+            elif method_name == "hybrid_cross_encoder":
+                ranked = hybrid_cross_encoder_ranked
+
+                elapsed = (
+                    bm25_seconds
+                    + dense_seconds
+                    + hybrid_ce_fusion_seconds
+                    + hybrid_cross_encoder_seconds
+                )
             else:
                 started = time.perf_counter()
                 bm25_by_id = {chunk.chunk_id: chunk for chunk in candidates}
@@ -526,6 +696,14 @@ def main(argv: list[str] | None = None) -> int:
             setup_seconds = semantic_setup_seconds
         elif method_name.startswith("hybrid"):
             setup_seconds = bm25_setup_seconds + semantic_setup_seconds
+        elif method_name == "cross_encoder":
+            setup_seconds = bm25_setup_seconds + cross_encoder_setup_seconds
+        elif method_name == "hybrid_cross_encoder":
+            setup_seconds = (
+                bm25_setup_seconds
+                + semantic_setup_seconds
+                + cross_encoder_setup_seconds
+            )
         summary_rows.append(
             {
                 "method": method_name,
