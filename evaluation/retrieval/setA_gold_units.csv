@@ -1,0 +1,298 @@
+query_id,unit,grade,source
+q01,S1-4.1,2,rule 1
+q01,S1-4.1.1,0,rule 1
+q01,S1-4.1.2,2,rule 1
+q01,S1-4.1.3,2,rule 1
+q01,S1-4.1.4,2,rule 1
+q02,S1-4.1,1,"third adjudicator: ""An organization is responsible for personal information under its control "" -> Use, activity only mentioned"
+q02,S1-4.1.1,1,agreed
+q02,S1-4.1.2,0,agreed
+q02,S1-4.1.3,1,agreed
+q02,S1-4.1.4,0,agreed
+q03,S1-4.1,2,rule 2
+q03,S1-4.1.1,1,rule 2
+q03,S1-4.1.2,1,rule 2
+q03,S1-4.1.3,2,rule 2
+q03,S1-4.1.4,2,rule 2
+q04,S1-4.1,0,agreed
+q04,S1-4.1.1,0,agreed
+q04,S1-4.1.2,2,"third adjudicator: ""shall be made known upon request."" -> Transparency"
+q04,S1-4.1.3,2,"third adjudicator: ""The organization shall use contractual or other means to provide a comparable level of protection"" -> Security"
+q04,S1-4.1.4,2,agreed
+q05,S1-4.1,0,agreed
+q05,S1-4.1.1,0,agreed
+q05,S1-4.1.2,0,agreed
+q05,S1-4.1.3,2,agreed
+q05,S1-4.1.4,0,agreed
+q06,S1-4.2,2,rule 1
+q06,S1-4.2.1,2,rule 1
+q06,S1-4.2.2,0,rule 1
+q06,S1-4.2.3,0,rule 1
+q06,S1-4.2.4,2,rule 1
+q06,S1-4.2.5,0,rule 1
+q06,S1-4.2.6,0,rule 1
+q07,S1-4.2,2,agreed
+q07,S1-4.2.1,2,agreed
+q07,S1-4.2.2,2,"third adjudicator: ""requires an organization to collect only that information necessary for the purposes that have been identified"" -> Collect"
+q07,S1-4.2.3,2,third adjudicator: Clause requires keywords related to collection to make its point -> Collect
+q07,S1-4.2.4,0,agreed
+q07,S1-4.2.5,1,third adjudicator: Collection mentioned in passing -> Collect
+q07,S1-4.2.6,0,agreed
+q08,S1-4.2,1,rule 2
+q08,S1-4.2.1,2,rule 2
+q08,S1-4.2.2,1,rule 2
+q08,S1-4.2.3,0,rule 2
+q08,S1-4.2.4,0,rule 2
+q08,S1-4.2.5,0,rule 2
+q08,S1-4.2.6,0,rule 2
+q09,S1-4.2,2,agreed
+q09,S1-4.2.1,1,agreed
+q09,S1-4.2.2,1,agreed
+q09,S1-4.2.3,1,"should rule: ""should be specified"" (was agreed 2)"
+q09,S1-4.2.4,2,agreed
+q09,S1-4.2.5,1,agreed
+q09,S1-4.2.6,0,agreed
+q10,S1-4.3,2,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.1,2,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.2,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.3,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.4,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.5,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.6,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.7,1,rule 5 (LegalBasis = Consent)
+q10,S1-4.3.8,1,rule 5 (LegalBasis = Consent)
+q11,S1-4.3,1,agreed
+q11,S1-4.3.1,2,agreed
+q11,S1-4.3.2,0,agreed
+q11,S1-4.3.3,1,agreed
+q11,S1-4.3.4,0,agreed
+q11,S1-4.3.5,0,agreed
+q11,S1-4.3.6,1,agreed
+q11,S1-4.3.7,1,third adjudicator: Collection mentioned in passing -> Collect
+q11,S1-4.3.8,0,agreed
+q12,S1-4.3,2,"rule 2 + Notes count (Note: ""the organization providing the list would be expected to obtain consent"")"
+q12,S1-4.3.1,2,rule 2
+q12,S1-4.3.2,2,rule 2
+q12,S1-4.3.3,2,rule 2
+q12,S1-4.3.4,2,rule 2
+q12,S1-4.3.5,2,rule 2
+q12,S1-4.3.6,2,rule 2
+q12,S1-4.3.7,1,rule 2
+q12,S1-4.3.8,2,rule 2
+q13,S1-4.3,2,"Notes count (Note: ""legal, medical, or security reasons"", ""fraud"", ""law enforcement"" -> Security, LegalCompliance)"
+q13,S1-4.3.1,0,agreed
+q13,S1-4.3.2,0,agreed
+q13,S1-4.3.3,1,"third adjudicator: ""as a condition of the supply of a product or service"" explains purpose in passing"
+q13,S1-4.3.4,0,agreed
+q13,S1-4.3.5,2,"third adjudicator: ""in addition to using the individual’s name and address for mailing and billing purposes, would also contact the person to solicit the renewal of the subscription."" -> ServiceProvision"
+q13,S1-4.3.6,0,agreed
+q13,S1-4.3.7,0,agreed
+q13,S1-4.3.8,0,agreed
+q14,S1-4.3,0,agreed
+q14,S1-4.3.1,0,agreed
+q14,S1-4.3.2,0,agreed
+q14,S1-4.3.3,0,agreed
+q14,S1-4.3.4,0,agreed
+q14,S1-4.3.5,0,agreed
+q14,S1-4.3.6,0,agreed
+q14,S1-4.3.7,0,agreed
+q14,S1-4.3.8,2,"third adjudicator: ""An individual may withdraw consent at any time"" -> Objection"
+q15,S1-4.3,0,agreed
+q15,S1-4.3.1,1,"third adjudicator: ""organization will seek consent for the use or disclosure of the information at the time of collection."" -> Transparency"
+q15,S1-4.3.2,2,agreed
+q15,S1-4.3.3,2,agreed
+q15,S1-4.3.4,0,agreed
+q15,S1-4.3.5,1,agreed
+q15,S1-4.3.6,0,agreed
+q15,S1-4.3.7,0,agreed
+q15,S1-4.3.8,0,third adjudicator: Not related to processing restrictions
+q16,S1-4.3,1,"third adjudicator: Related to data transfer ""use of personal data"", but not exclusively about data transfer ""collection, use… of personal data"""
+q16,S1-4.3.1,0,agreed
+q16,S1-4.3.2,0,agreed
+q16,S1-4.3.3,0,agreed
+q16,S1-4.3.4,0,agreed
+q16,S1-4.3.5,0,third adjudicator: Not related to third party data transfer
+q16,S1-4.3.6,0,agreed
+q16,S1-4.3.7,2,agreed
+q16,S1-4.3.8,0,agreed
+q17,S1-4.3,0,agreed
+q17,S1-4.3.1,0,agreed
+q17,S1-4.3.2,0,agreed
+q17,S1-4.3.3,0,agreed
+q17,S1-4.3.4,0,agreed
+q17,S1-4.3.5,0,agreed
+q17,S1-4.3.6,0,agreed
+q17,S1-4.3.7,0,agreed
+q17,S1-4.3.8,2,agreed
+q18,S1-4.4,2,rule 1
+q18,S1-4.4.1,2,rule 1
+q18,S1-4.4.2,2,rule 1
+q18,S1-4.4.3,0,rule 1
+q19,S1-4.4,2,agreed
+q19,S1-4.4.1,2,agreed
+q19,S1-4.4.2,2,agreed
+q19,S1-4.4.3,0,agreed
+q20,S1-4.4,1,rule 2
+q20,S1-4.4.1,2,rule 2
+q20,S1-4.4.2,1,rule 2
+q20,S1-4.4.3,0,rule 2
+q21,S1-4.4,2,agreed
+q21,S1-4.4.1,2,agreed
+q21,S1-4.4.2,2,"third adjudicator: ""collected by fair and lawful means...prevent organizations from collecting information by misleading or deceiving individuals...not be obtained through deception."" -> Use"
+q21,S1-4.4.3,0,agreed
+q22,S1-4.5,2,rule 1
+q22,S1-4.5.1,2,rule 1
+q22,S1-4.5.2,2,rule 1
+q22,S1-4.5.3,2,rule 1
+q22,S1-4.5.4,0,rule 1
+q23,S1-4.5,2,agreed
+q23,S1-4.5.1,1,agreed
+q23,S1-4.5.2,0,third adjudicator: Not directly related to Use
+q23,S1-4.5.3,0,third adjudicator: Not related to Usage
+q23,S1-4.5.4,0,agreed
+q24,S1-4.5,0,rule 2
+q24,S1-4.5.1,2,rule 2
+q24,S1-4.5.2,2,rule 2
+q24,S1-4.5.3,2,rule 2
+q24,S1-4.5.4,0,rule 2
+q25,S1-4.5,2,agreed
+q25,S1-4.5.1,1,agreed
+q25,S1-4.5.2,2,agreed
+q25,S1-4.5.3,2,agreed
+q25,S1-4.5.4,0,agreed
+q26,S1-4.5,2,agreed
+q26,S1-4.5.1,0,agreed
+q26,S1-4.5.2,2,agreed
+q26,S1-4.5.3,1,agreed
+q26,S1-4.5.4,0,agreed
+q27,S1-4.6,2,rule 1
+q27,S1-4.6.1,2,rule 1
+q27,S1-4.6.2,2,rule 1
+q27,S1-4.6.3,0,rule 1
+q28,S1-4.6,1,"third adjudicator: ""upto-date as is necessary for the purposes for which it is to be used."" -> Usage in passing"
+q28,S1-4.6.1,1,agreed
+q28,S1-4.6.2,0,agreed
+q28,S1-4.6.3,1,agreed
+q29,S1-4.6,0,rule 2
+q29,S1-4.6.1,0,rule 2
+q29,S1-4.6.2,2,rule 2
+q29,S1-4.6.3,0,rule 2
+q30,S1-4.6,2,agreed
+q30,S1-4.6.1,2,"third adjudicator: ""shall be accurate, complete, and up-to-date""-> accuracy"
+q30,S1-4.6.2,2,agreed
+q30,S1-4.6.3,1,agreed
+q31,S1-4.7,2,rule 1
+q31,S1-4.7.1,2,rule 1
+q31,S1-4.7.2,0,rule 1
+q31,S1-4.7.3,0,rule 1
+q31,S1-4.7.4,2,rule 1
+q31,S1-4.7.5,2,rule 1
+q32,S1-4.7,0,agreed
+q32,S1-4.7.1,1,"third adjudicator: Mentions storage in passing, mainly about security"
+q32,S1-4.7.2,1,"third adjudicator: Mentions storage in passing, mainly about security"
+q32,S1-4.7.3,1,"third adjudicator: Related to security but explicitly talks about how to store data in passing ""filing cabinets…security clearances...passwords and encryption"""
+q32,S1-4.7.4,0,agreed
+q32,S1-4.7.5,0,agreed
+q33,S1-4.7,0,rule 2
+q33,S1-4.7.1,2,rule 2
+q33,S1-4.7.2,0,rule 2
+q33,S1-4.7.3,0,rule 2
+q33,S1-4.7.4,2,rule 2
+q33,S1-4.7.5,0,rule 2
+q34,S1-4.7,2,agreed
+q34,S1-4.7.1,2,agreed
+q34,S1-4.7.2,1,"should rule: Constraint evidence only in ""should"" sentence"
+q34,S1-4.7.3,1,"should rule: Constraint evidence only in ""should"" sentence"
+q34,S1-4.7.4,2,"third adjudicator: ""maintaining the confidentiality"" -> Security"
+q34,S1-4.7.5,1,"third adjudicator: ""prevent unauthorized parties from gaining access"" -> Security in passing"
+q35,S1-4.8,2,rule 1
+q35,S1-4.8.1,2,rule 1
+q35,S1-4.8.2,2,rule 1
+q35,S1-4.8.3,0,rule 1
+q36,S1-4.8,0,agreed
+q36,S1-4.8.1,0,agreed
+q36,S1-4.8.2,1,"third adjudicator: "" including a general account of its use"" -> Use mentioned in passing"
+q36,S1-4.8.3,0,agreed
+q37,S1-4.8,2,rule 2
+q37,S1-4.8.1,2,rule 2
+q37,S1-4.8.2,1,rule 2
+q37,S1-4.8.3,2,rule 2
+q38,S1-4.8,0,agreed
+q38,S1-4.8.1,0,agreed
+q38,S1-4.8.2,2,agreed
+q38,S1-4.8.3,0,agreed
+q39,S1-4.8,2,agreed
+q39,S1-4.8.1,2,agreed
+q39,S1-4.8.2,2,"third adjudicator: "" information made available shall include"" -> Transparency"
+q39,S1-4.8.3,1,agreed
+q40,S1-4.8,0,agreed
+q40,S1-4.8.1,0,agreed
+q40,S1-4.8.2,1,"third adjudicator: ""what personal information is made available to related organizations"" -> DataTransfer mentioned in passing"
+q40,S1-4.8.3,0,agreed
+q41,S1-4.9,2,rule 1
+q41,S1-4.9.1,2,rule 1
+q41,S1-4.9.2,2,rule 1
+q41,S1-4.9.3,2,rule 1
+q41,S1-4.9.4,2,rule 1
+q41,S1-4.9.5,2,rule 1
+q41,S1-4.9.6,2,rule 1
+q42,S1-4.9,1,"third adjudicator: ""individual shall be informed of ... use, and … of his or her personal information"" -> Use mentioned in passing"
+q42,S1-4.9.1,1,"third adjudicator: ""organization shall provide an account of the use that has been made or is being made of this information"" -> Use mentioned in passing"
+q42,S1-4.9.2,2,agreed
+q42,S1-4.9.3,0,agreed
+q42,S1-4.9.4,0,agreed
+q42,S1-4.9.5,0,agreed
+q42,S1-4.9.6,0,agreed
+q43,S1-4.9,2,"rule 2 + Notes count (Note: ""an organization may not be able to provide access"")"
+q43,S1-4.9.1,2,rule 2
+q43,S1-4.9.2,1,rule 2
+q43,S1-4.9.3,2,rule 2
+q43,S1-4.9.4,2,rule 2
+q43,S1-4.9.5,2,rule 2
+q43,S1-4.9.6,1,rule 2
+q44,S1-4.9,2,agreed
+q44,S1-4.9.1,1,"third adjudicator: ""organization shall allow the individual access to this information"" -> Access mentioned in passing"
+q44,S1-4.9.2,0,agreed
+q44,S1-4.9.3,0,agreed
+q44,S1-4.9.4,1,agreed
+q44,S1-4.9.5,2,agreed
+q44,S1-4.9.6,1,agreed
+q45,S1-4.9,2,agreed
+q45,S1-4.9.1,1,"third adjudicator: ""shall inform an individual whether or not the organization holds personal information"" -> Transparency"
+q45,S1-4.9.2,0,agreed
+q45,S1-4.9.3,1,agreed
+q45,S1-4.9.4,2,agreed
+q45,S1-4.9.5,2,agreed
+q45,S1-4.9.6,0,agreed
+q46,S1-4.9,0,agreed
+q46,S1-4.9.1,1,agreed
+q46,S1-4.9.2,0,agreed
+q46,S1-4.9.3,2,agreed
+q46,S1-4.9.4,0,agreed
+q46,S1-4.9.5,1,agreed
+q46,S1-4.9.6,1,agreed
+q47,S1-4.10,1,rule 1
+q47,S1-4.10.1,0,rule 1
+q47,S1-4.10.2,2,rule 1
+q47,S1-4.10.3,2,rule 1
+q47,S1-4.10.4,2,rule 1
+q48,S1-4.10,0,agreed
+q48,S1-4.10.1,0,agreed
+q48,S1-4.10.2,1,"third adjudicator: "" policies and practices relating to the handling of personal information"" -> Use, but policies and practices may also relate to other activites"
+q48,S1-4.10.3,0,third adjudicator: Not directly related to Use
+q48,S1-4.10.4,0,agreed
+q49,S1-4.10,1,rule 2
+q49,S1-4.10.1,1,rule 2
+q49,S1-4.10.2,2,rule 2
+q49,S1-4.10.3,2,rule 2
+q49,S1-4.10.4,2,rule 2
+q50,S1-4.10,2,agreed
+q50,S1-4.10.1,0,agreed
+q50,S1-4.10.2,2,agreed
+q50,S1-4.10.3,2,agreed
+q50,S1-4.10.4,2,agreed
+q51,S1-4.10,0,agreed
+q51,S1-4.10.1,0,agreed
+q51,S1-4.10.2,1,agreed
+q51,S1-4.10.3,2,"third adjudicator: ""shall inform individuals"" -> Transparency"
+q51,S1-4.10.4,0,agreed

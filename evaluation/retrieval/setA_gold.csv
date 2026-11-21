@@ -1,0 +1,52 @@
+query_id,law,principle,principle_name,concept,gold_label,query,relevant_pipeda_references,n_grade2,n_grade1
+q01,PIPEDA,4.1,Accountability,LegalBasis,LegalObligation,LegalBasis 4.1 legal basis consent lawful grounds,S1-4.1:2;S1-4.1.2:2;S1-4.1.3:2;S1-4.1.4:2,4,0
+q02,PIPEDA,4.1,Accountability,ProcessingActivity,Use,ProcessingActivity 4.1 processing collect use disclose activity,S1-4.1:1;S1-4.1.1:1;S1-4.1.3:1,0,3
+q03,PIPEDA,4.1,Accountability,Actor,DataController,Actor 4.1 actor organization controller processor individual,S1-4.1:2;S1-4.1.3:2;S1-4.1.4:2;S1-4.1.1:1;S1-4.1.2:1,3,2
+q04,PIPEDA,4.1,Accountability,Constraint,Security|Transparency,Constraint 4.1 constraint limitation obligation safeguard,S1-4.1.2:2;S1-4.1.3:2;S1-4.1.4:2,3,0
+q05,PIPEDA,4.1,Accountability,DataTransfer,TRUE,DataTransfer 4.1 transfer third country cross-border mechanism,S1-4.1.3:2,1,0
+q06,PIPEDA,4.2,Identifying Purposes,LegalBasis,LegalObligation,LegalBasis 4.2 legal basis consent lawful grounds,S1-4.2:2;S1-4.2.1:2;S1-4.2.4:2,3,0
+q07,PIPEDA,4.2,Identifying Purposes,ProcessingActivity,Collect,ProcessingActivity 4.2 processing collect use disclose activity,S1-4.2:2;S1-4.2.1:2;S1-4.2.2:2;S1-4.2.3:2;S1-4.2.5:1,4,1
+q08,PIPEDA,4.2,Identifying Purposes,Actor,DataController,Actor 4.2 actor organization controller processor individual,S1-4.2.1:2;S1-4.2:1;S1-4.2.2:1,1,2
+q09,PIPEDA,4.2,Identifying Purposes,Constraint,PurposeLimitation|Transparency,Constraint 4.2 constraint limitation obligation safeguard,S1-4.2:2;S1-4.2.4:2;S1-4.2.1:1;S1-4.2.2:1;S1-4.2.3:1;S1-4.2.5:1,2,4
+q10,PIPEDA,4.3,Consent,LegalBasis,Consent,LegalBasis 4.3 legal basis consent lawful grounds,S1-4.3:2;S1-4.3.1:2;S1-4.3.2:1;S1-4.3.3:1;S1-4.3.4:1;S1-4.3.5:1;S1-4.3.6:1;S1-4.3.7:1;S1-4.3.8:1,2,7
+q11,PIPEDA,4.3,Consent,ProcessingActivity,Collect,ProcessingActivity 4.3 processing collect use disclose activity,S1-4.3.1:2;S1-4.3:1;S1-4.3.3:1;S1-4.3.6:1;S1-4.3.7:1,1,4
+q12,PIPEDA,4.3,Consent,Actor,DataController,Actor 4.3 actor organization controller processor individual,S1-4.3:2;S1-4.3.1:2;S1-4.3.2:2;S1-4.3.3:2;S1-4.3.4:2;S1-4.3.5:2;S1-4.3.6:2;S1-4.3.8:2;S1-4.3.7:1,8,1
+q13,PIPEDA,4.3,Consent,Purpose,Security|LegalCompliance|ServiceProvision,Purpose 4.3 purpose objective reason goal,S1-4.3:2;S1-4.3.5:2;S1-4.3.3:1,2,1
+q14,PIPEDA,4.3,Consent,Right,Objection,Right 4.3 right access correction deletion request,S1-4.3.8:2,1,0
+q15,PIPEDA,4.3,Consent,Constraint,PurposeLimitation|Transparency,Constraint 4.3 constraint limitation obligation safeguard,S1-4.3.2:2;S1-4.3.3:2;S1-4.3.1:1;S1-4.3.5:1,2,2
+q16,PIPEDA,4.3,Consent,DataTransfer,TRUE,DataTransfer 4.3 transfer third country cross-border mechanism,S1-4.3.7:2;S1-4.3:1,1,1
+q17,PIPEDA,4.3,Consent,ConsentWithdrawal,TRUE,ConsentWithdrawal 4.3 withdraw withdrawal revoke opt-out consent,S1-4.3.8:2,1,0
+q18,PIPEDA,4.4,Limiting Collection,LegalBasis,LegalObligation,LegalBasis 4.4 legal basis consent lawful grounds,S1-4.4:2;S1-4.4.1:2;S1-4.4.2:2,3,0
+q19,PIPEDA,4.4,Limiting Collection,ProcessingActivity,Collect,ProcessingActivity 4.4 processing collect use disclose activity,S1-4.4:2;S1-4.4.1:2;S1-4.4.2:2,3,0
+q20,PIPEDA,4.4,Limiting Collection,Actor,DataController,Actor 4.4 actor organization controller processor individual,S1-4.4.1:2;S1-4.4:1;S1-4.4.2:1,1,2
+q21,PIPEDA,4.4,Limiting Collection,Constraint,PurposeLimitation|Usage|Transparency,Constraint 4.4 constraint limitation obligation safeguard,S1-4.4:2;S1-4.4.1:2;S1-4.4.2:2,3,0
+q22,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",LegalBasis,LegalObligation,LegalBasis 4.5 legal basis consent lawful grounds,S1-4.5:2;S1-4.5.1:2;S1-4.5.2:2;S1-4.5.3:2,4,0
+q23,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",ProcessingActivity,Use,ProcessingActivity 4.5 processing collect use disclose activity,S1-4.5:2;S1-4.5.1:1,1,1
+q24,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",Actor,DataController,Actor 4.5 actor organization controller processor individual,S1-4.5.1:2;S1-4.5.2:2;S1-4.5.3:2,3,0
+q25,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",Constraint,PurposeLimitation|Retention|Temporal,Constraint 4.5 constraint limitation obligation safeguard,S1-4.5:2;S1-4.5.2:2;S1-4.5.3:2;S1-4.5.1:1,3,1
+q26,PIPEDA,4.5,"Limiting Use, Disclosure & Retention",RetentionPolicy,TRUE,RetentionPolicy 4.5 retention period duration keep destroy,S1-4.5:2;S1-4.5.2:2;S1-4.5.3:1,2,1
+q27,PIPEDA,4.6,Accuracy,LegalBasis,LegalObligation,LegalBasis 4.6 legal basis consent lawful grounds,S1-4.6:2;S1-4.6.1:2;S1-4.6.2:2,3,0
+q28,PIPEDA,4.6,Accuracy,ProcessingActivity,Use,ProcessingActivity 4.6 processing collect use disclose activity,S1-4.6:1;S1-4.6.1:1;S1-4.6.3:1,0,3
+q29,PIPEDA,4.6,Accuracy,Actor,DataController,Actor 4.6 actor organization controller processor individual,S1-4.6.2:2,1,0
+q30,PIPEDA,4.6,Accuracy,Constraint,Accuracy|PurposeLimitation,Constraint 4.6 constraint limitation obligation safeguard,S1-4.6:2;S1-4.6.1:2;S1-4.6.2:2;S1-4.6.3:1,3,1
+q31,PIPEDA,4.7,Safeguards,LegalBasis,LegalObligation,LegalBasis 4.7 legal basis consent lawful grounds,S1-4.7:2;S1-4.7.1:2;S1-4.7.4:2;S1-4.7.5:2,4,0
+q32,PIPEDA,4.7,Safeguards,ProcessingActivity,Store,ProcessingActivity 4.7 processing collect use disclose activity,S1-4.7.1:1;S1-4.7.2:1;S1-4.7.3:1,0,3
+q33,PIPEDA,4.7,Safeguards,Actor,DataController,Actor 4.7 actor organization controller processor individual,S1-4.7.1:2;S1-4.7.4:2,2,0
+q34,PIPEDA,4.7,Safeguards,Constraint,Security,Constraint 4.7 constraint limitation obligation safeguard,S1-4.7:2;S1-4.7.1:2;S1-4.7.4:2;S1-4.7.2:1;S1-4.7.3:1;S1-4.7.5:1,3,3
+q35,PIPEDA,4.8,Openness,LegalBasis,LegalObligation,LegalBasis 4.8 legal basis consent lawful grounds,S1-4.8:2;S1-4.8.1:2;S1-4.8.2:2,3,0
+q36,PIPEDA,4.8,Openness,ProcessingActivity,Use,ProcessingActivity 4.8 processing collect use disclose activity,S1-4.8.2:1,0,1
+q37,PIPEDA,4.8,Openness,Actor,DataController,Actor 4.8 actor organization controller processor individual,S1-4.8:2;S1-4.8.1:2;S1-4.8.3:2;S1-4.8.2:1,3,1
+q38,PIPEDA,4.8,Openness,Right,Access|Complaint,Right 4.8 right access correction deletion request,S1-4.8.2:2,1,0
+q39,PIPEDA,4.8,Openness,Constraint,Transparency,Constraint 4.8 constraint limitation obligation safeguard,S1-4.8:2;S1-4.8.1:2;S1-4.8.2:2;S1-4.8.3:1,3,1
+q40,PIPEDA,4.8,Openness,DataTransfer,TRUE,DataTransfer 4.8 transfer third country cross-border mechanism,S1-4.8.2:1,0,1
+q41,PIPEDA,4.9,Individual Access,LegalBasis,LegalObligation,LegalBasis 4.9 legal basis consent lawful grounds,S1-4.9:2;S1-4.9.1:2;S1-4.9.2:2;S1-4.9.3:2;S1-4.9.4:2;S1-4.9.5:2;S1-4.9.6:2,7,0
+q42,PIPEDA,4.9,Individual Access,ProcessingActivity,Use,ProcessingActivity 4.9 processing collect use disclose activity,S1-4.9.2:2;S1-4.9:1;S1-4.9.1:1,1,2
+q43,PIPEDA,4.9,Individual Access,Actor,DataController,Actor 4.9 actor organization controller processor individual,S1-4.9:2;S1-4.9.1:2;S1-4.9.3:2;S1-4.9.4:2;S1-4.9.5:2;S1-4.9.2:1;S1-4.9.6:1,5,2
+q44,PIPEDA,4.9,Individual Access,Right,Access|Rectification,Right 4.9 right access correction deletion request,S1-4.9:2;S1-4.9.5:2;S1-4.9.1:1;S1-4.9.4:1;S1-4.9.6:1,2,3
+q45,PIPEDA,4.9,Individual Access,Constraint,Transparency|Accuracy,Constraint 4.9 constraint limitation obligation safeguard,S1-4.9:2;S1-4.9.4:2;S1-4.9.5:2;S1-4.9.1:1;S1-4.9.3:1,3,2
+q46,PIPEDA,4.9,Individual Access,DataTransfer,TRUE,DataTransfer 4.9 transfer third country cross-border mechanism,S1-4.9.3:2;S1-4.9.1:1;S1-4.9.5:1;S1-4.9.6:1,1,3
+q47,PIPEDA,4.10,Challenging Compliance,LegalBasis,LegalObligation,LegalBasis 4.10 legal basis consent lawful grounds,S1-4.10.2:2;S1-4.10.3:2;S1-4.10.4:2;S1-4.10:1,3,1
+q48,PIPEDA,4.10,Challenging Compliance,ProcessingActivity,Use,ProcessingActivity 4.10 processing collect use disclose activity,S1-4.10.2:1,0,1
+q49,PIPEDA,4.10,Challenging Compliance,Actor,DataController,Actor 4.10 actor organization controller processor individual,S1-4.10.2:2;S1-4.10.3:2;S1-4.10.4:2;S1-4.10:1;S1-4.10.1:1,3,2
+q50,PIPEDA,4.10,Challenging Compliance,Right,Complaint,Right 4.10 right access correction deletion request,S1-4.10:2;S1-4.10.2:2;S1-4.10.3:2;S1-4.10.4:2,4,0
+q51,PIPEDA,4.10,Challenging Compliance,Constraint,Transparency,Constraint 4.10 constraint limitation obligation safeguard,S1-4.10.3:2;S1-4.10.2:1,1,1
