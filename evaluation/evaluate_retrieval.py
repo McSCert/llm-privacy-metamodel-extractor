@@ -30,6 +30,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
+from sentence_transformers import CrossEncoder
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -311,7 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gold",
         type=Path,
-        default=PROJECT_ROOT / "evaluation" / "retrieval_gold_standard.csv",
+        default=PROJECT_ROOT / "evaluation" / "retrieval" / "setA_gold.csv",
     )
     parser.add_argument("--db", type=Path, default=PROJECT_ROOT / "data" / "chunks.db")
     parser.add_argument(
@@ -339,13 +340,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--rerank-candidates",
         type=int,
-        default=5,
+        default=10,
         help="Number of BM25-ranked candidates passed to the cross-encoder",
     )
     parser.add_argument(
         "--rrf-k",
         type=int,
-        default=60,
+        default=10,
         help="RRF rank constant for the hybrid_rrf method",
     )
     parser.add_argument(
@@ -475,13 +476,6 @@ def main(argv: list[str] | None = None) -> int:
     cross_encoder = None
     cross_encoder_setup_seconds = 0.0
     if set(methods) & {"cross_encoder", "hybrid_cross_encoder"}:
-        try:
-            from sentence_transformers import CrossEncoder
-        except ImportError as exc:
-            parser.error(
-                f"cross_encoder needs sentence-transformers; install it with "
-                f"`pip install sentence-transformers`. Details: {exc}"
-            )
         started = time.perf_counter()
         cross_encoder = CrossEncoder(args.cross_encoder_model)
         cross_encoder_setup_seconds = time.perf_counter() - started
@@ -515,31 +509,6 @@ def main(argv: list[str] | None = None) -> int:
         cross_encoder_seconds = 0.0
         cross_encoder_ranked: list[tuple[Chunk, float]] = []
 
-        # Generate weighted hybrid ranking for hybrid + cross-encoder
-        hybrid_ce_base_ranked = []
-        hybrid_ce_fusion_seconds = 0.0
-
-        if "hybrid_cross_encoder" in methods:
-            started = time.perf_counter()
-
-            chunks_by_id = {
-                chunk.chunk_id: chunk for chunk in candidates
-            }
-
-            fused = hybrid_rank_by_similarity(
-                [(chunk.chunk_id, score) for chunk, score in bm25_ranked],
-                [(chunk.chunk_id, score) for chunk, score in dense_ranked],
-                top_k=len(candidates),
-                bm25_weight=args.hybrid_cross_encoder_bm25_weight,
-            )
-
-            hybrid_ce_base_ranked = [
-                (chunks_by_id[chunk_id], score)
-                for chunk_id, score in fused
-            ]
-
-            hybrid_ce_fusion_seconds = time.perf_counter() - started
-
         if bm25_embedder is not None:
             started = time.perf_counter()
             bm25_candidates = [
@@ -568,6 +537,32 @@ def main(argv: list[str] | None = None) -> int:
             ]
             dense_ranked.sort(key=lambda result: result[1], reverse=True)
             dense_seconds = time.perf_counter() - started
+
+        
+        # Generate weighted hybrid ranking for hybrid + cross-encoder
+        hybrid_ce_base_ranked = []
+        hybrid_ce_fusion_seconds = 0.0
+
+        if "hybrid_cross_encoder" in methods:
+            started = time.perf_counter()
+
+            chunks_by_id = {
+                chunk.chunk_id: chunk for chunk in candidates
+            }
+
+            fused = hybrid_rank_by_similarity(
+                [(chunk.chunk_id, score) for chunk, score in bm25_ranked],
+                [(chunk.chunk_id, score) for chunk, score in dense_ranked],
+                top_k=len(candidates),
+                bm25_weight=args.hybrid_cross_encoder_bm25_weight,
+            )
+
+            hybrid_ce_base_ranked = [
+                (chunks_by_id[chunk_id], score)
+                for chunk_id, score in fused
+            ]
+
+            hybrid_ce_fusion_seconds = time.perf_counter() - started
 
         cross_encoder_ranked = []
         hybrid_cross_encoder_ranked = []
