@@ -411,7 +411,12 @@ def hybrid_rank_by_similarity(
 # ── Hybrid retrieval notes ───────────────────────────────────────────────────
 #
 # Combine BM25 + SentenceTransformer scores as independent similarity signals:
+# Combine BM25 + SentenceTransformer scores as independent similarity signals:
 #
+# 1. Compute BM25 score for each candidate using the stored BM25 document vector.
+# 2. Compute dense semantic cosine score for each candidate using the query and
+#    chunk texts encoded by SentenceTransformerEmbedder.
+# 3. Fuse with either:
 # 1. Compute BM25 score for each candidate using the stored BM25 document vector.
 # 2. Compute dense semantic cosine score for each candidate using the query and
 #    chunk texts encoded by SentenceTransformerEmbedder.
@@ -419,6 +424,10 @@ def hybrid_rank_by_similarity(
 #    a) Reciprocal Rank Fusion (RRF):
 #         score_rrf(d) = Σ_i  1 / (k + rank_i(d))    k=60 is a common default
 #    b) Weighted sum:
+#         score(d) = 0.5 * bm25_score(d) + 0.5 * dense_score(d)
+#
+# The implementation below supports both methods and is used by Retriever when
+# sentence-transformers is available.
 #         score(d) = 0.5 * bm25_score(d) + 0.5 * dense_score(d)
 #
 # The implementation below supports both methods and is used by Retriever when
